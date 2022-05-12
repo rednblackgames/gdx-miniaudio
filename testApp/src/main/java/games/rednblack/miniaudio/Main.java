@@ -1,10 +1,8 @@
 package games.rednblack.miniaudio;
 
 import com.badlogic.gdx.ApplicationListener;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.badlogic.gdx.math.MathUtils;
 
 public class Main implements ApplicationListener {
 
@@ -58,7 +56,7 @@ public class Main implements ApplicationListener {
 
     @Override
     public void dispose() {
-        miniAudio.dispose();
         maSound.dispose();
+        miniAudio.dispose();
     }
 }

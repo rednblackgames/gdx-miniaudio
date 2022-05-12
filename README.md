@@ -92,9 +92,9 @@ public class Main implements ApplicationListener {
 
     @Override
     public void dispose() {
-        //Always dispose everything!
-        miniAudio.dispose();
+        //Always dispose everything! First all sounds and then the engine
         maSound.dispose();
+        miniAudio.dispose();
     }
 
     @Override
