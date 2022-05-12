@@ -1,0 +1,8 @@
+games_rednblack_miniaudio_*.h
+games_rednblack_miniaudio_*.cpp
+build*.xml
+Android.mk
+Application.mk
+jni-headers
+target
+memcpy_wrap.c

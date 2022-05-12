@@ -1,0 +1,63 @@
+buildscript {
+    dependencies {
+        classpath "com.badlogicgames.gdx:gdx-jnigen-gradle:$jniGenVersion"
+    }
+}
+
+plugins {
+    id 'java'
+}
+
+apply plugin: "com.badlogicgames.gdx.gdx-jnigen"
+
+group 'games.rednblack.miniaudio'
+version '0.1'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "com.badlogicgames.gdx:gdx-jnigen-loader:$jniGenVersion"
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+
+    sourceCompatibility = JavaVersion.VERSION_1_7
+    targetCompatibility = JavaVersion.VERSION_1_7
+}
+
+task dist(type: Jar) {
+    from files(sourceSets.main.output.classesDirs)
+    from files(sourceSets.main.output.resourcesDir)
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ["--release", "7"]
+}
+
+jnigen {
+    sharedLibName = "gdx-miniaudio"
+
+    all {
+        cFlags += " -lm -lpthread -ldl "
+        cIncludes = ["miniaudio.h", "stb_vorbis.c"]
+    }
+
+    add(Windows, x32)
+    add(Windows, x64)
+    add(Linux, x64)
+    add(Linux, x32, ARM)
+    add(Linux, x64, ARM)
+    add(MacOsX, x64)
+    add(MacOsX, x64, ARM)
+    add(Android) {
+        linkerFlags += " -landroid "
+    }
+    add(IOS)
+}
+
+apply from : 'publish.gradle'
