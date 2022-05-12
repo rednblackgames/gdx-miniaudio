@@ -53,16 +53,16 @@ jnigen {
     add(Linux, x32, ARM)
     add(Linux, x64, ARM)
     add(MacOsX, x64) {
-        linkerFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
+        cFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
     }
     add(MacOsX, x64, ARM) {
-        linkerFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
+        cFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
     }
     add(Android) {
         linkerFlags += " -landroid "
     }
     add(IOS) {
-        linkerFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
+        cFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
     }
 }
 
