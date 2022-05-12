@@ -109,28 +109,16 @@ public class Main implements ApplicationListener {
 }
 ```
 
-Some platform specific additions needs to be taken to properly load sound files for `Android` and `iOS`.
-Refers to [Interfacing with platform specific code](https://libgdx.com/wiki/app/interfacing-with-platform-specific-code).
-
 #### Android additions
 
-If current platform is Android, native AssetManager object needs to be injected to `MiniAudio` object.
+If current platform is Android, native AssetManager object needs to be injected to `MiniAudio` engine.
+Refers to [Interfacing with platform specific code](https://libgdx.com/wiki/app/interfacing-with-platform-specific-code).
 
 ```java
 miniAudio.setupAndroid(Context#getAssets());
 ```
 
 You can safely pass `null` on other platforms.
-
-#### iOS additions
-
-In `iOS` assets path are not relative and needs to be built from resource manager
-
-```java
-NSBundle nsBundle = NSBundle.getMainBundle();
-String filePath = nsBundle.findResourcePath("piano2", "wav", "");
-maSound = miniAudio.createSound(filePath);
-```
 
 ## TODO
 

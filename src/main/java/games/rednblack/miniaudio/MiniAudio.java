@@ -34,6 +34,13 @@ public class MiniAudio implements Disposable {
         #ifdef MA_ANDROID
         ma_android_vfs androidVFS;
         #endif
+
+        #ifdef MA_APPLE_MOBILE
+        #include <string>
+        std::string getBundlePath(const char* fileName) {
+            return [[[NSBundle mainBundle] pathForResource:[NSString stringWithUTF8String: fileName] ofType:nil] UTF8String];
+        }
+        #endif
      */
 
     public MiniAudio() {
@@ -204,8 +211,14 @@ public class MiniAudio implements Disposable {
         return jniPlaySound(fileName);
     }
 
-    private native int jniPlaySound(String filePath);/*
-        return ma_engine_play_sound(&engine, filePath, NULL);
+    private native int jniPlaySound(String fileName);/*
+        #if defined(MA_APPLE_MOBILE)
+        std::string cppStr = getBundlePath(fileName);
+        char* cFileName = const_cast<char*>(cppStr.c_str());
+        return ma_engine_play_sound(&engine, cFileName, NULL);
+        #else
+        return ma_engine_play_sound(&engine, fileName, NULL);
+        #endif
     */
 
     /**
@@ -217,7 +230,7 @@ public class MiniAudio implements Disposable {
      * @return {@link MASound} object.
      */
     public MASound createSound(String fileName) {
-        return new MASound(jniCreateSound(fileName, (short) 0), this);
+        return createSound(fileName, (short) 0);
     }
 
     /**
@@ -237,7 +250,13 @@ public class MiniAudio implements Disposable {
 
     private native long jniCreateSound(String fileName, short flags); /*
         ma_sound* sound = (ma_sound*) ma_malloc(sizeof(ma_sound), NULL);
+        #if defined(MA_APPLE_MOBILE)
+        std::string cppStr = getBundlePath(fileName);
+        char* cFileName = const_cast<char*>(cppStr.c_str());
+        ma_result result = ma_sound_init_from_file(&engine, cFileName, flags, NULL, NULL, sound);
+        #else
         ma_result result = ma_sound_init_from_file(&engine, fileName, flags, NULL, NULL, sound);
+        #endif
         if (result != MA_SUCCESS) return (jlong) result;
         return (jlong) sound;
     */
