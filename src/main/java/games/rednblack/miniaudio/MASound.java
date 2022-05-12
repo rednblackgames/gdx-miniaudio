@@ -82,7 +82,7 @@ public class MASound implements Disposable {
 
     /**
      * Set sound volume
-     * @param volume 0 for silence, 1 for default volume, > 1 lauder
+     * @param volume 0 for silence, 1 for default volume, greater than 1 lauder
      */
     public void setVolume(float volume) {
         miniAudio.setSoundVolume(address, volume);
@@ -160,6 +160,7 @@ public class MASound implements Disposable {
      * Smoothly fade in audio to a target volume.
      *
      * @param milliseconds fade duration in milliseconds
+     * @param targetVolume target fade volume
      */
     public void fadeIn(float milliseconds, float targetVolume) {
         miniAudio.soundFade(address, 0, targetVolume, milliseconds);
@@ -169,6 +170,7 @@ public class MASound implements Disposable {
      * Smoothly fade out audio to a target volume.
      *
      * @param milliseconds fade duration in milliseconds
+     * @param targetVolume target fade volume
      */
     public void fadeOut(float milliseconds, float targetVolume) {
         miniAudio.soundFade(address, -1, targetVolume, milliseconds);

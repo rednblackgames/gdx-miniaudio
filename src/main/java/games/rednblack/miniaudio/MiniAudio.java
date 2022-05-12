@@ -228,6 +228,7 @@ public class MiniAudio implements Disposable {
      * {@link MASound.Flags} are useful to customize sound loading and managing
      *
      * @param fileName path of the file relative to assets folder
+     * @param flags flags for audio loading
      * @return {@link MASound} object.
      */
     public MASound createSound(String fileName, short flags) {
@@ -363,7 +364,7 @@ public class MiniAudio implements Disposable {
      * Set sound volume.
      *
      * @param soundAddress native address to sound object
-     * @param volume 0 for silence, 1 for default volume, > 1 lauder
+     * @param volume 0 for silence, 1 for default volume, greater than 1 lauder
      */
     public void setSoundVolume(long soundAddress, float volume) {
         jniSetSoundVolume(soundAddress, volume);
