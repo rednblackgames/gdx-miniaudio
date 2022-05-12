@@ -52,12 +52,18 @@ jnigen {
     add(Linux, x64)
     add(Linux, x32, ARM)
     add(Linux, x64, ARM)
-    add(MacOsX, x64)
-    add(MacOsX, x64, ARM)
+    add(MacOsX, x64) {
+        linkerFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
+    }
+    add(MacOsX, x64, ARM) {
+        linkerFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
+    }
     add(Android) {
         linkerFlags += " -landroid "
     }
-    add(IOS)
+    add(IOS) {
+        linkerFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
+    }
 }
 
 apply from : 'publish.gradle'
