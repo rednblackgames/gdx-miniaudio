@@ -48,16 +48,17 @@ public class Main implements ApplicationListener {
 
     @Override
     public void pause() {
-
+        miniAudio.stopEngine();
     }
 
     @Override
     public void resume() {
-
+        miniAudio.startEngine();
     }
 
     @Override
     public void dispose() {
         miniAudio.dispose();
+        maSound.dispose();
     }
 }

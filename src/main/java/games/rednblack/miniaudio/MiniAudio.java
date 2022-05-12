@@ -3,6 +3,11 @@ package games.rednblack.miniaudio;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
 
+/**
+ * Main Audio Engine interface that handle calls with native library.
+ *
+ * @author fgnm
+ */
 public class MiniAudio implements Disposable {
     static {
         new SharedLibraryLoader().load("gdx-miniaudio");
@@ -48,6 +53,12 @@ public class MiniAudio implements Disposable {
 		return ma_engine_init(&engineConfig, &engine);
 	*/
 
+    /**
+     * Android native implementation needs the AssetManager reference from Java code.
+     * Call this only in Android Applications and passing `Context#getAssets()` object.
+     *
+     * @param assetManager Android's Native AssetManager
+     */
     public void setupAndroid(Object assetManager) {
         jniSetupAndroid(assetManager);
     }
@@ -58,6 +69,9 @@ public class MiniAudio implements Disposable {
         #endif
     */
 
+    /**
+     * Dispose Engine resources
+     */
     @Override
     public void dispose() {
         jniDispose();
@@ -67,6 +81,9 @@ public class MiniAudio implements Disposable {
         ma_engine_uninit(&engine);
     */
 
+    /**
+     * Set engine in play mode. Does nothing if Engine is already started.
+     */
     public void startEngine() {
         int result = jniStartEngine();
         if (result != Result.MA_SUCCESS) {
@@ -80,6 +97,9 @@ public class MiniAudio implements Disposable {
         return MA_SUCCESS;
     */
 
+    /**
+     * Stop audio processing and pause the Engine. Does nothing if Engine is already paused.
+     */
     public void stopEngine() {
         int result = jniStopEngine();
         if (result != Result.MA_SUCCESS) {
@@ -93,6 +113,11 @@ public class MiniAudio implements Disposable {
         return MA_SUCCESS;
     */
 
+    /**
+     * Set master volume of the engine.
+     *
+     * @param volume float value where 0 is silence and 1 the base volume.
+     */
     public void setMasterVolume(float volume) {
         int result = jniSetMasterVolume(volume);
         if (result != Result.MA_SUCCESS) {
@@ -106,6 +131,13 @@ public class MiniAudio implements Disposable {
         return MA_SUCCESS;
     */
 
+    /**
+     * Used for 3D Spatialization, set the position of the current listener in world coordinates.
+     *
+     * @param x position
+     * @param y position
+     * @param z position
+     */
     public void setListenerPosition(float x, float y, float z) {
         jniSetListenerPosition(x, y, z);
     }
@@ -114,6 +146,13 @@ public class MiniAudio implements Disposable {
         ma_engine_listener_set_position(&engine, 0, x, y, z);
     */
 
+    /**
+     * The direction of the listener represents it's forward vector.
+     *
+     * @param forwardX direction
+     * @param forwardY direction
+     * @param forwardZ direction
+     */
     public void setListenerDirection(float forwardX, float forwardY, float forwardZ) {
         jniSetListenerDirection(forwardX, forwardY, forwardZ);
     }
@@ -122,6 +161,14 @@ public class MiniAudio implements Disposable {
         ma_engine_listener_set_direction(&engine, 0, forwardX, forwardY, forwardZ);
     */
 
+    /**
+     * The listener's up vector can also be specified and defaults to +1 on the Y axis.
+     * Default 0, 1, 0.
+     *
+     * @param x normal
+     * @param y normal
+     * @param z normal
+     */
     public void setListenerWorldUp(float x, float y, float z) {
         jniSetListenerWorldUp(x, y, z);
     }
@@ -130,6 +177,15 @@ public class MiniAudio implements Disposable {
         ma_engine_listener_set_world_up(&engine, 0, x, y, z);
     */
 
+    /**
+     * The engine supports directional attenuation. The listener can have a cone the controls how sound is
+     * attenuated based on the listener's direction. When a sound is between the inner and outer cones, it
+     * will be attenuated between 1 and the cone's outer gain
+     *
+     * @param innerAngleInRadians inner angle in radiance
+     * @param outerAngleInRadians outer angle in radiance
+     * @param outerGain outer gain
+     */
     public void setListenerCone(float innerAngleInRadians, float outerAngleInRadians, float outerGain) {
         jniSetListenerCone(innerAngleInRadians, outerAngleInRadians, outerGain);
     }
@@ -138,6 +194,12 @@ public class MiniAudio implements Disposable {
         ma_engine_listener_set_cone(&engine, 0, innerAngleInRadians, outerAngleInRadians, outerGain);
     */
 
+    /**
+     * Play sound with "fire and forget"
+     *
+     * @param fileName path of the file relative to assets folder
+     * @return status check {@link Result}
+     */
     public int playSound(String fileName) {
         return jniPlaySound(fileName);
     }
@@ -146,10 +208,28 @@ public class MiniAudio implements Disposable {
         return ma_engine_play_sound(&engine, filePath, NULL);
     */
 
+    /**
+     * Load a new {@link MASound} object and upload sound data into memory. Each {@link MASound} object
+     * represents a single instance of the sound. If you want to play the same sound multiple times at the same time,
+     * you need to initialize a separate {@link MASound} object.
+     *
+     * @param fileName path of the file relative to assets folder
+     * @return {@link MASound} object.
+     */
     public MASound createSound(String fileName) {
         return new MASound(jniCreateSound(fileName, (short) 0), this);
     }
 
+    /**
+     * Load a new {@link MASound} object and upload sound data into memory. Each {@link MASound} object
+     * represents a single instance of the sound. If you want to play the same sound multiple times at the same time,
+     * you need to initialize a separate {@link MASound} object.
+     *
+     * {@link MASound.Flags} are useful to customize sound loading and managing
+     *
+     * @param fileName path of the file relative to assets folder
+     * @return {@link MASound} object.
+     */
     public MASound createSound(String fileName, short flags) {
         return new MASound(jniCreateSound(fileName, flags), this);
     }
@@ -161,6 +241,11 @@ public class MiniAudio implements Disposable {
         return (jlong) sound;
     */
 
+    /**
+     * Free sound memory. Use when not needed.
+     *
+     * @param soundAddress native address to sound object
+     */
     public void disposeSound(long soundAddress) {
         jniDisposeSound(soundAddress);
     }
@@ -171,6 +256,11 @@ public class MiniAudio implements Disposable {
         ma_free(sound, NULL);
     */
 
+    /**
+     * Play or resume sound.
+     *
+     * @param soundAddress native address to sound object
+     */
     public void playSound(long soundAddress) {
         jniPlaySound(soundAddress);
     }
@@ -180,6 +270,11 @@ public class MiniAudio implements Disposable {
         ma_sound_start(sound);
     */
 
+    /**
+     * Pause sound.
+     *
+     * @param soundAddress native address to sound object
+     */
     public void pauseSound(long soundAddress) {
         jniPauseSound(soundAddress);
     }
@@ -189,6 +284,11 @@ public class MiniAudio implements Disposable {
         ma_sound_stop(sound);
     */
 
+    /**
+     * Pause and rewind sound to beginning.
+     *
+     * @param soundAddress native address to sound object
+     */
     public void stopSound(long soundAddress) {
         jniStopSound(soundAddress);
     }
@@ -199,6 +299,12 @@ public class MiniAudio implements Disposable {
         ma_sound_seek_to_pcm_frame(sound, 0);
     */
 
+    /**
+     * Check if a sound is playing
+     *
+     * @param soundAddress native address to sound object
+     * @return true if sound is playing false otherwise
+     */
     public boolean isSoundPlaying(long soundAddress) {
         return jniIsSoundPlaying(soundAddress);
     }
@@ -208,6 +314,12 @@ public class MiniAudio implements Disposable {
         return (jboolean) ma_sound_is_playing(sound);
     */
 
+    /**
+     * Check if a sound is at the end
+     *
+     * @param soundAddress native address to sound object
+     * @return true if sound is at the end false otherwise
+     */
     public boolean isSoundEnd(long soundAddress) {
         return jniIsSoundEnd(soundAddress);
     }
@@ -217,6 +329,12 @@ public class MiniAudio implements Disposable {
         return (jboolean) ma_sound_at_end(sound);
     */
 
+    /**
+     * Check if a sound is looping
+     *
+     * @param soundAddress native address to sound object
+     * @return true if sound is looping false otherwise
+     */
     public boolean isSoundLooping(long soundAddress) {
         return jniIsSoundLooping(soundAddress);
     }
@@ -226,6 +344,12 @@ public class MiniAudio implements Disposable {
         return (jboolean) ma_sound_is_looping(sound);
     */
 
+    /**
+     * Set if the sound should loop or not
+     *
+     * @param soundAddress native address to sound object
+     * @param looping true if sound should loop
+     */
     public void setSoundLooping(long soundAddress, boolean looping) {
         jniSetSoundLooping(soundAddress, looping);
     }
@@ -235,6 +359,12 @@ public class MiniAudio implements Disposable {
         ma_sound_set_looping(sound, looping ? MA_TRUE : MA_FALSE);
     */
 
+    /**
+     * Set sound volume.
+     *
+     * @param soundAddress native address to sound object
+     * @param volume 0 for silence, 1 for default volume, > 1 lauder
+     */
     public void setSoundVolume(long soundAddress, float volume) {
         jniSetSoundVolume(soundAddress, volume);
     }
@@ -244,7 +374,14 @@ public class MiniAudio implements Disposable {
         ma_sound_set_volume(sound, volume);
     */
 
+    /**
+     * Control Sound Pitch A larger value will result in a higher pitch. The pitch must be greater than 0.
+     *
+     * @param soundAddress native address to sound object
+     * @param pitch value, 1 default
+     */
     public void setSoundPitch(long soundAddress, float pitch) {
+        if (pitch <= 0) throw new IllegalArgumentException("Pitch must be > 0");
         jniSetSoundPitch(soundAddress, pitch);
     }
 
@@ -253,6 +390,13 @@ public class MiniAudio implements Disposable {
         ma_sound_set_pitch(sound, pitch);
     */
 
+    /**
+     * Setting the pan to 0 will result in an unpanned sound. Setting it to -1 will shift everything to the left, whereas
+     * +1 will shift it to the right.
+     *
+     * @param soundAddress native address to sound object
+     * @param pan value in the range [-1, 1]
+     */
     public void setSoundPan(long soundAddress, float pan) {
         jniSetSoundPan(soundAddress, pan);
     }
@@ -262,6 +406,12 @@ public class MiniAudio implements Disposable {
         ma_sound_set_pan(sound, pan);
     */
 
+    /**
+     * Enable or disable sound spatialization effects.
+     *
+     * @param soundAddress native address to sound object
+     * @param spatial true by default
+     */
     public void setSoundSpatialization(long soundAddress, boolean spatial) {
         jniSetSoundSpatialization(soundAddress, spatial);
     }
@@ -271,6 +421,14 @@ public class MiniAudio implements Disposable {
         ma_sound_set_spatialization_enabled(sound, spatial ? MA_TRUE : MA_FALSE);
     */
 
+    /**
+     * Sounds have a position for 3D Spatialization. By default, the position of a sound is in absolute space.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param x position
+     * @param y position
+     * @param z position
+     */
     public void setSoundPosition(long soundAddress, float x, float y, float z) {
         jniSetSoundPosition(soundAddress, x, y, z);
     }
@@ -280,6 +438,14 @@ public class MiniAudio implements Disposable {
         ma_sound_set_position(sound, x, y, z);
     */
 
+    /**
+     * Sounds have a direction for 3D Spatialization. By default, the position of a sound is in absolute space.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param forwardX direction
+     * @param forwardY direction
+     * @param forwardZ direction
+     */
     public void setSoundDirection(long soundAddress, float forwardX, float forwardY, float forwardZ) {
         jniSetSoundDirection(soundAddress, forwardX, forwardY, forwardZ);
     }
@@ -289,6 +455,12 @@ public class MiniAudio implements Disposable {
         ma_sound_set_direction(sound, forwardX, forwardY, forwardZ);
     */
 
+    /**
+     * Set current audio playing position in seconds.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param seconds to seek the audio track
+     */
     public void seekSoundTo(long soundAddress, float seconds) {
         jniSeekSoundTo(soundAddress, seconds);
     }
@@ -299,6 +471,14 @@ public class MiniAudio implements Disposable {
         ma_sound_seek_to_pcm_frame(sound, frameIndex);
     */
 
+    /**
+     * Smoothly fade audio volume between two values.
+     *
+     * @param soundAddress  soundAddress native address to sound object
+     * @param start starting volume (use -1 for current volume)
+     * @param end ending volume (use -1 for current volume)
+     * @param milliseconds fade duration in milliseconds
+     */
     public void soundFade(long soundAddress, float start, float end, float milliseconds) {
         jniSoundFade(soundAddress, start, end, milliseconds);
     }

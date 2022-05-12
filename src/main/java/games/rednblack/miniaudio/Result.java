@@ -1,5 +1,10 @@
 package games.rednblack.miniaudio;
 
+/**
+ * Status codes from MiniAudio native library.
+ *
+ * @author fgnm
+ */
 public class Result {
     //MiniAudio Results
     public static final int MA_SUCCESS                        =  0,
