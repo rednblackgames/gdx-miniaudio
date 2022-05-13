@@ -23,6 +23,7 @@
 - Sound Position
 - Sound Direction
 - Sound Fading (In/Out/Custom)
+- Sound length and current cursor position
 
 ## How to use
 

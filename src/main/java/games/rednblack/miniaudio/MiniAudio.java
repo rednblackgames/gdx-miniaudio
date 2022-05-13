@@ -497,7 +497,7 @@ public class MiniAudio implements Disposable {
     /**
      * Smoothly fade audio volume between two values.
      *
-     * @param soundAddress  soundAddress native address to sound object
+     * @param soundAddress soundAddress native address to sound object
      * @param start starting volume (use -1 for current volume)
      * @param end ending volume (use -1 for current volume)
      * @param milliseconds fade duration in milliseconds
@@ -510,4 +510,40 @@ public class MiniAudio implements Disposable {
         ma_sound* sound = (ma_sound*) soundAddress;
         ma_sound_set_fade_in_milliseconds(sound, start, end, milliseconds);
     */
+
+    /**
+     * Get current sound cursor position.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @return cursor position in seconds
+     */
+    public float getSoundCursorPosition(long soundAddress) {
+        return jniGetSoundCursorPosition(soundAddress);
+    }
+
+    private native float jniGetSoundCursorPosition(long soundAddress);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        float cursor = 0;
+        ma_result res = ma_sound_get_cursor_in_seconds(sound, &cursor);
+        if (res != MA_SUCCESS) return res;
+        return cursor;
+    */
+
+    /**
+     * Get total length of the sound.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @return sound length in seconds
+     */
+    public float getSoundLength(long soundAddress) {
+        return jniGetSoundLength(soundAddress);
+    }
+
+    private native float jniGetSoundLength(long soundAddress);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        float length = 0;
+        ma_result res = ma_sound_get_length_in_seconds(sound, &length);
+        if (res != MA_SUCCESS) return res;
+        return length;
+     */
 }

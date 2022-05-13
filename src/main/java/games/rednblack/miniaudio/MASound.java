@@ -189,6 +189,24 @@ public class MASound implements Disposable {
     }
 
     /**
+     * Get current sound cursor position.
+     *
+     * @return cursor position in seconds
+     */
+    public float getCursorPosition() {
+        return miniAudio.getSoundCursorPosition(address);
+    }
+
+    /**
+     * Get total length of the sound.
+     *
+     * @return sound length in seconds
+     */
+    public float getLength() {
+        return miniAudio.getSoundLength(address);
+    }
+
+    /**
      * Release and dispose sound objects
      */
     @Override
