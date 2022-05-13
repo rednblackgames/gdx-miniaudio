@@ -82,7 +82,7 @@ public class Main implements ApplicationListener {
         //Play simple audio
         int res = miniAudio.playSound("piano2.wav");
         //res contains result code, check it for errors with
-        //games.rednblack.miniaudio.Result class
+        //games.rednblack.miniaudio.MAResult class
 
         //Create and load a sound without starting it
         maSound = miniAudio.createSound("piano2.wav");

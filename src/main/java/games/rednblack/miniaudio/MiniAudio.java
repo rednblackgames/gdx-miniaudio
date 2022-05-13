@@ -45,7 +45,7 @@ public class MiniAudio implements Disposable {
 
     public MiniAudio() {
         int result = init_engine();
-        if (result != Result.MA_SUCCESS) {
+        if (result != MAResult.MA_SUCCESS) {
             throw new RuntimeException("Unable to init MiniAudio Engine, error " + result);
         }
     }
@@ -93,7 +93,7 @@ public class MiniAudio implements Disposable {
      */
     public void startEngine() {
         int result = jniStartEngine();
-        if (result != Result.MA_SUCCESS) {
+        if (result != MAResult.MA_SUCCESS) {
             throw new RuntimeException("Unable to start MiniAudio Engine, error " + result);
         }
     }
@@ -109,7 +109,7 @@ public class MiniAudio implements Disposable {
      */
     public void stopEngine() {
         int result = jniStopEngine();
-        if (result != Result.MA_SUCCESS) {
+        if (result != MAResult.MA_SUCCESS) {
             throw new RuntimeException("Unable to stop MiniAudio Engine, error " + result);
         }
     }
@@ -127,7 +127,7 @@ public class MiniAudio implements Disposable {
      */
     public void setMasterVolume(float volume) {
         int result = jniSetMasterVolume(volume);
-        if (result != Result.MA_SUCCESS) {
+        if (result != MAResult.MA_SUCCESS) {
             throw new RuntimeException("Unable to set MiniAudio master volume, error " + result);
         }
     }
@@ -205,7 +205,7 @@ public class MiniAudio implements Disposable {
      * Play sound with "fire and forget"
      *
      * @param fileName path of the file relative to assets folder
-     * @return status check {@link Result}
+     * @return status check {@link MAResult}
      */
     public int playSound(String fileName) {
         return jniPlaySound(fileName);
@@ -257,7 +257,10 @@ public class MiniAudio implements Disposable {
         #else
         ma_result result = ma_sound_init_from_file(&engine, fileName, flags, NULL, NULL, sound);
         #endif
-        if (result != MA_SUCCESS) return (jlong) result;
+        if (result != MA_SUCCESS) {
+            ma_free(sound, NULL);
+            return (jlong) result;
+        }
         return (jlong) sound;
     */
 

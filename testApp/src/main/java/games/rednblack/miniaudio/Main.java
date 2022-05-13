@@ -9,7 +9,9 @@ public class Main implements ApplicationListener {
     MiniAudio miniAudio;
 
     public static void main(String[] args) {
-        new Lwjgl3Application(new Main(), new Lwjgl3ApplicationConfiguration());
+        Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
+        configuration.disableAudio(true);
+        new Lwjgl3Application(new Main(), configuration);
     }
 
     MASound maSound;
@@ -19,7 +21,7 @@ public class Main implements ApplicationListener {
         //int res = miniAudio.playSound("Median_test.ogg");
         //int res = miniAudio.playSound("piano2.wav");
         //System.out.println(res);
-        maSound = miniAudio.createSound("piano2.wav");
+        maSound = miniAudio.createSound("piano2.wav", MASound.Flags.MA_SOUND_FLAG_STREAM);
         maSound.fadeIn(1000);
         maSound.loop();
         System.out.println(maSound.isPlaying());

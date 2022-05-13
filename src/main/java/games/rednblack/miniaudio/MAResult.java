@@ -5,7 +5,7 @@ package games.rednblack.miniaudio;
  *
  * @author fgnm
  */
-public class Result {
+public class MAResult {
     //MiniAudio Results
     public static final int MA_SUCCESS                        =  0,
     MA_ERROR                          = -1,  /* A generic error. */

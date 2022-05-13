@@ -12,6 +12,9 @@ public class MASound implements Disposable {
     protected MiniAudio miniAudio;
 
     public MASound(long address, MiniAudio miniAudio) {
+        if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
+            throw new IllegalStateException("Error while loading Sound, code " + address);
+        }
         this.address = address;
         this.miniAudio = miniAudio;
     }
