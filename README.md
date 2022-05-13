@@ -17,7 +17,7 @@
 - Virtual 3D Listener Cone
 - "Fire and forget" Sounds
 - Sound creation (with custom flags)
-- Sound play/pause/stop/loop/isLooping/isEnd/seekTo (not precise yet)
+- Sound play/pause/stop/loop/isLooping/isEnd/seekTo
 - Sound Volume/Pan/Pitch
 - Sound Spatialization
 - Sound Position
@@ -123,8 +123,10 @@ You can safely pass `null` on other platforms.
 ## TODO
 
 - Filters and Effects Graph
+- Wave generation
+- Stream PCM data
+- Sound Groups
 - Audio recording (do we really need this?)
-- Seek to is not very accurate
 
 ### 3D Spatialization
 - Engine Multiple 3D Listeners (and ma_sound_set_pinned_listener_index)(are they useful?)
