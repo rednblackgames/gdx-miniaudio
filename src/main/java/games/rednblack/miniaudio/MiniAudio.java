@@ -20,6 +20,8 @@ public class MiniAudio implements Disposable {
         #define MINIAUDIO_IMPLEMENTATION
         #include "miniaudio.h"
 
+        #include "ma_reverb_node.c"
+
         #include <stdio.h>
 
         #ifdef MA_ANDROID

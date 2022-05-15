@@ -39,6 +39,7 @@
 **Effects**
 
 - Delay/Echo
+- Reverb
 
 ## How to use
 
