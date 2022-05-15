@@ -43,11 +43,14 @@ public class MiniAudio implements Disposable {
         #endif
      */
 
+    private final long engineAddress;
+
     public MiniAudio() {
         int result = init_engine();
         if (result != MAResult.MA_SUCCESS) {
             throw new RuntimeException("Unable to init MiniAudio Engine, error " + result);
         }
+        engineAddress = jniEngineAddress();
     }
 
     private native int init_engine();/*
@@ -59,6 +62,14 @@ public class MiniAudio implements Disposable {
         #endif
 		return ma_engine_init(&engineConfig, &engine);
 	*/
+
+    private native long jniEngineAddress();/*
+        return (jlong) &engine;
+    */
+
+    public long getEngineAddress() {
+        return engineAddress;
+    }
 
     /**
      * Android native implementation needs the AssetManager reference from Java code.
@@ -546,4 +557,30 @@ public class MiniAudio implements Disposable {
         if (res != MA_SUCCESS) return res;
         return length;
      */
+
+    private native long jniGetOutputEndpoint(long graphAddress);/*
+        ma_engine* g_engine = (ma_engine*) graphAddress;
+        return (jlong) ma_engine_get_endpoint(g_engine);
+    */
+
+    public void attachOutputBus(MANode firstNode, int busIndex, MANode secondNode, int secondBusIndex) {
+        int res = jniAttachOutputBus(firstNode.address, busIndex, secondNode.address, secondBusIndex);
+        if (res != MAResult.MA_SUCCESS)
+            throw new IllegalStateException("Could not attach nodes, error " + res);
+    }
+
+    private native int jniAttachOutputBus(long firstNode, int busIndex, long secondNode, int secondBusIndex);/*
+        ma_node* pNode = (ma_node*) firstNode;
+        ma_node* pOtherNode = (ma_node*) secondNode;
+        return ma_node_attach_output_bus(pNode, busIndex, pOtherNode, secondBusIndex);
+    */
+
+    public void attachToOutput(MANode node, int busIndex) {
+        if (busIndex >= node.getSupportedOutputs())
+            throw new IllegalArgumentException("Wrong output bus number, the node support up to " + node.getSupportedOutputs() + " buses.");
+
+        int res = jniAttachOutputBus(node.address, busIndex, jniGetOutputEndpoint(engineAddress), 0);
+        if (res != MAResult.MA_SUCCESS)
+            throw new IllegalStateException("Could not attach node to graph output, error " + res);
+    }
 }

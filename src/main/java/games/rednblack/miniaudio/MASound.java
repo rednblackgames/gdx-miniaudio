@@ -1,22 +1,17 @@
 package games.rednblack.miniaudio;
 
-import com.badlogic.gdx.utils.Disposable;
-
 /**
  * Wrapper class for mange native sound objects.
  *
  * @author fgnm
  */
-public class MASound implements Disposable {
-    protected long address;
-    protected MiniAudio miniAudio;
-
+public class MASound extends MANode {
     public MASound(long address, MiniAudio miniAudio) {
+        super(miniAudio);
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
             throw new IllegalStateException("Error while loading Sound, code " + address);
         }
         this.address = address;
-        this.miniAudio = miniAudio;
     }
 
     /**
@@ -212,6 +207,16 @@ public class MASound implements Disposable {
     @Override
     public void dispose() {
         miniAudio.disposeSound(address);
+    }
+
+    @Override
+    public void attachToNode(MANode previousNode, int outputBus) {
+        throw new RuntimeException("Sounds doesn't have input bus");
+    }
+
+    @Override
+    public int getSupportedOutputs() {
+        return 1;
     }
 
     /**

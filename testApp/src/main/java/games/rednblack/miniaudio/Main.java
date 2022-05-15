@@ -15,19 +15,26 @@ public class Main implements ApplicationListener {
     }
 
     MASound maSound;
+    MADelayNode delayNode;
+
     @Override
     public void create() {
         miniAudio = new MiniAudio();
         //int res = miniAudio.playSound("Median_test.ogg");
         //int res = miniAudio.playSound("piano2.wav");
         //System.out.println(res);
-        maSound = miniAudio.createSound("piano2.wav", MASound.Flags.MA_SOUND_FLAG_STREAM);
-        maSound.fadeIn(1000);
+        maSound = miniAudio.createSound("Median_test.ogg");
+
+        delayNode = new MADelayNode(miniAudio, 0.2f, 0.5f);
+        miniAudio.attachToOutput(delayNode, 0);
+        delayNode.attachToNode(maSound, 0);
+
         maSound.loop();
         System.out.println(maSound.isPlaying());
         System.out.println(maSound.isLooping());
         System.out.println(maSound.isEnd());
         System.out.println(maSound.isPlaying());
+        System.out.println(maSound.getLength());
     }
 
     @Override
@@ -38,6 +45,7 @@ public class Main implements ApplicationListener {
 
     @Override
     public void render() {
+        //System.out.println(maSound.getCursorPosition());
         //System.out.println("isLooping " + maSound.isLooping());
         //System.out.println("isEnd " + maSound.isEnd());
         //if (Gdx.graphics.getFrameId() == 200) maSound.seekTo(45);
@@ -59,6 +67,7 @@ public class Main implements ApplicationListener {
     @Override
     public void dispose() {
         maSound.dispose();
+        delayNode.dispose();
         miniAudio.dispose();
     }
 }
