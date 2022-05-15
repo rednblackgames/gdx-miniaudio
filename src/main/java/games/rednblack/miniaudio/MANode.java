@@ -28,7 +28,7 @@ public abstract class MANode implements Disposable {
      * Attach to the input of this node another {@link MANode} object
      *
      * @param previousNode the node that should be attached to this node input
-     * @param outputBus the output bus index of the node
+     * @param outputBusIndex the output bus index of the node
      */
     public void attachToNode(MANode previousNode, int outputBusIndex) {
         if (outputBusIndex >= previousNode.getSupportedOutputs())
