@@ -3,6 +3,8 @@ package games.rednblack.miniaudio;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import games.rednblack.miniaudio.effect.MADelayNode;
+import games.rednblack.miniaudio.filter.MABiquadFilter;
 
 public class Main implements ApplicationListener {
 
@@ -15,7 +17,7 @@ public class Main implements ApplicationListener {
     }
 
     MASound maSound;
-    MADelayNode delayNode;
+    MANode effectNode;
 
     @Override
     public void create() {
@@ -25,9 +27,11 @@ public class Main implements ApplicationListener {
         //System.out.println(res);
         maSound = miniAudio.createSound("Median_test.ogg");
 
-        delayNode = new MADelayNode(miniAudio, 0.2f, 0.5f);
-        miniAudio.attachToOutput(delayNode, 0);
-        delayNode.attachToNode(maSound, 0);
+        //effectNode = new MADelayNode(miniAudio, 0.2f, 0.5f);
+        effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
+
+        miniAudio.attachToOutput(effectNode, 0);
+        //effectNode.attachToNode(maSound, 0);
 
         maSound.loop();
         System.out.println(maSound.isPlaying());
@@ -67,7 +71,7 @@ public class Main implements ApplicationListener {
     @Override
     public void dispose() {
         maSound.dispose();
-        delayNode.dispose();
+        effectNode.dispose();
         miniAudio.dispose();
     }
 }

@@ -30,7 +30,12 @@ public abstract class MANode implements Disposable {
      * @param previousNode the node that should be attached to this node input
      * @param outputBus the output bus index of the node
      */
-    public abstract void attachToNode(MANode previousNode, int outputBus);
+    public void attachToNode(MANode previousNode, int outputBusIndex) {
+        if (outputBusIndex >= previousNode.getSupportedOutputs())
+            throw new IllegalArgumentException("Wrong output bus number, the node support up to " + previousNode.getSupportedOutputs() + " buses.");
+
+        miniAudio.attachOutputBus(previousNode, outputBusIndex, this, 0);
+    }
 
     /**
      * Returns how many output bus has this node.

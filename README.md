@@ -24,6 +24,21 @@
 - Sound Direction
 - Sound Fading (In/Out/Custom)
 - Sound length and current cursor position
+- Graph Nodes Filters/Effects
+
+**Filters**
+- Band Pass
+- Biquad
+- High Pass
+- High Shelf
+- Low Pass
+- Low Shelf
+- Notching
+- Peaking
+
+**Effects**
+
+- Delay/Echo
 
 ## How to use
 
@@ -123,7 +138,6 @@ You can safely pass `null` on other platforms.
 
 ## TODO
 
-- Filters and Effects Graph
 - Wave generation
 - Stream PCM data
 - Sound Groups

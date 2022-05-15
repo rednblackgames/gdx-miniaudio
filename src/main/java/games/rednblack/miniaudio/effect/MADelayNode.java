@@ -1,4 +1,8 @@
-package games.rednblack.miniaudio;
+package games.rednblack.miniaudio.effect;
+
+import games.rednblack.miniaudio.MANode;
+import games.rednblack.miniaudio.MAResult;
+import games.rednblack.miniaudio.MiniAudio;
 
 /**
  * Wrapper class to MiniAudio's Delay Node
@@ -44,14 +48,6 @@ public class MADelayNode extends MANode {
         }
         return (jlong) g_delayNode;
     */
-
-    @Override
-    public void attachToNode(MANode previousNode, int outputBusIndex) {
-        if (outputBusIndex >= previousNode.getSupportedOutputs())
-            throw new IllegalArgumentException("Wrong output bus number, the node support up to " + previousNode.getSupportedOutputs() + " buses.");
-
-        miniAudio.attachOutputBus(previousNode, outputBusIndex, this, 0);
-    }
 
     @Override
     public void dispose() {
