@@ -50,7 +50,7 @@ public class MiniAudio implements Disposable {
     public MiniAudio() {
         int result = init_engine();
         if (result != MAResult.MA_SUCCESS) {
-            throw new RuntimeException("Unable to init MiniAudio Engine, error " + result);
+            throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
     }
@@ -107,7 +107,7 @@ public class MiniAudio implements Disposable {
     public void startEngine() {
         int result = jniStartEngine();
         if (result != MAResult.MA_SUCCESS) {
-            throw new RuntimeException("Unable to start MiniAudio Engine, error " + result);
+            throw new MiniAudioException("Unable to start MiniAudio Engine", result);
         }
     }
 
@@ -123,7 +123,7 @@ public class MiniAudio implements Disposable {
     public void stopEngine() {
         int result = jniStopEngine();
         if (result != MAResult.MA_SUCCESS) {
-            throw new RuntimeException("Unable to stop MiniAudio Engine, error " + result);
+            throw new MiniAudioException("Unable to stop MiniAudio Engine", result);
         }
     }
 
@@ -141,7 +141,7 @@ public class MiniAudio implements Disposable {
     public void setMasterVolume(float volume) {
         int result = jniSetMasterVolume(volume);
         if (result != MAResult.MA_SUCCESS) {
-            throw new RuntimeException("Unable to set MiniAudio master volume, error " + result);
+            throw new MiniAudioException("Unable to set MiniAudio master volume", result);
         }
     }
 
@@ -568,7 +568,7 @@ public class MiniAudio implements Disposable {
     public void attachOutputBus(MANode firstNode, int busIndex, MANode secondNode, int secondBusIndex) {
         int res = jniAttachOutputBus(firstNode.address, busIndex, secondNode.address, secondBusIndex);
         if (res != MAResult.MA_SUCCESS)
-            throw new IllegalStateException("Could not attach nodes, error " + res);
+            throw new MiniAudioException("Could not attach nodes", res);
     }
 
     private native int jniAttachOutputBus(long firstNode, int busIndex, long secondNode, int secondBusIndex);/*
@@ -583,6 +583,6 @@ public class MiniAudio implements Disposable {
 
         int res = jniAttachOutputBus(node.address, busIndex, jniGetOutputEndpoint(engineAddress), 0);
         if (res != MAResult.MA_SUCCESS)
-            throw new IllegalStateException("Could not attach node to graph output, error " + res);
+            throw new MiniAudioException("Could not attach node to graph output", res);
     }
 }

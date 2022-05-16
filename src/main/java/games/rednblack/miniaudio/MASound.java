@@ -9,7 +9,7 @@ public class MASound extends MANode {
     public MASound(long address, MiniAudio miniAudio) {
         super(miniAudio);
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
-            throw new IllegalStateException("Error while loading Sound, code " + address);
+            throw new MiniAudioException("Error while loading Sound", (int) address);
         }
         this.address = address;
     }

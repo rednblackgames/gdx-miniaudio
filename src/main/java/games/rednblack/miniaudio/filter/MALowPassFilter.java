@@ -3,6 +3,7 @@ package games.rednblack.miniaudio.filter;
 import games.rednblack.miniaudio.MANode;
 import games.rednblack.miniaudio.MAResult;
 import games.rednblack.miniaudio.MiniAudio;
+import games.rednblack.miniaudio.MiniAudioException;
 
 /**
  * Wrapper class to MiniAudio's Low Pass Filter
@@ -21,7 +22,7 @@ public class MALowPassFilter extends MANode {
         address = jniCreateNode(miniAudio.getEngineAddress(), cutoffFrequency, order);
 
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
-            throw new IllegalStateException("Error while creating biquad node, code " + address);
+            throw new MiniAudioException("Error while creating low pass filter node", (int) address);
         }
     }
 
