@@ -542,6 +542,25 @@ public class MiniAudio implements Disposable {
         return cursor;
     */
 
+
+    /**
+     * Get current sound cursor position.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @return cursor position in PCM frames
+     */
+    public int getSoundCursorPCMPosition(long soundAddress) {
+        return jniGetSoundCursorPCMPosition(soundAddress);
+    }
+
+    private native int jniGetSoundCursorPCMPosition(long soundAddress);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_uint64 cursor = 0;
+        ma_result res = ma_sound_get_cursor_in_pcm_frames(sound, &cursor);
+        if (res != MA_SUCCESS) return res;
+        return cursor;
+    */
+
     /**
      * Get total length of the sound.
      *
@@ -565,6 +584,14 @@ public class MiniAudio implements Disposable {
         return (jlong) ma_engine_get_endpoint(g_engine);
     */
 
+    /**
+     * Connect two nodes into the graph node effects system.
+     *
+     * @param firstNode left node of the link
+     * @param busIndex output bus index of the left node
+     * @param secondNode right node of the link
+     * @param secondBusIndex input bus index of the right node
+     */
     public void attachOutputBus(MANode firstNode, int busIndex, MANode secondNode, int secondBusIndex) {
         int res = jniAttachOutputBus(firstNode.address, busIndex, secondNode.address, secondBusIndex);
         if (res != MAResult.MA_SUCCESS)
@@ -577,6 +604,12 @@ public class MiniAudio implements Disposable {
         return ma_node_attach_output_bus(pNode, busIndex, pOtherNode, secondBusIndex);
     */
 
+    /**
+     * Attach a node graph to the main engine audio output.
+     *
+     * @param node to be attached to the engine output
+     * @param busIndex index of the input Node
+     */
     public void attachToOutput(MANode node, int busIndex) {
         if (busIndex >= node.getSupportedOutputs())
             throw new IllegalArgumentException("Wrong output bus number, the node support up to " + node.getSupportedOutputs() + " buses.");
@@ -585,4 +618,85 @@ public class MiniAudio implements Disposable {
         if (res != MAResult.MA_SUCCESS)
             throw new MiniAudioException("Could not attach node to graph output", res);
     }
+
+    /**
+     * Create a new Audio Buffer and allocated a float array data buffer to store raw PCM data.
+     *
+     * @param size of the buffer
+     * @param channels how many channels
+     * @return {@link MAAudioBuffer} that can be used for create a new Sound with {@link #createSound(MADataSource)}
+     */
+    public MAAudioBuffer createAudioBuffer(int size, int channels) {
+        long dataBuffer = jniCreateFloatBuffer(size * channels);
+        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, size, channels), dataBuffer, size, this);
+    }
+
+    private native long jniCreateFloatBuffer(int size);/*
+        return (jlong) calloc(size, sizeof(float));
+    */
+
+    private native long jniCreateAudioBuffer(long dataBuffer, int size, int channels);/*
+        float* pExistingData = (float*) dataBuffer;
+        ma_audio_buffer_config config = ma_audio_buffer_config_init(ma_format_f32, channels, size, pExistingData, NULL);
+
+        ma_audio_buffer* buffer = (ma_audio_buffer*) ma_malloc(sizeof(ma_audio_buffer), NULL);
+        ma_result result = ma_audio_buffer_init(&config, buffer);
+        if (result != MA_SUCCESS) {
+            free(buffer);
+            return (jlong) result;
+        }
+
+        return (jlong) buffer;
+    */
+
+    /**
+     * Dispose and free memory of the Audio Buffer and attached data buffer
+     *
+     * @param audioBuffer audio buffer native memory address
+     * @param dataBuffer data buffer native memory address
+     */
+    public void disposeAudioBuffer(long audioBuffer, long dataBuffer) {
+        jniDisposeAudioBuffer(audioBuffer, dataBuffer);
+    }
+
+    private native void jniDisposeAudioBuffer(long audioBuffer, long dataBuffer);/*
+        ma_audio_buffer* buffer = (ma_audio_buffer*) audioBuffer;
+        float* pExistingData = (float*) dataBuffer;
+
+        ma_audio_buffer_uninit(buffer);
+        ma_free(buffer, NULL);
+        free(pExistingData);
+    */
+
+    /**
+     * Create a new {@link MASound} from an arbitrary {@link MADataSource}.
+     *
+     * @param dataSource source of the audio data
+     * @return {@link MASound} object ready to be used
+     */
+    public MASound createSound(MADataSource dataSource) {
+        return createSound(dataSource, (short) 0);
+    }
+
+    /**
+     * Create a new {@link MASound} from an arbitrary {@link MADataSource}.
+     *
+     * @param dataSource source of the audio data
+     * @param flags flags for audio loading
+     * @return {@link MASound} object ready to be used
+     */
+    public MASound createSound(MADataSource dataSource, short flags) {
+        return new MASound(jniCreateSoundFromDataSource(dataSource.address, flags), this);
+    }
+
+    private native long jniCreateSoundFromDataSource(long dataSource, short flags);/*
+        ma_data_source* source = (ma_data_source*) dataSource;
+        ma_sound* sound = (ma_sound*) ma_malloc(sizeof(ma_sound), NULL);
+        ma_result result = ma_sound_init_from_data_source(&engine, source, flags, NULL, sound);
+        if (result != MA_SUCCESS) {
+            ma_free(sound, NULL);
+            return (jlong) result;
+        }
+        return (jlong) sound;
+    */
 }

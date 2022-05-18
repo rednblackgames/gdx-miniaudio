@@ -25,6 +25,7 @@
 - Sound Fading (In/Out/Custom)
 - Sound length and current cursor position
 - Graph Nodes Filters/Effects
+- Play raw PCM data
 
 **Filters**
 - Band Pass
@@ -140,7 +141,7 @@ You can safely pass `null` on other platforms.
 ## TODO
 
 - Wave generation
-- Stream PCM data
+- Stream PCM data (like libGDX specs)
 - Sound Groups
 - Audio recording (do we really need this?)
 

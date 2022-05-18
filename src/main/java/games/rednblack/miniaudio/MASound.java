@@ -193,6 +193,15 @@ public class MASound extends MANode {
     }
 
     /**
+     * Get current sound cursor position.
+     *
+     * @return cursor position in PCM frames
+     */
+    public int getCursorPCMPosition() {
+        return miniAudio.getSoundCursorPCMPosition(address);
+    }
+
+    /**
      * Get total length of the sound.
      *
      * @return sound length in seconds
