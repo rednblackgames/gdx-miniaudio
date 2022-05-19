@@ -79,6 +79,16 @@ public class MASound extends MANode {
     }
 
     /**
+     * By default sounds will be spatialized based on the closest listener. If a sound should always be spatialized
+     * relative to a specific listener it can be pinned to one
+     *
+     * @param listenerIndex index of the pinned listener
+     */
+    public void setPinnedListenerIndex(int listenerIndex) {
+        miniAudio.setSoundPinnedListenerIndex(address, listenerIndex);
+    }
+
+    /**
      * Set sound volume
      * @param volume 0 for silence, 1 for default volume, greater than 1 lauder
      */
@@ -134,6 +144,90 @@ public class MASound extends MANode {
      */
     public void setDirection(float forwardX, float forwardY, float forwardZ) {
         miniAudio.setSoundDirection(address, forwardX, forwardY, forwardZ);
+    }
+
+    /**
+     * Sound's also have a cone for controlling directional attenuation. This works exactly the same as
+     * listeners
+     *
+     * @param innerAngleInRadians inner angle in radiance
+     * @param outerAngleInRadians outer angle in radiance
+     * @param outerGain outer gain
+     */
+    public void setCone(float innerAngleInRadians, float outerAngleInRadians, float outerGain) {
+        miniAudio.setSoundCone(address, innerAngleInRadians, outerAngleInRadians, outerGain);
+    }
+
+    /**
+     * The velocity of a sound is used for doppler effect.
+     *
+     * @param velocityX doppler velocity on x-axis
+     * @param velocityY doppler velocity on y-axis
+     * @param velocityZ doppler velocity on z-axis
+     */
+    public void setVelocity(float velocityX, float velocityY, float velocityZ) {
+        miniAudio.setSoundVelocity(address, velocityX, velocityY, velocityZ);
+    }
+
+    /**
+     * The engine supports different attenuation models which can be configured on a per-sound basis.
+     *
+     * @param attenuationModel set pre defined attenuation model
+     */
+    public void setAttenuationModel(MAAttenuationModel attenuationModel) {
+        miniAudio.setSoundAttenuationModel(address, attenuationModel);
+    }
+
+    /**
+     * Sounds have a position. By default, the position of a sound is in absolute space,
+     * but it can be changed to be relative to a listener.
+     *
+     * @param positioning type of coordinates position
+     */
+    public void setPositioning(MAPositioning positioning) {
+        miniAudio.setSoundPositioning(address, positioning);
+    }
+
+    /**
+     * To control how quickly a sound rolls off as it moves away from the listener, rolloff needs to be configured
+     *
+     * @param rolloff value of the rolloff effect
+     */
+    public void setRolloff(float rolloff) {
+        miniAudio.setSoundRolloff(address, rolloff);
+    }
+
+    /**
+     * Set the minimum and maximum gain to apply from spatialization.
+     *
+     * @param minGain minimum gain to apply
+     * @param maxGain maximum gain to apply
+     */
+    public void setGainRange(float minGain, float maxGain) {
+        miniAudio.setSoundGainRange(address, minGain, maxGain);
+    }
+
+    /**
+     * Likewise, in the calculation of attenuation, you can control the minimum and maximum distances for
+     * the attenuation calculation. This is useful if you want to ensure sounds don't drop below a certain
+     * volume after the listener moves further away and to have sounds play a maximum volume when the
+     * listener is within a certain distance.
+     *
+     * @param minDistance minimum distance
+     * @param maxDistance maximum distance
+     */
+    public void setDistanceRange(float minDistance, float maxDistance) {
+        miniAudio.setSoundDistanceRange(address, minDistance, maxDistance);
+    }
+
+    /**
+     * The engine's spatialization system supports doppler effect. The doppler factor can be configure on
+     * a per-sound basis
+     *
+     * @param dopplerFactor doppler factor
+     */
+    public void setDopplerFactor(float dopplerFactor) {
+        miniAudio.setSoundDopplerFactor(address, dopplerFactor);
     }
 
     /**

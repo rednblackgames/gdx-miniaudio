@@ -145,19 +145,6 @@ You can safely pass `null` on other platforms.
 - Sound Groups
 - Audio recording (do we really need this?)
 
-### 3D Spatialization
-- Engine Multiple 3D Listeners (and ma_sound_set_pinned_listener_index)(are they useful?)
-- ma_sound_set_cone
-- ma_sound_set_velocity
-- ma_sound_set_attenuation_model
-- ma_sound_set_positioning
-- ma_sound_set_rolloff
-- ma_sound_set_min_gain
-- ma_sound_set_max_gain
-- ma_sound_set_min_distance
-- ma_sound_set_max_distance
-- ma_sound_set_doppler_factor
-
 ### License
 
 [MiniAudio](https://github.com/mackron/miniaudio) is licensed under public domain or MIT No Attribution.

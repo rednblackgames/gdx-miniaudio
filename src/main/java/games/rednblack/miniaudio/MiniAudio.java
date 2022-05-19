@@ -13,6 +13,8 @@ public class MiniAudio implements Disposable {
         new SharedLibraryLoader().load("gdx-miniaudio");
     }
 
+    public static final int MA_ENGINE_MAX_LISTENERS = 4;
+
     /*JNI
         #define STB_VORBIS_HEADER_ONLY
         #include "stb_vorbis.c"
@@ -47,16 +49,33 @@ public class MiniAudio implements Disposable {
 
     private final long engineAddress;
 
+    /**
+     * Create a new MiniAudio Engine Instance
+     *
+     */
     public MiniAudio() {
-        int result = init_engine();
+        this(1);
+    }
+
+    /**
+     * Create a new MiniAudio Engine Instance
+     *
+     * @param listenerCount number of listeners in 3D Spatialization.
+     */
+    public MiniAudio(int listenerCount) {
+        if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
+            throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
+
+        int result = init_engine(listenerCount);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
     }
 
-    private native int init_engine();/*
+    private native int init_engine(int listenerCount);/*
         engineConfig = ma_engine_config_init();
+        engineConfig.listenerCount = listenerCount;
         #if defined(MA_ANDROID)
         ma_result res = ma_android_vfs_init(&androidVFS, NULL);
         if (res != MA_SUCCESS) return res;
@@ -159,11 +178,23 @@ public class MiniAudio implements Disposable {
      * @param z position
      */
     public void setListenerPosition(float x, float y, float z) {
-        jniSetListenerPosition(x, y, z);
+        setListenerPosition(0, x, y, z);
     }
 
-    private native void jniSetListenerPosition(float x, float y, float z);/*
-        ma_engine_listener_set_position(&engine, 0, x, y, z);
+    /**
+     * Used for 3D Spatialization, set the position of the current listener in world coordinates.
+     *
+     * @param listenerIndex index of the listener
+     * @param x position
+     * @param y position
+     * @param z position
+     */
+    public void setListenerPosition(int listenerIndex, float x, float y, float z) {
+        jniSetListenerPosition(listenerIndex, x, y, z);
+    }
+
+    private native void jniSetListenerPosition(int listenerIndex, float x, float y, float z);/*
+        ma_engine_listener_set_position(&engine, listenerIndex, x, y, z);
     */
 
     /**
@@ -174,11 +205,23 @@ public class MiniAudio implements Disposable {
      * @param forwardZ direction
      */
     public void setListenerDirection(float forwardX, float forwardY, float forwardZ) {
-        jniSetListenerDirection(forwardX, forwardY, forwardZ);
+        setListenerDirection(0, forwardX, forwardY, forwardZ);
     }
 
-    private native void jniSetListenerDirection(float forwardX, float forwardY, float forwardZ);/*
-        ma_engine_listener_set_direction(&engine, 0, forwardX, forwardY, forwardZ);
+    /**
+     * The direction of the listener represents it's forward vector.
+     *
+     * @param listenerIndex index of the listener
+     * @param forwardX direction
+     * @param forwardY direction
+     * @param forwardZ direction
+     */
+    public void setListenerDirection(int listenerIndex, float forwardX, float forwardY, float forwardZ) {
+        jniSetListenerDirection(listenerIndex, forwardX, forwardY, forwardZ);
+    }
+
+    private native void jniSetListenerDirection(int listenerIndex, float forwardX, float forwardY, float forwardZ);/*
+        ma_engine_listener_set_direction(&engine, listenerIndex, forwardX, forwardY, forwardZ);
     */
 
     /**
@@ -190,11 +233,24 @@ public class MiniAudio implements Disposable {
      * @param z normal
      */
     public void setListenerWorldUp(float x, float y, float z) {
-        jniSetListenerWorldUp(x, y, z);
+        setListenerWorldUp(0, x, y, z);
     }
 
-    private native void jniSetListenerWorldUp(float x, float y, float z);/*
-        ma_engine_listener_set_world_up(&engine, 0, x, y, z);
+    /**
+     * The listener's up vector can also be specified and defaults to +1 on the Y axis.
+     * Default 0, 1, 0.
+     *
+     * @param listenerIndex index of the listener
+     * @param x normal
+     * @param y normal
+     * @param z normal
+     */
+    public void setListenerWorldUp(int listenerIndex, float x, float y, float z) {
+        jniSetListenerWorldUp(listenerIndex, x, y, z);
+    }
+
+    private native void jniSetListenerWorldUp(int listenerIndex, float x, float y, float z);/*
+        ma_engine_listener_set_world_up(&engine, listenerIndex, x, y, z);
     */
 
     /**
@@ -207,11 +263,25 @@ public class MiniAudio implements Disposable {
      * @param outerGain outer gain
      */
     public void setListenerCone(float innerAngleInRadians, float outerAngleInRadians, float outerGain) {
-        jniSetListenerCone(innerAngleInRadians, outerAngleInRadians, outerGain);
+        setListenerCone(0, innerAngleInRadians, outerAngleInRadians, outerGain);
     }
 
-    private native void jniSetListenerCone(float innerAngleInRadians, float outerAngleInRadians, float outerGain);/*
-        ma_engine_listener_set_cone(&engine, 0, innerAngleInRadians, outerAngleInRadians, outerGain);
+    /**
+     * The engine supports directional attenuation. The listener can have a cone the controls how sound is
+     * attenuated based on the listener's direction. When a sound is between the inner and outer cones, it
+     * will be attenuated between 1 and the cone's outer gain
+     *
+     * @param listenerIndex index of the listener
+     * @param innerAngleInRadians inner angle in radiance
+     * @param outerAngleInRadians outer angle in radiance
+     * @param outerGain outer gain
+     */
+    public void setListenerCone(int listenerIndex, float innerAngleInRadians, float outerAngleInRadians, float outerGain) {
+        jniSetListenerCone(listenerIndex, innerAngleInRadians, outerAngleInRadians, outerGain);
+    }
+
+    private native void jniSetListenerCone(int listenerIndex, float innerAngleInRadians, float outerAngleInRadians, float outerGain);/*
+        ma_engine_listener_set_cone(&engine, listenerIndex, innerAngleInRadians, outerAngleInRadians, outerGain);
     */
 
     /**
@@ -396,6 +466,22 @@ public class MiniAudio implements Disposable {
     */
 
     /**
+     * By default sounds will be spatialized based on the closest listener. If a sound should always be spatialized
+     * relative to a specific listener it can be pinned to one
+     *
+     * @param soundAddress native address to sound object
+     * @param listenerIndex index of the pinned listener
+     */
+    public void setSoundPinnedListenerIndex(long soundAddress, int listenerIndex) {
+        jniSetSoundPinnedListenerIndex(soundAddress, listenerIndex);
+    }
+
+    private native void jniSetSoundPinnedListenerIndex(long soundAddress, int listenerIndex);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_pinned_listener_index(sound, listenerIndex);
+    */
+
+    /**
      * Set sound volume.
      *
      * @param soundAddress native address to sound object
@@ -492,6 +578,160 @@ public class MiniAudio implements Disposable {
     */
 
     /**
+     * Sound's also have a cone for controlling directional attenuation. This works exactly the same as
+     * listeners
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param innerAngleInRadians inner angle in radiance
+     * @param outerAngleInRadians outer angle in radiance
+     * @param outerGain outer gain
+     */
+    public void setSoundCone(long soundAddress, float innerAngleInRadians, float outerAngleInRadians, float outerGain) {
+        jniSetSoundCone(soundAddress, innerAngleInRadians, outerAngleInRadians, outerGain);
+    }
+
+    private native void jniSetSoundCone(long soundAddress, float innerAngleInRadians, float outerAngleInRadians, float outerGain);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_cone(sound, innerAngleInRadians, outerAngleInRadians, outerGain);
+    */
+
+    /**
+     * The velocity of a sound is used for doppler effect.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param velocityX doppler velocity on x-axis
+     * @param velocityY doppler velocity on y-axis
+     * @param velocityZ doppler velocity on z-axis
+     */
+    public void setSoundVelocity(long soundAddress, float velocityX, float velocityY, float velocityZ) {
+        jniSetSoundVelocity(soundAddress, velocityX, velocityY, velocityZ);
+    }
+
+    private native void jniSetSoundVelocity(long soundAddress, float velocityX, float velocityY, float velocityZ);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_velocity(sound, velocityX, velocityY, velocityZ);
+    */
+
+    /**
+     * The engine supports different attenuation models which can be configured on a per-sound basis.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param maAttenuationModel set pre defined attenuation model
+     */
+    public void setSoundAttenuationModel(long soundAddress, MAAttenuationModel maAttenuationModel) {
+        jniSetSoundAttenuationModel(soundAddress, maAttenuationModel.code);
+    }
+
+    private native void jniSetSoundAttenuationModel(long soundAddress, int maAttenuationModel);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        switch (maAttenuationModel) {
+            case 0:
+                ma_sound_set_attenuation_model(sound, ma_attenuation_model_none);
+                break;
+            case 1:
+                ma_sound_set_attenuation_model(sound, ma_attenuation_model_inverse);
+                break;
+            case 2:
+                ma_sound_set_attenuation_model(sound, ma_attenuation_model_linear);
+                break;
+            case 3:
+                ma_sound_set_attenuation_model(sound, ma_attenuation_model_exponential);
+                break;
+        }
+    */
+
+    /**
+     * Sounds have a position. By default, the position of a sound is in absolute space,
+     * but it can be changed to be relative to a listener.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param maPositioning type of coordinates position
+     */
+    public void setSoundPositioning(long soundAddress, MAPositioning maPositioning) {
+        jniSetSoundPositioning(soundAddress, maPositioning.code);
+    }
+
+    private native void jniSetSoundPositioning(long soundAddress, int maPositioning);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        switch (maPositioning) {
+            case 0:
+                ma_sound_set_positioning(sound, ma_positioning_absolute);
+                break;
+            case 1:
+                ma_sound_set_positioning(sound, ma_positioning_relative);
+                break;
+        }
+    */
+
+    /**
+     * To control how quickly a sound rolls off as it moves away from the listener, rolloff needs to be configured
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param rolloff value of the rolloff effect
+     */
+    public void setSoundRolloff(long soundAddress, float rolloff) {
+        jniSetSoundRolloff(soundAddress, rolloff);
+    }
+
+    private native void jniSetSoundRolloff(long soundAddress, float rolloff);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_rolloff(sound, rolloff);
+    */
+
+    /**
+     * Set the minimum and maximum gain to apply from spatialization.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param minGain minimum gain to apply
+     * @param maxGain maximum gain to apply
+     */
+    public void setSoundGainRange(long soundAddress, float minGain, float maxGain) {
+        jniSetSoundGainRange(soundAddress, minGain, maxGain);
+    }
+
+    private native void jniSetSoundGainRange(long soundAddress, float minGain, float maxGain);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_min_gain(sound, minGain);
+        ma_sound_set_max_gain(sound, maxGain);
+    */
+
+    /**
+     * Likewise, in the calculation of attenuation, you can control the minimum and maximum distances for
+     * the attenuation calculation. This is useful if you want to ensure sounds don't drop below a certain
+     * volume after the listener moves further away and to have sounds play a maximum volume when the
+     * listener is within a certain distance.
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param minDistance minimum distance
+     * @param maxDistance maximum distance
+     */
+    public void setSoundDistanceRange(long soundAddress, float minDistance, float maxDistance) {
+        jniSetSoundDistanceRange(soundAddress, minDistance, maxDistance);
+    }
+
+    private native void jniSetSoundDistanceRange(long soundAddress, float minDistance, float maxDistance);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_min_distance(sound, minDistance);
+        ma_sound_set_max_distance(sound, maxDistance);
+    */
+
+    /**
+     * The engine's spatialization system supports doppler effect. The doppler factor can be configure on
+     * a per-sound basis
+     *
+     * @param soundAddress soundAddress native address to sound object
+     * @param dopplerFactor doppler factor
+     */
+    public void setSoundDopplerFactor(long soundAddress, float dopplerFactor) {
+        jniSetSoundDopplerFactor(soundAddress, dopplerFactor);
+    }
+
+    private native void jniSetSoundDopplerFactor(long soundAddress, float dopplerFactor);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_doppler_factor(sound, dopplerFactor);
+    */
+
+    /**
      * Set current audio playing position in seconds.
      *
      * @param soundAddress soundAddress native address to sound object
@@ -541,7 +781,6 @@ public class MiniAudio implements Disposable {
         if (res != MA_SUCCESS) return res;
         return cursor;
     */
-
 
     /**
      * Get current sound cursor position.
