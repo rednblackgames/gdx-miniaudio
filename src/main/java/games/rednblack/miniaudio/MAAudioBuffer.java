@@ -14,7 +14,6 @@ public class MAAudioBuffer extends MADataSource {
         if (audioBuffer >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && audioBuffer <= MAResult.MA_ERROR) {
             throw new MiniAudioException("Error while creating Audio Buffer", (int) audioBuffer);
         }
-        this.miniAudio = miniAudio;
         bufferSize = size;
         dataBufferAddress = dataBuffer;
     }

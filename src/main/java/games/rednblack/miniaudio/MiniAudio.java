@@ -938,4 +938,167 @@ public class MiniAudio implements Disposable {
         }
         return (jlong) sound;
     */
+
+    /**
+     * Create a new waveform object to generate Sine, Square, Triangle and Sawtooth waves
+     *
+     * @param channels number of channels, usually 2
+     * @param type {@link MAWaveformType} of the wave
+     * @param amplitude amplitude of the wave
+     * @param frequency frequency of the wave
+     * @return new {@link  MAWaveform} object
+     */
+    public MAWaveform createWaveform(int channels, MAWaveformType type, double amplitude, double frequency) {
+        return new MAWaveform(jniCreateWaveform(channels, type.code, amplitude, frequency), this);
+    }
+
+    private native long jniCreateWaveform(int channels, int type, double amplitude, double frequency);/*
+        ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
+        ma_waveform_type waveType;
+        switch(type) {
+            case 0:
+                waveType = ma_waveform_type_sine;
+                break;
+            case 1:
+                waveType = ma_waveform_type_square;
+                break;
+            case 2:
+                waveType = ma_waveform_type_triangle;
+                break;
+            case 3:
+                waveType = ma_waveform_type_sawtooth;
+                break;
+        }
+
+        ma_waveform_config config = ma_waveform_config_init(ma_format_f32, channels, sampleRate, waveType, amplitude, frequency);
+
+        ma_waveform* waveform = (ma_waveform*) ma_malloc(sizeof(ma_waveform), NULL);
+        ma_result result = ma_waveform_init(&config, waveform);
+        if (result != MA_SUCCESS) {
+            free(waveform);
+            return (jlong) result;
+        }
+
+        return (jlong) waveform;
+    */
+
+    /**
+     * Change waveform amplitude dynamically.
+     *
+     * @param waveformAddress native address to waveform object
+     * @param amplitude amplitude of the wave
+     */
+    public void setWaveformAmplitude(long waveformAddress, double amplitude) {
+        jniSetWaveformAmplitude(waveformAddress, amplitude);
+    }
+
+    private native void jniSetWaveformAmplitude(long waveformAddress, double amplitude);/*
+        ma_waveform* waveform = (ma_waveform*) waveformAddress;
+        ma_waveform_set_amplitude(waveform, amplitude);
+    */
+
+    /**
+     * Change waveform frequency dynamically.
+     *
+     * @param waveformAddress native address to waveform object
+     * @param frequency frequency of the wave
+     */
+    public void setWaveformFrequency(long waveformAddress, double frequency) {
+        jniSetWaveformFrequency(waveformAddress, frequency);
+    }
+
+    private native void jniSetWaveformFrequency(long waveformAddress, double frequency);/*
+        ma_waveform* waveform = (ma_waveform*) waveformAddress;
+        ma_waveform_set_frequency(waveform, frequency);
+    */
+
+    /**
+     * Change waveform type dynamically.
+     *
+     * @param waveformAddress native address to waveform object
+     * @param type {@link MAWaveformType} of the wave
+     */
+    public void setWaveformType(long waveformAddress, MAWaveformType type) {
+        jniSetWaveformType(waveformAddress, type.code);
+    }
+
+    private native void jniSetWaveformType(long waveformAddress, int type);/*
+        ma_waveform* waveform = (ma_waveform*) waveformAddress;
+        ma_waveform_type waveType;
+        switch(type) {
+            case 0:
+                waveType = ma_waveform_type_sine;
+                break;
+            case 1:
+                waveType = ma_waveform_type_square;
+                break;
+            case 2:
+                waveType = ma_waveform_type_triangle;
+                break;
+            case 3:
+                waveType = ma_waveform_type_sawtooth;
+                break;
+        }
+        ma_waveform_set_type(waveform, waveType);
+    */
+
+    /**
+     * Free waveform memory. Use when not needed.
+     *
+     * @param waveformAddress native address to waveform object
+     */
+    public void disposeWaveform(long waveformAddress) {
+        jniDisposeWaveform(waveformAddress);
+    }
+
+    private native void jniDisposeWaveform(long waveformAddress); /*
+        ma_waveform* waveform = (ma_waveform*) waveformAddress;
+        ma_waveform_uninit(waveform);
+        ma_free(waveform, NULL);
+    */
+
+    public MANoise createNoise(int channels, MANoiseType type, int seed, double amplitude) {
+        return new MANoise(jniCreateNoise(channels, type.code, seed, amplitude), this);
+    }
+
+    private native long jniCreateNoise(int channels, int type, int seed, double amplitude);/*
+        ma_noise_type noiseType;
+        switch(type) {
+            case 0:
+                noiseType = ma_noise_type_white;
+                break;
+            case 1:
+                noiseType = ma_noise_type_pink;
+                break;
+            case 2:
+                noiseType = ma_noise_type_brownian;
+                break;
+        }
+
+        ma_noise_config config = ma_noise_config_init(ma_format_f32, channels, noiseType, seed, amplitude);
+
+        ma_noise* noise = (ma_noise*) ma_malloc(sizeof(ma_noise), NULL);
+        ma_result result = ma_noise_init(&config, NULL, noise);
+        if (result != MA_SUCCESS) {
+            free(noise);
+            return (jlong) result;
+        }
+
+        return (jlong) noise;
+    */
+
+    /**
+     * Free waveform memory. Use when not needed.
+     *
+     * @param noiseAddress native address to noise object
+     */
+    public void disposeNoise(long noiseAddress) {
+        jniDisposeNoise(noiseAddress);
+    }
+
+    private native void jniDisposeNoise(long noiseAddress); /*
+        ma_noise* noise = (ma_noise*) noiseAddress;
+        ma_noise_uninit(noise, NULL);
+        ma_free(noise, NULL);
+    */
 }
