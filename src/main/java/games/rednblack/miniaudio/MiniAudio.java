@@ -1057,6 +1057,17 @@ public class MiniAudio implements Disposable {
         ma_free(waveform, NULL);
     */
 
+    /**
+     * Creates a new Noise object. The noise API uses simple LCG random number generation. It supports a custom seed
+     * which is useful for things like automated testing requiring reproducibility. Setting the seed to zero will
+     * default to MA_DEFAULT_LCG_SEED.
+     *
+     * @param channels number of channels, usually 2
+     * @param type {@link MANoiseType} of the wave
+     * @param seed random seed or 0 for default LCG Seed
+     * @param amplitude amplitude of the wave
+     * @return new {@link  MANoise} object
+     */
     public MANoise createNoise(int channels, MANoiseType type, int seed, double amplitude) {
         return new MANoise(jniCreateNoise(channels, type.code, seed, amplitude), this);
     }
@@ -1088,7 +1099,7 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Free waveform memory. Use when not needed.
+     * Free noise memory. Use when not needed.
      *
      * @param noiseAddress native address to noise object
      */
