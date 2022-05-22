@@ -325,6 +325,7 @@ public class MiniAudio implements Disposable {
      *
      * @param fileName path of the file relative to assets folder
      * @param flags flags for audio loading
+     * @param group where sound should be attached, can be null
      * @return {@link MASound} object.
      */
     public MASound createSound(String fileName, short flags, MAGroup group) {
@@ -924,6 +925,7 @@ public class MiniAudio implements Disposable {
      *
      * @param dataSource source of the audio data
      * @param flags flags for audio loading
+     * @param group where sound should be attached, can be null
      * @return {@link MASound} object ready to be used
      */
     public MASound createSound(MADataSource dataSource, short flags, MAGroup group) {

@@ -323,7 +323,7 @@ public class MASound extends MANode {
     }
 
     /**
-     * Flags to customize sound loading and management {@link MiniAudio#createSound(String, short)}
+     * Flags to customize sound loading and management {@link MiniAudio#createSound(String, short, MAGroup)}
      *
      * @author fgnm
      */
