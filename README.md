@@ -11,22 +11,20 @@
 - Supported formats: WAV, FLAC, MP3, OGG Vorbis
 - Global start and stop/pause
 - Master volume control
-- Virtual 3D Listener Position
-- Virtual 3D Listener Direction
-- Virtual 3D Listener WorldUp
-- Virtual 3D Listener Cone
+- Virtual 3D Listener (Position/Direction/WorldUp/Cone)
+- Multiple 3D Listeners
 - "Fire and forget" Sounds
 - Sound creation (with custom flags)
 - Sound play/pause/stop/loop/isLooping/isEnd/seekTo
 - Sound Volume/Pan/Pitch
-- Sound Spatialization
-- Sound Position
-- Sound Direction
+- Sound Spatialization (position, direction, cone, attenuation model, rolloff, etc.)
 - Sound Fading (In/Out/Custom)
 - Sound length and current cursor position
 - Graph Nodes Filters/Effects
 - Play raw PCM data
 - Waves and Noise generation
+- Sound Groups with atomic management
+- Sound Groups Spatialization (position, direction, cone, attenuation model, rolloff, etc.)
 
 **Filters**
 - Band Pass
@@ -142,7 +140,6 @@ You can safely pass `null` on other platforms.
 ## TODO
 
 - Stream PCM data (like libGDX specs)
-- Sound Groups
 - Audio recording (do we really need this?)
 
 ### License

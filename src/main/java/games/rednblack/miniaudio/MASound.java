@@ -79,7 +79,7 @@ public class MASound extends MANode {
     }
 
     /**
-     * By default sounds will be spatialized based on the closest listener. If a sound should always be spatialized
+     * By default, sounds will be spatialized based on the closest listener. If a sound should always be spatialized
      * relative to a specific listener it can be pinned to one
      *
      * @param listenerIndex index of the pinned listener

@@ -313,7 +313,7 @@ public class MiniAudio implements Disposable {
      * @return {@link MASound} object.
      */
     public MASound createSound(String fileName) {
-        return createSound(fileName, (short) 0);
+        return createSound(fileName, (short) 0, null);
     }
 
     /**
@@ -327,18 +327,19 @@ public class MiniAudio implements Disposable {
      * @param flags flags for audio loading
      * @return {@link MASound} object.
      */
-    public MASound createSound(String fileName, short flags) {
-        return new MASound(jniCreateSound(fileName, flags), this);
+    public MASound createSound(String fileName, short flags, MAGroup group) {
+        return new MASound(jniCreateSound(fileName, flags, group == null ? -1 : group.address), this);
     }
 
-    private native long jniCreateSound(String fileName, short flags); /*
+    private native long jniCreateSound(String fileName, short flags, long group); /*
+        ma_sound_group* pGroup = group == -1 ? NULL : (ma_sound_group*) group;
         ma_sound* sound = (ma_sound*) ma_malloc(sizeof(ma_sound), NULL);
         #if defined(MA_APPLE_MOBILE)
         std::string cppStr = getBundlePath(fileName);
         char* cFileName = const_cast<char*>(cppStr.c_str());
-        ma_result result = ma_sound_init_from_file(&engine, cFileName, flags, NULL, NULL, sound);
+        ma_result result = ma_sound_init_from_file(&engine, cFileName, flags, pGroup, NULL, sound);
         #else
-        ma_result result = ma_sound_init_from_file(&engine, fileName, flags, NULL, NULL, sound);
+        ma_result result = ma_sound_init_from_file(&engine, fileName, flags, pGroup, NULL, sound);
         #endif
         if (result != MA_SUCCESS) {
             ma_free(sound, NULL);
@@ -544,7 +545,8 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Sounds have a position for 3D Spatialization. By default, the position of a sound is in absolute space.
+     * Sounds have a position for 3D Spatialization. By default, the position of a sound is in absolute space or
+     * relative to its listener see {@link #setSoundPositioning(long, MAPositioning)}
      *
      * @param soundAddress soundAddress native address to sound object
      * @param x position
@@ -561,7 +563,7 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Sounds have a direction for 3D Spatialization. By default, the position of a sound is in absolute space.
+     * Sounds have a direction for 3D Spatialization.
      *
      * @param soundAddress soundAddress native address to sound object
      * @param forwardX direction
@@ -914,7 +916,7 @@ public class MiniAudio implements Disposable {
      * @return {@link MASound} object ready to be used
      */
     public MASound createSound(MADataSource dataSource) {
-        return createSound(dataSource, (short) 0);
+        return createSound(dataSource, (short) 0, null);
     }
 
     /**
@@ -924,14 +926,15 @@ public class MiniAudio implements Disposable {
      * @param flags flags for audio loading
      * @return {@link MASound} object ready to be used
      */
-    public MASound createSound(MADataSource dataSource, short flags) {
-        return new MASound(jniCreateSoundFromDataSource(dataSource.address, flags), this);
+    public MASound createSound(MADataSource dataSource, short flags, MAGroup group) {
+        return new MASound(jniCreateSoundFromDataSource(dataSource.address, flags, group == null ? -1 : group.address), this);
     }
 
-    private native long jniCreateSoundFromDataSource(long dataSource, short flags);/*
+    private native long jniCreateSoundFromDataSource(long dataSource, short flags, long group);/*
+        ma_sound_group* pGroup = group == -1 ? NULL : (ma_sound_group*) group;
         ma_data_source* source = (ma_data_source*) dataSource;
         ma_sound* sound = (ma_sound*) ma_malloc(sizeof(ma_sound), NULL);
-        ma_result result = ma_sound_init_from_data_source(&engine, source, flags, NULL, sound);
+        ma_result result = ma_sound_init_from_data_source(&engine, source, flags, pGroup, sound);
         if (result != MA_SUCCESS) {
             ma_free(sound, NULL);
             return (jlong) result;
@@ -1111,5 +1114,364 @@ public class MiniAudio implements Disposable {
         ma_noise* noise = (ma_noise*) noiseAddress;
         ma_noise_uninit(noise, NULL);
         ma_free(noise, NULL);
+    */
+
+    /**
+     * Create a new sound group to manage multiple sounds together.
+     *
+     * @return {@link MAGroup} object
+     */
+    public MAGroup createGroup() {
+        return createGroup((short) 0, null);
+    }
+
+    /**
+     * Create a new sound group to manage multiple sounds together.
+     *
+     * @param flags group customizations using {@link games.rednblack.miniaudio.MASound.Flags}
+     * @param parentGroup parent group
+     * @return {@link MAGroup} object
+     */
+    public MAGroup createGroup(short flags, MAGroup parentGroup) {
+        return new MAGroup(jniCreateGroup(flags, parentGroup == null ? -1 : parentGroup.address), this);
+    }
+
+    private native long jniCreateGroup(short flags, long parentGroup);/*
+        ma_sound_group* pParentGroup = parentGroup == -1 ? NULL : (ma_sound_group*) parentGroup;
+        ma_sound_group* group = (ma_sound_group*) ma_malloc(sizeof(ma_sound_group), NULL);
+        ma_result result = ma_sound_group_init(&engine, flags, pParentGroup, group);
+        if (result != MA_SUCCESS) {
+            free(group);
+            return (jlong) result;
+        }
+
+        return (jlong) group;
+    */
+
+    /**
+     * Free group memory. Use when not needed.
+     *
+     * @param groupAddress native address to group object
+     */
+    public void disposeGroup(long groupAddress) {
+        jniDisposeGroup(groupAddress);
+    }
+
+    private native void jniDisposeGroup(long groupAddress); /*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_uninit(group);
+        ma_free(group, NULL);
+    */
+
+    /**
+     * Play or resume sound group.
+     *
+     * @param groupAddress native address to group object
+     */
+    public void playGroup(long groupAddress) {
+        jniPlayGroup(groupAddress);
+    }
+
+    private native void jniPlayGroup(long groupAddress); /*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_start(group);
+    */
+
+    /**
+     * Pause sound group.
+     *
+     * @param groupAddress native address to group object
+     */
+    public void pauseGroup(long groupAddress) {
+        jniPauseGroup(groupAddress);
+    }
+
+    private native void jniPauseGroup(long groupAddress); /*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_stop(group);
+    */
+
+    /**
+     * Set sound group volume.
+     *
+     * @param groupAddress native address to group object
+     * @param volume 0 for silence, 1 for default volume, greater than 1 lauder
+     */
+    public void setGroupVolume(long groupAddress, float volume) {
+        jniSetGroupVolume(groupAddress, volume);
+    }
+
+    private native void jniSetGroupVolume(long groupAddress, float volume);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_volume(group, volume);
+    */
+
+    /**
+     * Control Sound Group Pitch A larger value will result in a higher pitch. The pitch must be greater than 0.
+     *
+     * @param groupAddress native address to group object
+     * @param pitch value, 1 default
+     */
+    public void setGroupPitch(long groupAddress, float pitch) {
+        if (pitch <= 0) throw new IllegalArgumentException("Pitch must be > 0");
+        jniSetGroupPitch(groupAddress, pitch);
+    }
+
+    private native void jniSetGroupPitch(long groupAddress, float pitch);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_pitch(group, pitch);
+    */
+
+    /**
+     * Setting the pan to 0 will result in an unpanned sound. Setting it to -1 will shift everything to the left, whereas
+     * +1 will shift it to the right.
+     *
+     * @param groupAddress native address to group object
+     * @param pan value in the range [-1, 1]
+     */
+    public void setGroupPan(long groupAddress, float pan) {
+        jniSetGroupPan(groupAddress, pan);
+    }
+
+    private native void jniSetGroupPan(long groupAddress, float pan);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_pan(group, pan);
+    */
+
+    /**
+     * Enable or disable sound spatialization effects.
+     *
+     * @param groupAddress native address to group object
+     * @param spatial true by default
+     */
+    public void setGroupSpatialization(long groupAddress, boolean spatial) {
+        jniSetGroupSpatialization(groupAddress, spatial);
+    }
+
+    private native void jniSetGroupSpatialization(long groupAddress, boolean spatial);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_spatialization_enabled(group, spatial ? MA_TRUE : MA_FALSE);
+    */
+
+    /**
+     * By default, groups will be spatialized based on the closest listener. If a group should always be spatialized
+     * relative to a specific listener it can be pinned to one
+     *
+     * @param groupAddress native address to group object
+     * @param listenerIndex index of the pinned listener
+     */
+    public void setGroupPinnedListenerIndex(long groupAddress, int listenerIndex) {
+        jniSetGroupPinnedListenerIndex(groupAddress, listenerIndex);
+    }
+
+    private native void jniSetGroupPinnedListenerIndex(long groupAddress, int listenerIndex);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_pinned_listener_index(group, listenerIndex);
+    */
+
+    /**
+     * Groups have a position for 3D Spatialization. By default, the position of a group is in absolute space or
+     * relative to its listener see {@link #setGroupPositioning(long, MAPositioning)}.
+     *
+     * @param groupAddress native address to group object
+     * @param x position
+     * @param y position
+     * @param z position
+     */
+    public void setGroupPosition(long groupAddress, float x, float y, float z) {
+        jniSetGroupPosition(groupAddress, x, y, z);
+    }
+
+    private native void jniSetGroupPosition(long groupAddress, float x, float y, float z);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_position(group, x, y, z);
+    */
+
+    /**
+     * Groups have a direction for 3D Spatialization.
+     *
+     * @param groupAddress native address to group object
+     * @param forwardX direction
+     * @param forwardY direction
+     * @param forwardZ direction
+     */
+    public void setGroupDirection(long groupAddress, float forwardX, float forwardY, float forwardZ) {
+        jniSetGroupDirection(groupAddress, forwardX, forwardY, forwardZ);
+    }
+
+    private native void jniSetGroupDirection(long groupAddress, float forwardX, float forwardY, float forwardZ);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_direction(group, forwardX, forwardY, forwardZ);
+    */
+
+    /**
+     * The velocity of a group is used for doppler effect.
+     *
+     * @param groupAddress native address to group object
+     * @param velocityX doppler velocity on x-axis
+     * @param velocityY doppler velocity on y-axis
+     * @param velocityZ doppler velocity on z-axis
+     */
+    public void setGroupVelocity(long groupAddress, float velocityX, float velocityY, float velocityZ) {
+        jniSetGroupVelocity(groupAddress, velocityX, velocityY, velocityZ);
+    }
+
+    private native void jniSetGroupVelocity(long groupAddress, float velocityX, float velocityY, float velocityZ);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_velocity(group, velocityX, velocityY, velocityZ);
+    */
+
+    /**
+     * The engine supports different attenuation models which can be configured on a per-sound basis.
+     *
+     * @param groupAddress native address to group object
+     * @param maAttenuationModel set pre defined attenuation model
+     */
+    public void setGroupAttenuationModel(long groupAddress, MAAttenuationModel maAttenuationModel) {
+        jniSetGroupAttenuationModel(groupAddress, maAttenuationModel.code);
+    }
+
+    private native void jniSetGroupAttenuationModel(long groupAddress, int maAttenuationModel);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        switch (maAttenuationModel) {
+            case 0:
+                ma_sound_group_set_attenuation_model(group, ma_attenuation_model_none);
+                break;
+            case 1:
+                ma_sound_group_set_attenuation_model(group, ma_attenuation_model_inverse);
+                break;
+            case 2:
+                ma_sound_group_set_attenuation_model(group, ma_attenuation_model_linear);
+                break;
+            case 3:
+                ma_sound_group_set_attenuation_model(group, ma_attenuation_model_exponential);
+                break;
+        }
+    */
+
+    /**
+     * Groups have a position. By default, the position of a sound is in absolute space,
+     * but it can be changed to be relative to a listener.
+     *
+     * @param groupAddress native address to group object
+     * @param maPositioning type of coordinates position
+     */
+    public void setGroupPositioning(long groupAddress, MAPositioning maPositioning) {
+        jniSetGroupPositioning(groupAddress, maPositioning.code);
+    }
+
+    private native void jniSetGroupPositioning(long groupAddress, int maPositioning);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        switch (maPositioning) {
+            case 0:
+                ma_sound_group_set_positioning(group, ma_positioning_absolute);
+                break;
+            case 1:
+                ma_sound_group_set_positioning(group, ma_positioning_relative);
+                break;
+        }
+    */
+
+    /**
+     * To control how quickly a group rolls off as it moves away from the listener, rolloff needs to be configured
+     *
+     * @param groupAddress native address to group object
+     * @param rolloff value of the rolloff effect
+     */
+    public void setGroupRolloff(long groupAddress, float rolloff) {
+        jniSetGroupRolloff(groupAddress, rolloff);
+    }
+
+    private native void jniSetGroupRolloff(long groupAddress, float rolloff);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_rolloff(group, rolloff);
+    */
+
+    /**
+     * Set the minimum and maximum gain to apply from spatialization.
+     *
+     * @param groupAddress native address to group object
+     * @param minGain minimum gain to apply
+     * @param maxGain maximum gain to apply
+     */
+    public void setGroupGainRange(long groupAddress, float minGain, float maxGain) {
+        jniSetGroupGainRange(groupAddress, minGain, maxGain);
+    }
+
+    private native void jniSetGroupGainRange(long groupAddress, float minGain, float maxGain);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_min_gain(group, minGain);
+        ma_sound_group_set_max_gain(group, maxGain);
+    */
+
+    /**
+     * Likewise, in the calculation of attenuation, you can control the minimum and maximum distances for
+     * the attenuation calculation. This is useful if you want to ensure sounds don't drop below a certain
+     * volume after the listener moves further away and to have sounds play a maximum volume when the
+     * listener is within a certain distance.
+     *
+     * @param groupAddress native address to group object
+     * @param minDistance minimum distance
+     * @param maxDistance maximum distance
+     */
+    public void setGroupDistanceRange(long groupAddress, float minDistance, float maxDistance) {
+        jniSetGroupDistanceRange(groupAddress, minDistance, maxDistance);
+    }
+
+    private native void jniSetGroupDistanceRange(long groupAddress, float minDistance, float maxDistance);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_min_distance(group, minDistance);
+        ma_sound_group_set_max_distance(group, maxDistance);
+    */
+
+    /**
+     * Groups also have a cone for controlling directional attenuation. This works exactly the same as
+     * listeners
+     *
+     * @param groupAddress native address to group object
+     * @param innerAngleInRadians inner angle in radiance
+     * @param outerAngleInRadians outer angle in radiance
+     * @param outerGain outer gain
+     */
+    public void setGroupCone(long groupAddress, float innerAngleInRadians, float outerAngleInRadians, float outerGain) {
+        jniSetGroupCone(groupAddress, innerAngleInRadians, outerAngleInRadians, outerGain);
+    }
+
+    private native void jniSetGroupCone(long groupAddress, float innerAngleInRadians, float outerAngleInRadians, float outerGain);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_cone(group, innerAngleInRadians, outerAngleInRadians, outerGain);
+    */
+
+    /**
+     * The engine's spatialization system supports doppler effect. The doppler factor can be configured on
+     * a per-sound basis
+     *
+     * @param groupAddress native address to group object
+     * @param dopplerFactor doppler factor
+     */
+    public void setGroupDopplerFactor(long groupAddress, float dopplerFactor) {
+        jniSetGroupDopplerFactor(groupAddress, dopplerFactor);
+    }
+
+    private native void jniSetGroupDopplerFactor(long groupAddress, float dopplerFactor);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_doppler_factor(group, dopplerFactor);
+    */
+
+    /**
+     * Smoothly fade group's volume between two values.
+     *
+     * @param groupAddress native address to group object
+     * @param start starting volume (use -1 for current volume)
+     * @param end ending volume (use -1 for current volume)
+     * @param milliseconds fade duration in milliseconds
+     */
+    public void groupFade(long groupAddress, float start, float end, float milliseconds) {
+        jniGroupFade(groupAddress, start, end, milliseconds);
+    }
+
+    private native void jniGroupFade(long groupAddress, float start, float end, float milliseconds);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        ma_sound_group_set_fade_in_milliseconds(group, start, end, milliseconds);
     */
 }
