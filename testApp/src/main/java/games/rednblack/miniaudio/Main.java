@@ -2,11 +2,15 @@ package games.rednblack.miniaudio;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Logger;
 import games.rednblack.miniaudio.effect.MADelayNode;
+import games.rednblack.miniaudio.effect.MAReverbNode;
 import games.rednblack.miniaudio.filter.MABiquadFilter;
+import games.rednblack.miniaudio.loader.MASoundLoader;
 
 public class Main implements ApplicationListener {
 
@@ -22,6 +26,7 @@ public class Main implements ApplicationListener {
     MAGroup maGroup;
     MANode effectNode;
 
+    AssetManager assetManager;
     @Override
     public void create() {
         miniAudio = new MiniAudio();
@@ -36,7 +41,7 @@ public class Main implements ApplicationListener {
         maSound = miniAudio.createSound("Perfect_Mishap.ogg");
         maSound.setPositioning(MAPositioning.RELATIVE);
 
-        //effectNode = new MADelayNode(miniAudio, 0.2f, 0.5f);
+        effectNode = new MAReverbNode(miniAudio);
         effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
 
         miniAudio.attachToOutput(effectNode, 0);
@@ -56,6 +61,14 @@ public class Main implements ApplicationListener {
         System.out.println(maSound.isEnd());
         System.out.println(maSound.isPlaying());
         System.out.println(maSound.getLength());
+
+        assetManager = new AssetManager();
+        assetManager.getLogger().setLevel(Logger.DEBUG);
+        assetManager.setLoader(MASound.class, new MASoundLoader(miniAudio, assetManager.getFileHandleResolver()));
+        assetManager.load("game.ogg", MASound.class);
+        assetManager.load("Median_test.ogg", MASound.class);
+        assetManager.load("Perfect_Mishap.ogg", MASound.class);
+        assetManager.load("piano2.wav", MASound.class);
     }
 
     @Override
@@ -63,16 +76,24 @@ public class Main implements ApplicationListener {
 
     }
     private float angle;
-
+    boolean loaded = false;
     @Override
     public void render() {
+        if (!assetManager.update()) {
+            System.out.println(assetManager.getProgress());
+        } else if (!loaded) {
+            loaded = true;
+            /*MASound sound = assetManager.get("Perfect_Mishap.ogg", MASound.class);
+            effectNode.attachToNode(sound, 0);
+            sound.loop();*/
+        }
         //System.out.println(maSound.getCursorPosition());
         //System.out.println("isLooping " + maSound.isLooping());
         //System.out.println("isEnd " + maSound.isEnd());
         //if (Gdx.graphics.getFrameId() == 200) maSound.seekTo(45);
         //if (Gdx.graphics.getFrameId() == 500) maSound.setPitch(1);
         angle += MathUtils.PI / 4f / 100f;
-        maGroup.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
+        maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
         //miniAudio.setListenerPosition(MathUtils.cosDeg(i)*5, 0, 0);
     }
 
@@ -88,6 +109,8 @@ public class Main implements ApplicationListener {
 
     @Override
     public void dispose() {
+        assetManager.dispose();
+
         maSound.dispose();
         effectNode.dispose();
         maGroup.dispose();

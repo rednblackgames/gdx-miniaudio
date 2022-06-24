@@ -25,6 +25,7 @@
 - Waves and Noise generation
 - Sound Groups with atomic management
 - Sound Groups Spatialization (position, direction, cone, attenuation model, rolloff, etc.)
+- libGDX AssetManager Loader
 
 **Filters**
 - Band Pass
@@ -90,6 +91,7 @@ Usage of MiniAudio Engine is straightforward.
 public class Main implements ApplicationListener {
     MiniAudio miniAudio;
     MASound maSound;
+    AssetManager assetManager;
     
     @Override
     public void create() {
@@ -105,12 +107,21 @@ public class Main implements ApplicationListener {
         maSound = miniAudio.createSound("piano2.wav");
         // .. sound customization ...
         maSound.play();
+        
+        //AssetManager Loader
+        assetManager = new AssetManager();
+        assetManager.setLoader(MASound.class, new MASoundLoader(miniAudio, assetManager.getFileHandleResolver()));
+        assetManager.load("game.ogg", MASound.class);
+        // ... load as usual ...
     }
 
     @Override
     public void dispose() {
         //Always dispose everything! First all sounds and then the engine
         maSound.dispose();
+        //If MASounds are loaded with the AssetManager be sure to dispose it first
+        assetManager.dispose();
+        
         miniAudio.dispose();
     }
 
