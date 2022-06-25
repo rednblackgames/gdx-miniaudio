@@ -16,9 +16,13 @@ public class MADelayNode extends MANode {
      */
 
     public MADelayNode(MiniAudio miniAudio, float delay, float decay) {
+        this(miniAudio, delay, decay, -1);
+    }
+
+    public MADelayNode(MiniAudio miniAudio, float delay, float decay, int customChannels) {
         super(miniAudio);
 
-        address = jniCreateDelayNode(miniAudio.getEngineAddress(), delay, decay);
+        address = jniCreateDelayNode(miniAudio.getEngineAddress(), delay, decay, customChannels);
 
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
             throw new MiniAudioException("Error while creating delay node", (int) address);
@@ -30,13 +34,13 @@ public class MADelayNode extends MANode {
         return 1;
     }
 
-    private native long jniCreateDelayNode(long graphAddress, float delay, float decay);/*
+    private native long jniCreateDelayNode(long graphAddress, float delay, float decay, int customChannels);/*
         ma_engine* g_engine = (ma_engine*) graphAddress;
         ma_delay_node_config delayNodeConfig;
         ma_uint32 channels;
         ma_uint32 sampleRate;
 
-        channels   = ma_engine_get_channels(g_engine);
+        channels   = customChannels == -1 ? ma_engine_get_channels(g_engine) : customChannels;
         sampleRate = ma_engine_get_sample_rate(g_engine);
 
         delayNodeConfig = ma_delay_node_config_init(channels, sampleRate, (ma_uint32)(sampleRate * delay), decay);

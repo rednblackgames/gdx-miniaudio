@@ -17,22 +17,26 @@ public class MALowPassFilter extends MANode {
      */
 
     public MALowPassFilter(MiniAudio miniAudio, double cutoffFrequency, int order) {
+        this(miniAudio, cutoffFrequency, order, -1);
+    }
+
+    public MALowPassFilter(MiniAudio miniAudio, double cutoffFrequency, int order, int customChannels) {
         super(miniAudio);
 
-        address = jniCreateNode(miniAudio.getEngineAddress(), cutoffFrequency, order);
+        address = jniCreateNode(miniAudio.getEngineAddress(), cutoffFrequency, order, customChannels);
 
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
             throw new MiniAudioException("Error while creating low pass filter node", (int) address);
         }
     }
 
-    private native long jniCreateNode(long graphAddress, double cutoffFrequency, int order);/*
+    private native long jniCreateNode(long graphAddress, double cutoffFrequency, int order, int customChannels);/*
         ma_engine* g_engine = (ma_engine*) graphAddress;
         ma_lpf_node_config nodeConfig;
         ma_uint32 channels;
         ma_uint32 sampleRate;
 
-        channels   = ma_engine_get_channels(g_engine);
+        channels   = customChannels == -1 ? ma_engine_get_channels(g_engine) : customChannels;
         sampleRate = ma_engine_get_sample_rate(g_engine);
 
         nodeConfig = ma_lpf_node_config_init(channels, sampleRate, cutoffFrequency, order);

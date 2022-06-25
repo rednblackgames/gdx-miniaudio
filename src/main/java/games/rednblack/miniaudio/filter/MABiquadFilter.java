@@ -17,21 +17,25 @@ public class MABiquadFilter extends MANode {
      */
 
     public MABiquadFilter(MiniAudio miniAudio, float b0, float b1, float b2, float a0, float a1, float a2) {
+        this(miniAudio, b0, b1, b2, a0, a1, a2, -1);
+    }
+
+    public MABiquadFilter(MiniAudio miniAudio, float b0, float b1, float b2, float a0, float a1, float a2, int customChannels) {
         super(miniAudio);
 
-        address = jniCreateNode(miniAudio.getEngineAddress(), b0, b1, b2, a0, a1, a2);
+        address = jniCreateNode(miniAudio.getEngineAddress(), b0, b1, b2, a0, a1, a2, customChannels);
 
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
             throw new MiniAudioException("Error while creating biquad filter node", (int) address);
         }
     }
 
-    private native long jniCreateNode(long graphAddress, float b0, float b1, float b2, float a0, float a1, float a2);/*
+    private native long jniCreateNode(long graphAddress, float b0, float b1, float b2, float a0, float a1, float a2, int customChannels);/*
         ma_engine* g_engine = (ma_engine*) graphAddress;
         ma_biquad_node_config nodeConfig;
         ma_uint32 channels;
 
-        channels   = ma_engine_get_channels(g_engine);
+        channels   = customChannels == -1 ? ma_engine_get_channels(g_engine) : customChannels;
 
         nodeConfig = ma_biquad_node_config_init(channels, b0, b1, b2, a0, a1, a2);
 

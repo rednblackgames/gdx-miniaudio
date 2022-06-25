@@ -18,22 +18,26 @@ public class MAReverbNode extends MANode {
      */
 
     public MAReverbNode(MiniAudio miniAudio) {
+        this(miniAudio, -1);
+    }
+
+    public MAReverbNode(MiniAudio miniAudio, int customChannels) {
         super(miniAudio);
 
-        address = jniCreateNode(miniAudio.getEngineAddress());
+        address = jniCreateNode(miniAudio.getEngineAddress(), customChannels);
 
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
             throw new MiniAudioException("Error while creating reverb node", (int) address);
         }
     }
 
-    private native long jniCreateNode(long graphAddress);/*
+    private native long jniCreateNode(long graphAddress, int customChannels);/*
         ma_engine* g_engine = (ma_engine*) graphAddress;
         ma_reverb_node_config nodeConfig;
         ma_uint32 channels;
         ma_uint32 sampleRate;
 
-        channels   = ma_engine_get_channels(g_engine);
+        channels   = customChannels == -1 ? ma_engine_get_channels(g_engine) : customChannels;
         sampleRate = ma_engine_get_sample_rate(g_engine);
 
         nodeConfig = ma_reverb_node_config_init(channels, sampleRate);

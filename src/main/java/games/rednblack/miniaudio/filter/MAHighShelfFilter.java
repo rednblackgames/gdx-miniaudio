@@ -17,22 +17,26 @@ public class MAHighShelfFilter extends MANode {
      */
 
     public MAHighShelfFilter(MiniAudio miniAudio, double gainDB, double q, double frequency) {
+        this(miniAudio, gainDB, q, frequency, -1);
+    }
+
+    public MAHighShelfFilter(MiniAudio miniAudio, double gainDB, double q, double frequency, int customChannels) {
         super(miniAudio);
 
-        address = jniCreateNode(miniAudio.getEngineAddress(), gainDB, q, frequency);
+        address = jniCreateNode(miniAudio.getEngineAddress(), gainDB, q, frequency, customChannels);
 
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
             throw new MiniAudioException("Error while creating high shelf filter node", (int) address);
         }
     }
 
-    private native long jniCreateNode(long graphAddress, double gainDB, double q, double frequency);/*
+    private native long jniCreateNode(long graphAddress, double gainDB, double q, double frequency, int customChannels);/*
         ma_engine* g_engine = (ma_engine*) graphAddress;
         ma_hishelf_node_config nodeConfig;
         ma_uint32 channels;
         ma_uint32 sampleRate;
 
-        channels   = ma_engine_get_channels(g_engine);
+        channels   = customChannels == -1 ? ma_engine_get_channels(g_engine) : customChannels;
         sampleRate = ma_engine_get_sample_rate(g_engine);
 
         nodeConfig = ma_hishelf_node_config_init(channels, sampleRate, gainDB, q, frequency);
