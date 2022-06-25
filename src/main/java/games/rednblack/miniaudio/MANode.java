@@ -63,9 +63,22 @@ public abstract class MANode implements Disposable {
     }
 
     /**
+     * The volume of an output bus can be configured on a per-bus basis.
+     *
+     * @param outputBusIndex output bus index of the node
+     * @param volume of the bus
+     */
+    public void setOutputBusVolume(int outputBusIndex, float volume) {
+        if (outputBusIndex >= getSupportedOutputs())
+            throw new IllegalArgumentException("Wrong output bus number, the node support up to " + getSupportedOutputs() + " buses.");
+
+        miniAudio.setOutputBusVolume(this, outputBusIndex, volume);
+    }
+
+    /**
      * Returns how many output bus has this node.
      *
-     * @return autput bus for this node
+     * @return output bus for this node
      */
     public abstract int getSupportedOutputs();
 }

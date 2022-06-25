@@ -872,6 +872,24 @@ public class MiniAudio implements Disposable {
     */
 
     /**
+     * The volume of an output bus can be configured on a per-bus basis.
+     *
+     * @param node node to be modified
+     * @param busIndex output bus index of the node
+     * @param volume of the bus
+     */
+    public void setOutputBusVolume(MANode node, int busIndex, float volume) {
+        int res = jniSetOutputBusVolume(node.address, busIndex, volume);
+        if (res != MAResult.MA_SUCCESS)
+            throw new MiniAudioException("Could not set output bus volume", res);
+    }
+
+    private native int jniSetOutputBusVolume(long node, int busIndex, float volume);/*
+        ma_node* pNode = (ma_node*) node;
+        return ma_node_set_output_bus_volume(pNode, busIndex, volume);
+    */
+
+    /**
      * Attach a node graph to the main engine audio output.
      *
      * @param node to be attached to the engine output
@@ -998,6 +1016,8 @@ public class MiniAudio implements Disposable {
             case 3:
                 waveType = ma_waveform_type_sawtooth;
                 break;
+            default:
+                waveType = ma_waveform_type_sine;
         }
 
         ma_waveform_config config = ma_waveform_config_init(ma_format_f32, channels, sampleRate, waveType, amplitude, frequency);
@@ -1068,6 +1088,8 @@ public class MiniAudio implements Disposable {
             case 3:
                 waveType = ma_waveform_type_sawtooth;
                 break;
+            default:
+                waveType = ma_waveform_type_sine;
         }
         ma_waveform_set_type(waveform, waveType);
     */
@@ -1114,6 +1136,8 @@ public class MiniAudio implements Disposable {
             case 2:
                 noiseType = ma_noise_type_brownian;
                 break;
+            default:
+                noiseType = ma_noise_type_white;
         }
 
         ma_noise_config config = ma_noise_config_init(ma_format_f32, channels, noiseType, seed, amplitude);

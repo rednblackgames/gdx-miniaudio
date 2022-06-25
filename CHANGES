@@ -1,0 +1,10 @@
+[0.2]
+- Update miniaudio to latest bug fixes
+- Implement libGDX AssetManager Loader
+- Add channel separator and combiner nodes
+- Add Splitter Node
+- Add Leading silence trim node
+- Improve effects graph bindings (custom channels control, detach nodes, output bus volume control, better names)
+
+[0.1]
+- Initial Public Release
