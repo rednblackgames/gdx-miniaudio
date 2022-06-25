@@ -23,6 +23,8 @@ public class MiniAudio implements Disposable {
         #include "miniaudio.h"
 
         #include "ma_reverb_node.c"
+        #include "ma_channel_separator_node.c"
+        #include "ma_channel_combiner_node.c"
 
         #include <stdio.h>
 

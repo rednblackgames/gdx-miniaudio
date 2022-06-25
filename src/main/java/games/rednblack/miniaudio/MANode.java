@@ -31,10 +31,21 @@ public abstract class MANode implements Disposable {
      * @param outputBusIndex the output bus index of the node
      */
     public void attachToThisNode(MANode previousNode, int outputBusIndex) {
+        attachToThisNode(previousNode, outputBusIndex, 0);
+    }
+
+    /**
+     * Attach to the input of this node another {@link MANode} object
+     *
+     * @param previousNode the node that should be attached to this node input
+     * @param outputBusIndex the output bus index of the node
+     * @param thisBusIndex the input bus index of this node
+     */
+    public void attachToThisNode(MANode previousNode, int outputBusIndex, int thisBusIndex) {
         if (outputBusIndex >= previousNode.getSupportedOutputs())
             throw new IllegalArgumentException("Wrong output bus number, the node support up to " + previousNode.getSupportedOutputs() + " buses.");
 
-        miniAudio.attachOutputBus(previousNode, outputBusIndex, this, 0);
+        miniAudio.attachOutputBus(previousNode, outputBusIndex, this, thisBusIndex);
     }
 
     /**
