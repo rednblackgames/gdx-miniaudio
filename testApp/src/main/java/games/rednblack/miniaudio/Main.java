@@ -7,9 +7,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Logger;
-import games.rednblack.miniaudio.effect.MADelayNode;
 import games.rednblack.miniaudio.effect.MAReverbNode;
-import games.rednblack.miniaudio.filter.MABiquadFilter;
 import games.rednblack.miniaudio.loader.MASoundLoader;
 
 public class Main implements ApplicationListener {
@@ -41,13 +39,14 @@ public class Main implements ApplicationListener {
         maSound = miniAudio.createSound("Perfect_Mishap.ogg");
         maSound.setPositioning(MAPositioning.RELATIVE);
 
+        //effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f);
         effectNode = new MAReverbNode(miniAudio);
-        effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
+        //effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
 
-        miniAudio.attachToOutput(effectNode, 0);
-        //effectNode.attachToNode(maSound, 0);
+        miniAudio.attachToEngineOutput(effectNode, 0);
+        //effectNode.attachToThisNode(maSound, 0);
 
-        maSound.loop();
+        //maSound.loop();
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //MAWaveform waveform = miniAudio.createWaveform(2, MAWaveformType.SAWTOOTH, 1, 400);
         //maSound = miniAudio.createSound(waveform);
@@ -79,21 +78,25 @@ public class Main implements ApplicationListener {
     boolean loaded = false;
     @Override
     public void render() {
-        if (!assetManager.update()) {
+        if (!assetManager.update(60)) {
             System.out.println(assetManager.getProgress());
         } else if (!loaded) {
             loaded = true;
-            /*MASound sound = assetManager.get("Perfect_Mishap.ogg", MASound.class);
-            effectNode.attachToNode(sound, 0);
-            sound.loop();*/
+            MASound sound = assetManager.get("game.ogg", MASound.class);
+            effectNode.attachToThisNode(sound, 0);
+            sound.loop();
         }
         //System.out.println(maSound.getCursorPosition());
         //System.out.println("isLooping " + maSound.isLooping());
         //System.out.println("isEnd " + maSound.isEnd());
-        //if (Gdx.graphics.getFrameId() == 200) maSound.seekTo(45);
+        if (Gdx.graphics.getFrameId() == 200) {
+            //maSound.seekTo(45);
+            MASound sound = assetManager.get("game.ogg", MASound.class);
+            miniAudio.attachToEngineOutput(sound,0);
+        }
         //if (Gdx.graphics.getFrameId() == 500) maSound.setPitch(1);
         angle += MathUtils.PI / 4f / 100f;
-        maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
+        //maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
         //miniAudio.setListenerPosition(MathUtils.cosDeg(i)*5, 0, 0);
     }
 

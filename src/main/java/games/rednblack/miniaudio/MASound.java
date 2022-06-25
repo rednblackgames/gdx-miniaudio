@@ -313,7 +313,7 @@ public class MASound extends MANode {
     }
 
     @Override
-    public void attachToNode(MANode previousNode, int outputBus) {
+    public void attachToThisNode(MANode previousNode, int outputBus) {
         throw new RuntimeException("Sounds doesn't have input bus");
     }
 

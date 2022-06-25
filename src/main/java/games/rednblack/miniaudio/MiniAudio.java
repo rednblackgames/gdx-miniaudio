@@ -850,12 +850,31 @@ public class MiniAudio implements Disposable {
     */
 
     /**
+     * Detach a specific output bus from the node in effects graph. If you want to just move the output bus from
+     * one attachment to another, you do not need to detach first. You can just call {@link #attachOutputBus} and it'll
+     * deal with it for you.
+     *
+     * @param node node to be detached
+     * @param busIndex output bus index of the node
+     */
+    public void detachOutputBus(MANode node, int busIndex) {
+        int res = jniDetachOutputBus(node.address, busIndex);
+        if (res != MAResult.MA_SUCCESS)
+            throw new MiniAudioException("Could not detach node", res);
+    }
+
+    private native int jniDetachOutputBus(long node, int busIndex);/*
+        ma_node* pNode = (ma_node*) node;
+        return ma_node_detach_output_bus(pNode, busIndex);
+    */
+
+    /**
      * Attach a node graph to the main engine audio output.
      *
      * @param node to be attached to the engine output
      * @param busIndex index of the input Node
      */
-    public void attachToOutput(MANode node, int busIndex) {
+    public void attachToEngineOutput(MANode node, int busIndex) {
         if (busIndex >= node.getSupportedOutputs())
             throw new IllegalArgumentException("Wrong output bus number, the node support up to " + node.getSupportedOutputs() + " buses.");
 
