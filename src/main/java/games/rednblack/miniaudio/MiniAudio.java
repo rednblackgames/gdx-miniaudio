@@ -54,28 +54,31 @@ public class MiniAudio implements Disposable {
      *
      */
     public MiniAudio() {
-        this(1);
+        this(1, 0);
     }
 
     /**
      * Create a new MiniAudio Engine Instance
      *
      * @param listenerCount number of listeners in 3D Spatialization.
+     * @param channels The number of channels to use when mixing and spatializing.
+     *                 When set to 0, will use the native channel count of the device.
      */
-    public MiniAudio(int listenerCount) {
+    public MiniAudio(int listenerCount, int channels) {
         if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = init_engine(listenerCount);
+        int result = init_engine(listenerCount, channels);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
     }
 
-    private native int init_engine(int listenerCount);/*
+    private native int init_engine(int listenerCount, int channels);/*
         engineConfig = ma_engine_config_init();
         engineConfig.listenerCount = listenerCount;
+        engineConfig.channels = channels;
         #if defined(MA_ANDROID)
         ma_result res = ma_android_vfs_init(&androidVFS, NULL);
         if (res != MA_SUCCESS) return res;
