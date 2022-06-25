@@ -7,6 +7,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Logger;
+import games.rednblack.miniaudio.effect.MAReverbNode;
 import games.rednblack.miniaudio.filter.MALowPassFilter;
 import games.rednblack.miniaudio.mix.MAChannelCombiner;
 import games.rednblack.miniaudio.mix.MAChannelSeparator;
@@ -43,19 +44,20 @@ public class Main implements ApplicationListener {
         maSound = miniAudio.createSound("Legendary.mp3");
         maSound.setPositioning(MAPositioning.RELATIVE);
 
-        effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
-        //effectNode = new MAReverbNode(miniAudio, 1);
+        //effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
+        effectNode = new MAReverbNode(miniAudio);
         //effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
-        //effectNode.attachToThisNode(maSound, 0);
+        miniAudio.attachToEngineOutput(effectNode, 0);
+        effectNode.attachToThisNode(maSound, 0);
 
-        MAChannelSeparator channelSeparator = new MAChannelSeparator(miniAudio, 2);
+        /*MAChannelSeparator channelSeparator = new MAChannelSeparator(miniAudio, 2);
         MAChannelCombiner channelCombiner = new MAChannelCombiner(miniAudio, 2);
 
         miniAudio.attachToEngineOutput(channelCombiner, 0);
         channelCombiner.attachToThisNode(channelSeparator, 0, 0);
         channelCombiner.attachToThisNode(effectNode, 0, 1);
         effectNode.attachToThisNode(channelSeparator, 1);
-        channelSeparator.attachToThisNode(maSound, 0);
+        channelSeparator.attachToThisNode(maSound, 0);*/
 
 
         /*MASplitter splitter = new MASplitter(miniAudio);
@@ -120,7 +122,7 @@ public class Main implements ApplicationListener {
         }*/
         //if (Gdx.graphics.getFrameId() == 500) maSound.setPitch(1);
         angle += MathUtils.PI / 4f / 100f;
-        //maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
+        maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
         //miniAudio.setListenerPosition(MathUtils.cosDeg(i)*5, 0, 0);
     }
 
