@@ -13,6 +13,7 @@ import games.rednblack.miniaudio.mix.MAChannelCombiner;
 import games.rednblack.miniaudio.mix.MAChannelSeparator;
 import games.rednblack.miniaudio.effect.MADelayNode;
 import games.rednblack.miniaudio.loader.MASoundLoader;
+import games.rednblack.miniaudio.mix.MALTrim;
 import games.rednblack.miniaudio.mix.MASplitter;
 
 public class Main implements ApplicationListener {
@@ -44,20 +45,22 @@ public class Main implements ApplicationListener {
         maSound = miniAudio.createSound("Legendary.mp3");
         maSound.setPositioning(MAPositioning.RELATIVE);
 
-        //effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
+        /*//effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
         effectNode = new MAReverbNode(miniAudio);
+        //effectNode = new MALTrim(miniAudio, 0);
         //effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
         miniAudio.attachToEngineOutput(effectNode, 0);
-        effectNode.attachToThisNode(maSound, 0);
+        effectNode.attachToThisNode(maSound, 0);*/
 
-        /*MAChannelSeparator channelSeparator = new MAChannelSeparator(miniAudio, 2);
+        effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
+        MAChannelSeparator channelSeparator = new MAChannelSeparator(miniAudio, 2);
         MAChannelCombiner channelCombiner = new MAChannelCombiner(miniAudio, 2);
 
         miniAudio.attachToEngineOutput(channelCombiner, 0);
         channelCombiner.attachToThisNode(channelSeparator, 0, 0);
         channelCombiner.attachToThisNode(effectNode, 0, 1);
         effectNode.attachToThisNode(channelSeparator, 1);
-        channelSeparator.attachToThisNode(maSound, 0);*/
+        channelSeparator.attachToThisNode(maSound, 0);
 
 
         /*MASplitter splitter = new MASplitter(miniAudio);

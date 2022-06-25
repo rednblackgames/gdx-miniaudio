@@ -42,6 +42,13 @@
 - Delay/Echo
 - Reverb
 
+**Mixers**
+
+- Channel Splitter
+- Channel Combiner
+- Stream Splitter (duplicate source)
+- Leading silence trimmer
+
 ## How to use
 
 ### Include gradle dependencies
@@ -147,6 +154,37 @@ miniAudio.setupAndroid(Context#getAssets());
 ```
 
 You can safely pass `null` on other platforms.
+
+### Effects Graph
+
+MiniAudio comes with a powerful effects system based on graph design.
+
+```
+    >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Data flows left to right >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                                                   +-----------------+
+                              +----------+    +----= Low Pass Filter =----+
+         +---------------+    |          =----+    +-----------------+    |    +----------+
+         |    MASound    =----= Splitter |                                +----= ENDPOINT |
+         +---------------+    |          =----+    +-----------------+    |    +----------+
+                              +----------+    +----=  Echo / Delay   =----+
+                                                   +-----------------+
+```
+
+```java
+MASplitter splitter = new MASplitter(miniAudio);
+MALowPassFilter lowPassFilter = new MALowPassFilter(miniAudio, 550, 8);
+MADelayNode delayNode = new MADelayNode(miniAudio, 0.25f, 0.45f);
+
+miniAudio.attachToEngineOutput(lowPassFilter, 0);
+miniAudio.attachToEngineOutput(delayNode, 0);
+
+lowPassFilter.attachToThisNode(splitter, 0);
+delayNode.attachToThisNode(splitter, 1);
+
+splitter.attachToThisNode(maSound, 0);
+
+maSound.loop();
+```
 
 ## TODO
 
