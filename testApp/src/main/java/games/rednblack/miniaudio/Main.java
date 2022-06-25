@@ -7,8 +7,12 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Logger;
-import games.rednblack.miniaudio.effect.MAReverbNode;
+import games.rednblack.miniaudio.filter.MALowPassFilter;
+import games.rednblack.miniaudio.mix.MAChannelCombiner;
+import games.rednblack.miniaudio.mix.MAChannelSeparator;
+import games.rednblack.miniaudio.effect.MADelayNode;
 import games.rednblack.miniaudio.loader.MASoundLoader;
+import games.rednblack.miniaudio.mix.MASplitter;
 
 public class Main implements ApplicationListener {
 
@@ -36,17 +40,37 @@ public class Main implements ApplicationListener {
         //int res = miniAudio.playSound("Median_test.ogg");
         //int res = miniAudio.playSound("piano2.wav");
         //System.out.println(res);
-        maSound = miniAudio.createSound("Perfect_Mishap.ogg");
+        maSound = miniAudio.createSound("Legendary.mp3");
         maSound.setPositioning(MAPositioning.RELATIVE);
 
-        //effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f);
-        effectNode = new MAReverbNode(miniAudio);
+        effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
+        //effectNode = new MAReverbNode(miniAudio, 1);
         //effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
-
-        miniAudio.attachToEngineOutput(effectNode, 0);
         //effectNode.attachToThisNode(maSound, 0);
 
-        //maSound.loop();
+        MAChannelSeparator channelSeparator = new MAChannelSeparator(miniAudio, 2);
+        MAChannelCombiner channelCombiner = new MAChannelCombiner(miniAudio, 2);
+
+        miniAudio.attachToEngineOutput(channelCombiner, 0);
+        channelCombiner.attachToThisNode(channelSeparator, 0, 0);
+        channelCombiner.attachToThisNode(effectNode, 0, 1);
+        effectNode.attachToThisNode(channelSeparator, 1);
+        channelSeparator.attachToThisNode(maSound, 0);
+
+
+        /*MASplitter splitter = new MASplitter(miniAudio);
+        MALowPassFilter lowPassFilter = new MALowPassFilter(miniAudio, 550, 8);
+        MADelayNode delayNode = new MADelayNode(miniAudio, 0.25f, 0.45f);
+
+        miniAudio.attachToEngineOutput(lowPassFilter, 0);
+        miniAudio.attachToEngineOutput(delayNode, 0);
+
+        lowPassFilter.attachToThisNode(splitter, 0);
+        delayNode.attachToThisNode(splitter, 1);
+
+        splitter.attachToThisNode(maSound, 0);*/
+
+        maSound.loop();
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //MAWaveform waveform = miniAudio.createWaveform(2, MAWaveformType.SAWTOOTH, 1, 400);
         //maSound = miniAudio.createSound(waveform);
@@ -82,18 +106,18 @@ public class Main implements ApplicationListener {
             System.out.println(assetManager.getProgress());
         } else if (!loaded) {
             loaded = true;
-            MASound sound = assetManager.get("game.ogg", MASound.class);
+            /*MASound sound = assetManager.get("game.ogg", MASound.class);
             effectNode.attachToThisNode(sound, 0);
-            sound.loop();
+            sound.loop();*/
         }
         //System.out.println(maSound.getCursorPosition());
         //System.out.println("isLooping " + maSound.isLooping());
         //System.out.println("isEnd " + maSound.isEnd());
-        if (Gdx.graphics.getFrameId() == 200) {
+        /*if (Gdx.graphics.getFrameId() == 200) {
             //maSound.seekTo(45);
             MASound sound = assetManager.get("game.ogg", MASound.class);
             miniAudio.attachToEngineOutput(sound,0);
-        }
+        }*/
         //if (Gdx.graphics.getFrameId() == 500) maSound.setPitch(1);
         angle += MathUtils.PI / 4f / 100f;
         //maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));

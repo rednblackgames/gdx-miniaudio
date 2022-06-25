@@ -1,4 +1,4 @@
-package games.rednblack.miniaudio.effect;
+package games.rednblack.miniaudio.mix;
 
 import games.rednblack.miniaudio.MANode;
 import games.rednblack.miniaudio.MAResult;
