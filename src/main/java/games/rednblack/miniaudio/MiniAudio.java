@@ -31,16 +31,11 @@ public class MiniAudio implements Disposable {
 
         #ifdef MA_ANDROID
         #include <android/asset_manager_jni.h>
-        AAssetManager* asset_manager = NULL;
         #include "miniaudio_android_assets.h"
+        ma_android_vfs* androidVFS;
         #endif
 
         ma_engine engine;
-        ma_engine_config engineConfig;
-
-        #ifdef MA_ANDROID
-        ma_android_vfs androidVFS;
-        #endif
 
         #ifdef MA_APPLE_MOBILE
         #include <string>
@@ -79,13 +74,14 @@ public class MiniAudio implements Disposable {
     }
 
     private native int init_engine(int listenerCount, int channels);/*
-        engineConfig = ma_engine_config_init();
+        ma_engine_config engineConfig = ma_engine_config_init();
         engineConfig.listenerCount = listenerCount;
         engineConfig.channels = channels;
         #if defined(MA_ANDROID)
-        ma_result res = ma_android_vfs_init(&androidVFS, NULL);
+        androidVFS = (ma_android_vfs*) ma_malloc(sizeof(ma_android_vfs), NULL);
+        ma_result res = ma_android_vfs_init(androidVFS, NULL);
         if (res != MA_SUCCESS) return res;
-        engineConfig.pResourceManagerVFS = &androidVFS;
+        engineConfig.pResourceManagerVFS = androidVFS;
         #endif
 		return ma_engine_init(&engineConfig, &engine);
 	*/
@@ -110,7 +106,7 @@ public class MiniAudio implements Disposable {
 
     private native void jniSetupAndroid(Object assetManager);/*
         #if defined(MA_ANDROID)
-        asset_manager = AAssetManager_fromJava(env, assetManager);
+        androidVFS->asset_manager = AAssetManager_fromJava(env, assetManager);
         #endif
     */
 
@@ -124,6 +120,9 @@ public class MiniAudio implements Disposable {
 
     private native void jniDispose();/*
         ma_engine_uninit(&engine);
+        #if defined(MA_ANDROID)
+        ma_free(androidVFS, NULL);
+        #endif
     */
 
     /**

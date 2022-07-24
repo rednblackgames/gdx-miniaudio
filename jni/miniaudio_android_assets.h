@@ -6,6 +6,7 @@
 typedef struct {
     ma_vfs_callbacks cb;
     ma_allocation_callbacks allocationCallbacks;
+    AAssetManager* asset_manager;
 } ma_android_vfs;
 
 ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 openMode, ma_vfs_file* pFile) {
@@ -13,7 +14,9 @@ ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 ope
         return MA_INVALID_ARGS;
     }
 
-    if (asset_manager == NULL) {
+    ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
+
+    if (androidVfs->asset_manager == NULL) {
         return MA_UNAVAILABLE;
     }
 
@@ -23,7 +26,7 @@ ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 ope
         return MA_INVALID_ARGS;
     }
 
-    AAsset* asset = AAssetManager_open(asset_manager, pFilePath, AASSET_MODE_STREAMING);
+    AAsset* asset = AAssetManager_open(androidVfs->asset_manager, pFilePath, AASSET_MODE_STREAMING);
     if (asset == NULL) {
         return MA_DOES_NOT_EXIST;
     }
@@ -38,7 +41,9 @@ ma_result ma_android_vfs_close(ma_vfs* pVFS, ma_vfs_file file) {
         return MA_INVALID_ARGS;
     }
 
-    if (asset_manager == NULL) {
+    ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
+
+    if (androidVfs->asset_manager == NULL) {
         return MA_UNAVAILABLE;
     }
 
@@ -58,7 +63,9 @@ ma_result ma_android_vfs_read(ma_vfs* pVFS, ma_vfs_file file, void* pDst, size_t
         return MA_INVALID_ARGS;
     }
 
-    if (asset_manager == NULL) {
+    ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
+
+    if (androidVfs->asset_manager == NULL) {
         return MA_UNAVAILABLE;
     }
 
@@ -85,7 +92,9 @@ ma_result ma_android_vfs_seek(ma_vfs* pVFS, ma_vfs_file file, ma_int64 offset, m
         return MA_INVALID_ARGS;
     }
 
-    if (asset_manager == NULL) {
+    ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
+
+    if (androidVfs->asset_manager == NULL) {
         return MA_UNAVAILABLE;
     }
 
@@ -119,7 +128,9 @@ ma_result ma_android_vfs_info(ma_vfs* pVFS, ma_vfs_file file, ma_file_info* pInf
         return MA_INVALID_ARGS;
     }
 
-    if (asset_manager == NULL) {
+    ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
+
+    if (androidVfs->asset_manager == NULL) {
         return MA_UNAVAILABLE;
     }
 
@@ -141,7 +152,9 @@ ma_result ma_android_vfs_tell(ma_vfs* pVFS, ma_vfs_file file, ma_int64* pCursor)
         return MA_INVALID_ARGS;
     }
 
-    if (asset_manager == NULL) {
+    ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
+
+    if (androidVfs->asset_manager == NULL) {
         return MA_UNAVAILABLE;
     }
 
@@ -169,6 +182,8 @@ ma_result ma_android_vfs_init(ma_android_vfs* pVFS, const ma_allocation_callback
     pVFS->cb.onTell  = ma_android_vfs_tell;
     pVFS->cb.onInfo  = ma_android_vfs_info;
     ma_allocation_callbacks_init_copy(&pVFS->allocationCallbacks, pAllocationCallbacks);
+
+    pVFS->asset_manager = NULL;
 
     return MA_SUCCESS;
 }
