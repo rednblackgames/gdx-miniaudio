@@ -33,7 +33,8 @@ public class Main implements ApplicationListener {
     AssetManager assetManager;
     @Override
     public void create() {
-        miniAudio = new MiniAudio();
+        //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
+        miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
         miniAudio.setListenerDirection(0, 0, 1);
         miniAudio.setListenerCone(MathUtils.PI / 4f, MathUtils.PI / 4f, 2f);
 
@@ -42,17 +43,19 @@ public class Main implements ApplicationListener {
         //int res = miniAudio.playSound("Median_test.ogg");
         //int res = miniAudio.playSound("piano2.wav");
         //System.out.println(res);
-        maSound = miniAudio.createSound("Legendary.mp3");
-        maSound.setPositioning(MAPositioning.RELATIVE);
+        //maSound = miniAudio.createSound("Legendary.mp3");
+        //maSound.setPositioning(MAPositioning.RELATIVE);
+        maSound = miniAudio.createInputSound((short) 0, null);
+        maSound.setSpatialization(false);
 
-        /*//effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
+        //effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
         effectNode = new MAReverbNode(miniAudio);
         //effectNode = new MALTrim(miniAudio, 0);
         //effectNode = new MABiquadFilter(miniAudio, .0102f, .0105f, .011f, .109f, .01047f, .1028f);
-        miniAudio.attachToEngineOutput(effectNode, 0);
-        effectNode.attachToThisNode(maSound, 0);*/
+        //miniAudio.attachToEngineOutput(effectNode, 0);
+        //effectNode.attachToThisNode(maSound, 0);
 
-        effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
+        /*effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
         MAChannelSeparator channelSeparator = new MAChannelSeparator(miniAudio, 2);
         MAChannelCombiner channelCombiner = new MAChannelCombiner(miniAudio, 2);
 
@@ -60,7 +63,7 @@ public class Main implements ApplicationListener {
         channelCombiner.attachToThisNode(channelSeparator, 0, 0);
         channelCombiner.attachToThisNode(effectNode, 0, 1);
         effectNode.attachToThisNode(channelSeparator, 1);
-        channelSeparator.attachToThisNode(maSound, 0);
+        channelSeparator.attachToThisNode(maSound, 0);*/
 
 
         /*MASplitter splitter = new MASplitter(miniAudio);
@@ -75,7 +78,8 @@ public class Main implements ApplicationListener {
 
         splitter.attachToThisNode(maSound, 0);*/
 
-        maSound.loop();
+        //maSound.setVolume(1);
+        maSound.play();
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //MAWaveform waveform = miniAudio.createWaveform(2, MAWaveformType.SAWTOOTH, 1, 400);
         //maSound = miniAudio.createSound(waveform);
@@ -125,7 +129,8 @@ public class Main implements ApplicationListener {
         }*/
         //if (Gdx.graphics.getFrameId() == 500) maSound.setPitch(1);
         angle += MathUtils.PI / 4f / 100f;
-        maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
+        //miniAudio.setListenerDirection(0, 0, MathUtils.sin(angle));
+        //maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
         //miniAudio.setListenerPosition(MathUtils.cosDeg(i)*5, 0, 0);
     }
 
