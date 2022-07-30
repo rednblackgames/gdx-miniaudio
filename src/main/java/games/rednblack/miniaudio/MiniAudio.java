@@ -19,6 +19,7 @@ public class MiniAudio implements Disposable {
         #define STB_VORBIS_HEADER_ONLY
         #include "stb_vorbis.c"
 
+        #define MA_DEBUG_OUTPUT
         #define MINIAUDIO_IMPLEMENTATION
         #include "miniaudio.h"
 
@@ -36,6 +37,8 @@ public class MiniAudio implements Disposable {
         #endif
 
         ma_engine engine;
+        ma_device device;
+        ma_audio_buffer_ref inputBufferData;
 
         #ifdef MA_APPLE_MOBILE
         #include <string>
@@ -43,6 +46,11 @@ public class MiniAudio implements Disposable {
             return [[[NSBundle mainBundle] pathForResource:[NSString stringWithUTF8String: fileName] ofType:nil] UTF8String];
         }
         #endif
+
+        void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+            ma_audio_buffer_ref_set_data(&inputBufferData, pInput, frameCount);
+            ma_engine_read_pcm_frames(&engine, pOutput, frameCount, NULL);
+        }
      */
 
     private final long engineAddress;
@@ -52,7 +60,7 @@ public class MiniAudio implements Disposable {
      *
      */
     public MiniAudio() {
-        this(1, 0);
+        this(1, 0, 0, 0, 0);
     }
 
     /**
@@ -62,27 +70,50 @@ public class MiniAudio implements Disposable {
      * @param channels The number of channels to use when mixing and spatializing.
      *                 When set to 0, will use the native channel count of the device.
      */
-    public MiniAudio(int listenerCount, int channels) {
+    public MiniAudio(int listenerCount, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate) {
         if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = init_engine(listenerCount, channels);
+        int result = init_engine(listenerCount, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
     }
 
-    private native int init_engine(int listenerCount, int channels);/*
+    private native int init_engine(int listenerCount, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate);/*
+        ma_result res;
+        ma_device_config deviceConfig = ma_device_config_init(ma_device_type_duplex);
+        deviceConfig.capture.pDeviceID  = NULL;
+        deviceConfig.capture.format     = ma_format_f32;
+        deviceConfig.capture.channels   = channels;
+        deviceConfig.capture.shareMode  = ma_share_mode_shared;
+        deviceConfig.playback.pDeviceID = NULL;
+        deviceConfig.playback.format    = ma_format_f32;
+        deviceConfig.playback.channels  = channels;
+        deviceConfig.sampleRate         = sampleRate;
+        deviceConfig.dataCallback       = data_callback;
+        deviceConfig.performanceProfile = ma_performance_profile_low_latency;
+        deviceConfig.periodSizeInFrames = bufferPeriodFrames;
+        deviceConfig.periodSizeInMilliseconds = bufferPeriodMillis;
+        res = ma_device_init(NULL, &deviceConfig, &device);
+        if (res != MA_SUCCESS) return res;
+
+        res = ma_audio_buffer_ref_init(device.capture.format, device.capture.channels, NULL, 0, &inputBufferData);
+        if (res != MA_SUCCESS) return res;
+
         ma_engine_config engineConfig = ma_engine_config_init();
         engineConfig.listenerCount = listenerCount;
         engineConfig.channels = channels;
+        engineConfig.pDevice = &device;
+
         #if defined(MA_ANDROID)
         androidVFS = (ma_android_vfs*) ma_malloc(sizeof(ma_android_vfs), NULL);
-        ma_result res = ma_android_vfs_init(androidVFS, NULL);
+        res = ma_android_vfs_init(androidVFS, NULL);
         if (res != MA_SUCCESS) return res;
         engineConfig.pResourceManagerVFS = androidVFS;
         #endif
+
 		return ma_engine_init(&engineConfig, &engine);
 	*/
 
@@ -347,6 +378,21 @@ public class MiniAudio implements Disposable {
         #else
         ma_result result = ma_sound_init_from_file(&engine, fileName, flags, pGroup, NULL, sound);
         #endif
+        if (result != MA_SUCCESS) {
+            ma_free(sound, NULL);
+            return (jlong) result;
+        }
+        return (jlong) sound;
+    */
+
+    public MASound createInputSound(short flags, MAGroup group) {
+        return new MASound(jniCreateInputSound(flags, group == null ? -1 : group.address), this);
+    }
+
+    private native long jniCreateInputSound(short flags, long group); /*
+        ma_sound_group* pGroup = group == -1 ? NULL : (ma_sound_group*) group;
+        ma_sound* sound = (ma_sound*) ma_malloc(sizeof(ma_sound), NULL);
+        ma_result result = ma_sound_init_from_data_source(&engine, &inputBufferData, flags, pGroup, sound);
         if (result != MA_SUCCESS) {
             ma_free(sound, NULL);
             return (jlong) result;
