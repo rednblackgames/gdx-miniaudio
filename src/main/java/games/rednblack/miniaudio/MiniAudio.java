@@ -19,7 +19,6 @@ public class MiniAudio implements Disposable {
         #define STB_VORBIS_HEADER_ONLY
         #include "stb_vorbis.c"
 
-        #define MA_DEBUG_OUTPUT
         #define MINIAUDIO_IMPLEMENTATION
         #include "miniaudio.h"
 
@@ -36,8 +35,9 @@ public class MiniAudio implements Disposable {
         ma_android_vfs* androidVFS;
         #endif
 
-        ma_engine engine;
+        ma_context context;
         ma_device device;
+        ma_engine engine;
         ma_audio_buffer_ref inputBufferData;
 
         #ifdef MA_APPLE_MOBILE
@@ -53,50 +53,232 @@ public class MiniAudio implements Disposable {
         }
      */
 
-    private final long engineAddress;
+    private long engineAddress = 0;
 
     /**
      * Create a new MiniAudio Engine Instance
      *
      */
     public MiniAudio() {
-        this(1, 0, 0, 0, 0);
+        this(true);
     }
 
     /**
      * Create a new MiniAudio Engine Instance
      *
+     * @param initEngine automatic init engine with default parameters
+     */
+    public MiniAudio(boolean initEngine) {
+        int result = init_context();
+        if (result != MAResult.MA_SUCCESS) {
+            throw new MiniAudioException("Unable to init MiniAudio Context", result);
+        }
+
+        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32);
+    }
+
+    /**
+     * Initialize MiniAudio Engine
+     *
      * @param listenerCount number of listeners in 3D Spatialization.
+     * @param playbackId native address of playback device (use -1 for default).
+     * @param captureId native address of capture device (use -1 for default).
      * @param channels The number of channels to use when mixing and spatializing.
      *                 When set to 0, will use the native channel count of the device.
+     * @param bufferPeriodMillis the size of input buffer in millis. Set 0 for default.
+     * @param bufferPeriodFrames the size of input buffer in PCM frames, use it to change latency (bufferSize / sampleRate).
+     *                           Set 0 for default.
+     * @param sampleRate how many samples your audio interface will capture every second. Set 0 for default.
+     * @param formatType devices data format, see {@link MAFormatType}
      */
-    public MiniAudio(int listenerCount, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate) {
+    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType) {
+        if (engineAddress != 0) throw new IllegalStateException("A MiniAudio Engine is already initialized.");
+
         if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = init_engine(listenerCount, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate);
+        int result = init_engine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
     }
 
-    private native int init_engine(int listenerCount, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate);/*
+    private native int init_context();/*
+        return ma_context_init(NULL, 0, NULL, &context);
+    */
+
+    /**
+     * Enumerate every device attached to the device with their capabilities,
+     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType)}
+     *
+     * @return array of devices information
+     */
+    public MADeviceInfo[] enumerateDevices() {
+        return enumerate_devices(MADeviceInfo.class, MADeviceInfo.MADeviceNativeDataFormat.class);
+    }
+
+    private native MADeviceInfo[] enumerate_devices(Class infoClass, Class nativeFormatClass);/*
+        ma_device_info* pPlaybackInfos;
+        ma_uint32 playbackCount;
+        ma_device_info* pCaptureInfos;
+        ma_uint32 captureCount;
+
+        ma_result res = ma_context_get_devices(&context, &pPlaybackInfos, &playbackCount, &pCaptureInfos, &captureCount);
+        if (res != MA_SUCCESS) return NULL;
+
+        jclass formatTypeClass = env->FindClass("games/rednblack/miniaudio/MAFormatType");
+
+        jmethodID constructor = env->GetMethodID(infoClass, "<init>", "()V");
+        jmethodID constructorFormat = env->GetMethodID(nativeFormatClass, "<init>", "()V");
+
+        jfieldID fFormatUNKNOWN = env->GetStaticFieldID(formatTypeClass, "UNKNOWN", "Lgames/rednblack/miniaudio/MAFormatType;");
+        jfieldID fFormatU8 = env->GetStaticFieldID(formatTypeClass, "U8", "Lgames/rednblack/miniaudio/MAFormatType;");
+        jfieldID fFormatS16 = env->GetStaticFieldID(formatTypeClass, "S16", "Lgames/rednblack/miniaudio/MAFormatType;");
+        jfieldID fFormatS24 = env->GetStaticFieldID(formatTypeClass, "S24", "Lgames/rednblack/miniaudio/MAFormatType;");
+        jfieldID fFormatS32 = env->GetStaticFieldID(formatTypeClass, "S32", "Lgames/rednblack/miniaudio/MAFormatType;");
+        jfieldID fFormatF32 = env->GetStaticFieldID(formatTypeClass, "F32", "Lgames/rednblack/miniaudio/MAFormatType;");
+
+        jfieldID fName = env->GetFieldID(infoClass, "name", "Ljava/lang/String;");
+        jfieldID fIsCapture = env->GetFieldID(infoClass, "isCapture", "Z");
+        jfieldID fIdAddress = env->GetFieldID(infoClass, "idAddress", "J");
+        jfieldID fIsDefault = env->GetFieldID(infoClass, "isDefault", "Z");
+        jfieldID fNativeDataFormats = env->GetFieldID(infoClass, "nativeDataFormats", "[Lgames/rednblack/miniaudio/MADeviceInfo$MADeviceNativeDataFormat;");
+
+        jfieldID fFormat =  env->GetFieldID(nativeFormatClass, "format", "Lgames/rednblack/miniaudio/MAFormatType;");
+        jfieldID fChannels = env->GetFieldID(nativeFormatClass, "channels", "I");
+        jfieldID fSampleRate = env->GetFieldID(nativeFormatClass, "sampleRate", "I");
+        jfieldID fFlags = env->GetFieldID(nativeFormatClass, "flags", "I");
+
+        jobjectArray ret = env->NewObjectArray(playbackCount + captureCount, infoClass, NULL);
+
+        if (ret) {
+            ma_uint32 iDevice = 0;
+            for (; iDevice < playbackCount; iDevice += 1) {
+                jobject obj = env->NewObject(infoClass, constructor);
+                if(obj) {
+                    ma_context_get_device_info(&context, ma_device_type_playback, &pPlaybackInfos[iDevice].id, &pPlaybackInfos[iDevice]);
+                    env->SetBooleanField(obj, fIsCapture, 0);
+                    env->SetLongField(obj, fIdAddress, (jlong) &pPlaybackInfos[iDevice].id);
+                    env->SetBooleanField(obj, fIsDefault, pPlaybackInfos[iDevice].isDefault);
+                    jstring buffer = env->NewStringUTF(pPlaybackInfos[iDevice].name);
+                    env->SetObjectField(obj, fName, buffer);
+
+                    jobjectArray formats = env->NewObjectArray(pPlaybackInfos[iDevice].nativeDataFormatCount, nativeFormatClass, NULL);
+                    if (formats) {
+                        for (ma_uint32 i = 0; i < pPlaybackInfos[iDevice].nativeDataFormatCount; i++) {
+                            jobject objInfo = env->NewObject(nativeFormatClass, constructorFormat);
+
+                            if (objInfo) {
+                                switch(pPlaybackInfos[iDevice].nativeDataFormats[i].format) {
+                                    case ma_format_unknown:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatUNKNOWN));
+                                        break;
+                                    case ma_format_u8:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatU8));
+                                        break;
+                                    case ma_format_s16:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatS16));
+                                        break;
+                                    case ma_format_s24:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatS24));
+                                        break;
+                                    case ma_format_s32:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatS32));
+                                        break;
+                                    case ma_format_f32:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatF32));
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                env->SetIntField(objInfo, fChannels, pPlaybackInfos[iDevice].nativeDataFormats[i].channels);
+                                env->SetIntField(objInfo, fSampleRate, pPlaybackInfos[iDevice].nativeDataFormats[i].sampleRate);
+                                env->SetIntField(objInfo, fFlags, pPlaybackInfos[iDevice].nativeDataFormats[i].flags);
+
+                                env->SetObjectArrayElement(formats, i, objInfo);
+                            }
+                        }
+                        env->SetObjectField(obj, fNativeDataFormats, formats);
+                    }
+
+                    env->SetObjectArrayElement(ret, iDevice, obj);
+                }
+            }
+
+            for (ma_uint32 i2 = 0; i2 < captureCount; i2 += 1, iDevice += 1) {
+                jobject obj = env->NewObject(infoClass, constructor);
+                if(obj) {
+                    ma_context_get_device_info(&context, ma_device_type_capture, &pCaptureInfos[i2].id, &pCaptureInfos[i2]);
+
+                    env->SetBooleanField(obj, fIsCapture, 1);
+                    env->SetLongField(obj, fIdAddress, (jlong) &pCaptureInfos[i2].id);
+                    env->SetBooleanField(obj, fIsDefault, pCaptureInfos[i2].isDefault);
+                    jstring buffer = env->NewStringUTF(pCaptureInfos[i2].name);
+                    env->SetObjectField(obj, fName, buffer);
+
+                    jobjectArray formats = env->NewObjectArray(pCaptureInfos[i2].nativeDataFormatCount, nativeFormatClass, NULL);
+                    if (formats) {
+                        for (ma_uint32 i = 0; i < pCaptureInfos[i2].nativeDataFormatCount; i++) {
+                            jobject objInfo = env->NewObject(nativeFormatClass, constructorFormat);
+
+                            if (objInfo) {
+                                switch(pCaptureInfos[i2].nativeDataFormats[i].format) {
+                                    case ma_format_unknown:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatUNKNOWN));
+                                        break;
+                                    case ma_format_u8:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatU8));
+                                        break;
+                                    case ma_format_s16:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatS16));
+                                        break;
+                                    case ma_format_s24:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatS24));
+                                        break;
+                                    case ma_format_s32:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatS32));
+                                        break;
+                                    case ma_format_f32:
+                                        env->SetObjectField(objInfo, fFormat, env->GetStaticObjectField(formatTypeClass, fFormatF32));
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                env->SetIntField(objInfo, fChannels, pCaptureInfos[i2].nativeDataFormats[i].channels);
+                                env->SetIntField(objInfo, fSampleRate, pCaptureInfos[i2].nativeDataFormats[i].sampleRate);
+                                env->SetIntField(objInfo, fFlags, pCaptureInfos[i2].nativeDataFormats[i].flags);
+
+                                env->SetObjectArrayElement(formats, i, objInfo);
+                            }
+                        }
+                        env->SetObjectField(obj, fNativeDataFormats, formats);
+                    }
+
+                    env->SetObjectArrayElement(ret, iDevice, obj);
+                }
+            }
+        }
+
+        return ret;
+    */
+
+    private native int init_engine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format);/*
         ma_result res;
-        ma_device_config deviceConfig = ma_device_config_init(ma_device_type_duplex);
-        deviceConfig.capture.pDeviceID  = NULL;
-        deviceConfig.capture.format     = ma_format_f32;
+        ma_device_config deviceConfig   = ma_device_config_init(ma_device_type_duplex);
+        deviceConfig.capture.pDeviceID  = playbackId == -1 ? NULL : (ma_device_id*) playbackId;
+        deviceConfig.capture.format     = (ma_format) format;
         deviceConfig.capture.channels   = channels;
         deviceConfig.capture.shareMode  = ma_share_mode_shared;
-        deviceConfig.playback.pDeviceID = NULL;
-        deviceConfig.playback.format    = ma_format_f32;
+        deviceConfig.playback.pDeviceID = captureId == -1 ? NULL : (ma_device_id*) captureId;
+        deviceConfig.playback.format    = (ma_format) format;
         deviceConfig.playback.channels  = channels;
         deviceConfig.sampleRate         = sampleRate;
         deviceConfig.dataCallback       = data_callback;
         deviceConfig.performanceProfile = ma_performance_profile_low_latency;
         deviceConfig.periodSizeInFrames = bufferPeriodFrames;
         deviceConfig.periodSizeInMilliseconds = bufferPeriodMillis;
-        res = ma_device_init(NULL, &deviceConfig, &device);
+        res = ma_device_init(&context, &deviceConfig, &device);
         if (res != MA_SUCCESS) return res;
 
         res = ma_audio_buffer_ref_init(device.capture.format, device.capture.channels, NULL, 0, &inputBufferData);
@@ -121,6 +303,11 @@ public class MiniAudio implements Disposable {
         return (jlong) &engine;
     */
 
+    /**
+     * Get engine native address
+     *
+     * @return the engine native address
+     */
     public long getEngineAddress() {
         return engineAddress;
     }
@@ -150,7 +337,9 @@ public class MiniAudio implements Disposable {
     }
 
     private native void jniDispose();/*
+        ma_device_uninit(&device);
         ma_engine_uninit(&engine);
+        ma_context_uninit(&context);
         #if defined(MA_ANDROID)
         ma_free(androidVFS, NULL);
         #endif

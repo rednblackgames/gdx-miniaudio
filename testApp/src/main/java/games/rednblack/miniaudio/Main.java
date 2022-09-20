@@ -34,7 +34,12 @@ public class Main implements ApplicationListener {
     @Override
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
-        miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
+        miniAudio = new MiniAudio(false);
+        MADeviceInfo[] devices = miniAudio.enumerateDevices();
+        for (MADeviceInfo info : devices) {
+            System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);
+        }
+        miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32);
         miniAudio.setListenerDirection(0, 0, 1);
         miniAudio.setListenerCone(MathUtils.PI / 4f, MathUtils.PI / 4f, 2f);
 
@@ -43,9 +48,9 @@ public class Main implements ApplicationListener {
         //int res = miniAudio.playSound("Median_test.ogg");
         //int res = miniAudio.playSound("piano2.wav");
         //System.out.println(res);
-        //maSound = miniAudio.createSound("Legendary.mp3");
+        maSound = miniAudio.createSound("Legendary.mp3");
         //maSound.setPositioning(MAPositioning.RELATIVE);
-        maSound = miniAudio.createInputSound((short) 0, null);
+        //maSound = miniAudio.createInputSound((short) 0, null);
         maSound.setSpatialization(false);
 
         //effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
