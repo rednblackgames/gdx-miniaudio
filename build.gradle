@@ -59,7 +59,7 @@ jnigen {
         cFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "
     }
     add(Android) {
-        linkerFlags += " -landroid -llog "
+        linkerFlags += " -landroid "
     }
     add(IOS) {
         cFlags += " -framework CoreFoundation -framework CoreAudio -framework AudioUnit "

@@ -3,6 +3,7 @@
 - Enable full duplex (mic input node)
 - Update MiniAudio to 0.11.10
 - Add native log level support
+- Playback/Capture device enumerations
 
 [0.2]
 - Update miniaudio to latest bug fixes
