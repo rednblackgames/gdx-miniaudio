@@ -149,7 +149,7 @@ public class MiniAudio implements Disposable {
 
     /**
      * Enumerate every device attached to the device with their capabilities,
-     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType)}
+     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType, boolean)}
      *
      * @return array of devices information
      */
