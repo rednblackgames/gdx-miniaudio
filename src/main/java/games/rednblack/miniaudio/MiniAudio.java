@@ -31,9 +31,31 @@ public class MiniAudio implements Disposable {
 
         #ifdef MA_ANDROID
         #include <android/asset_manager_jni.h>
+        #include <android/log.h>
         #include "miniaudio_android_assets.h"
         ma_android_vfs* androidVFS;
         #endif
+
+        #ifndef MA_ANDROID_LOG_TAG
+        #define MA_ANDROID_LOG_TAG  "miniaudio"
+        #endif
+
+        ma_uint32 logLevel = MA_LOG_LEVEL_ERROR;
+
+        void ma_log_callback_debug(void* pUserData, ma_uint32 level, const char* pMessage) {
+            if (logLevel < level) return;
+
+            (void)pUserData;
+            #if defined(MA_ANDROID)
+            {
+                __android_log_print(ANDROID_LOG_DEBUG, MA_ANDROID_LOG_TAG, "%s: %s", ma_log_level_to_string(level), pMessage);
+            }
+            #else
+            {
+                printf("%s: %s", ma_log_level_to_string(level), pMessage);
+            }
+            #endif
+        }
 
         ma_context context;
         ma_device device;
@@ -105,7 +127,23 @@ public class MiniAudio implements Disposable {
     }
 
     private native int init_context();/*
-        return ma_context_init(NULL, 0, NULL, &context);
+        ma_result res = ma_context_init(NULL, 0, NULL, &context);
+        if (res != MA_SUCCESS) return res;
+        ma_log_register_callback(context.pLog, ma_log_callback_init(ma_log_callback_debug, NULL));
+        return MA_SUCCESS;
+    */
+
+    /**
+     * Set MiniAudio's  native log level.
+     *
+     * @param logLevel minimum log level to print
+     */
+    public void setLogLevel(MALogLevel logLevel) {
+        set_log_level(logLevel.code);
+    }
+
+    private native void set_log_level(int log);/*
+        logLevel = log;
     */
 
     /**

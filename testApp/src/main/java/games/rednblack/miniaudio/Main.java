@@ -35,6 +35,7 @@ public class Main implements ApplicationListener {
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
         miniAudio = new MiniAudio(false);
+        miniAudio.setLogLevel(MALogLevel.WARNING);
         MADeviceInfo[] devices = miniAudio.enumerateDevices();
         for (MADeviceInfo info : devices) {
             System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);
