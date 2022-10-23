@@ -42,9 +42,7 @@ jobs:
   linux:
     if: "!contains(github.event.head_commit.message, 'cd skip')"
     needs: macos
-    runs-on: ubuntu-18.04
-    env:
-      NDK_HOME: /usr/local/lib/android/sdk/ndk-bundle
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -83,7 +81,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build with Gradle
-        run: ./gradlew jniGen jnigenBuildLinux64 jnigenBuildLinuxARM jnigenBuildLinuxARM64 jnigenBuildWindows64 jnigenBuildWindows jnigenBuildAndroid
+        run: |
+          export NDK_HOME=$ANDROID_NDK_HOME
+         ./gradlew jniGen jnigenBuildLinux64 jnigenBuildLinuxARM jnigenBuildLinuxARM64 jnigenBuildWindows64 jnigenBuildWindows jnigenBuildAndroid
       - name: Publish SNAPSHOT artifacts
         env:
           NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}

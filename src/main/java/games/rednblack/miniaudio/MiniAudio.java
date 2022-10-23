@@ -31,7 +31,7 @@ public class MiniAudio implements Disposable {
 
         #ifdef MA_ANDROID
         #include <android/asset_manager_jni.h>
-        //#include <android/log.h>
+        #include <android/log.h>
         #include "miniaudio_android_assets.h"
         ma_android_vfs* androidVFS;
         #endif
@@ -48,7 +48,7 @@ public class MiniAudio implements Disposable {
             (void)pUserData;
             #if defined(MA_ANDROID)
             {
-                //__android_log_print(ANDROID_LOG_DEBUG, MA_ANDROID_LOG_TAG, "%s: %s", ma_log_level_to_string(level), pMessage);
+                __android_log_print(ANDROID_LOG_DEBUG, MA_ANDROID_LOG_TAG, "%s: %s", ma_log_level_to_string(level), pMessage);
             }
             #else
             {
