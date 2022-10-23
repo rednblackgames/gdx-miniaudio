@@ -1,6 +1,6 @@
 /*
 Audio playback and capture library. Choice of public domain or MIT-0. See license statements at the end of this file.
-miniaudio - v0.11.10 - TBD
+miniaudio - v0.11.10 - 2022-10-20
 
 David Reid - mackron@gmail.com
 
@@ -3914,7 +3914,7 @@ implications. Where supported by the compiler, alignment will be used, but other
 architecture does not require it, it will simply leave it unaligned. This is the case with old
 versions of Visual Studio, which I've confirmed with at least VC6.
 */
-#if defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#if !defined(_MSC_VER) && defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
     #include <stdalign.h>
     #define MA_ATOMIC(alignment, type)            alignas(alignment) type
 #else
@@ -4772,7 +4772,7 @@ typedef struct
 {
     ma_delay_config config;
     ma_uint32 cursor;               /* Feedback is written to this cursor. Always equal or in front of the read cursor. */
-    ma_uint32 bufferSizeInFrames;   /* The maximum of config.startDelayInFrames and config.feedbackDelayInFrames. */
+    ma_uint32 bufferSizeInFrames;
     float* pBuffer;
 } ma_delay;
 
@@ -11881,12 +11881,19 @@ Standard Library Stuff
 #endif
 #endif
 
-#ifndef MA_ZERO_MEMORY
+static MA_INLINE void ma_zero_memory_default(void* p, size_t sz)
+{
 #ifdef MA_WIN32
-#define MA_ZERO_MEMORY(p, sz) ZeroMemory((p), (sz))
+    ZeroMemory(p, sz);
 #else
-#define MA_ZERO_MEMORY(p, sz) memset((p), 0, (sz))
+    if (sz > 0) {
+        memset(p, 0, sz);
+    }
 #endif
+}
+
+#ifndef MA_ZERO_MEMORY
+#define MA_ZERO_MEMORY(p, sz) ma_zero_memory_default((p), (sz))
 #endif
 
 #ifndef MA_COPY_MEMORY
@@ -20899,9 +20906,10 @@ typedef enum
 } MA_PROCESS_LOOPBACK_MODE;
 
 /* https://docs.microsoft.com/en-us/windows/win32/api/audioclientactivationparams/ns-audioclientactivationparams-audioclient_process_loopback_params */
-typedef struct {
-  DWORD TargetProcessId;
-  MA_PROCESS_LOOPBACK_MODE ProcessLoopbackMode;
+typedef struct
+{
+    DWORD TargetProcessId;
+    MA_PROCESS_LOOPBACK_MODE ProcessLoopbackMode;
 } MA_AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS;
 
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -38944,7 +38952,7 @@ static ma_result ma_context_init__webaudio(ma_context* pContext, const ma_contex
 
     /* Here is where our global JavaScript object is initialized. */
     resultFromJS = EM_ASM_INT({
-        if ((window.AudioContext || window.webkitAudioContext) === undefined) {
+        if (typeof window === 'undefined' || (window.AudioContext || window.webkitAudioContext) === undefined) {
             return 0;   /* Web Audio not supported. */
         }
 
@@ -55665,7 +55673,8 @@ MA_API ma_result ma_data_source_get_cursor_in_seconds(ma_data_source* pDataSourc
         return result;
     }
 
-    *pCursor = cursorInPCMFrames / (float)sampleRate;
+    /* VC6 does not support division of unsigned 64-bit integers with floating point numbers. Need to use a signed number. This shouldn't effect anything in practice. */
+    *pCursor = (ma_int64)cursorInPCMFrames / (float)sampleRate;
 
     return MA_SUCCESS;
 }
@@ -55692,7 +55701,8 @@ MA_API ma_result ma_data_source_get_length_in_seconds(ma_data_source* pDataSourc
         return result;
     }
 
-    *pLength = lengthInPCMFrames / (float)sampleRate;
+    /* VC6 does not support division of unsigned 64-bit integers with floating point numbers. Need to use a signed number. This shouldn't effect anything in practice. */
+    *pLength = (ma_int64)lengthInPCMFrames / (float)sampleRate;
 
     return MA_SUCCESS;
 }
@@ -57797,7 +57807,7 @@ extern "C" {
 #define DRWAV_XSTRINGIFY(x)     DRWAV_STRINGIFY(x)
 #define DRWAV_VERSION_MAJOR     0
 #define DRWAV_VERSION_MINOR     13
-#define DRWAV_VERSION_REVISION  6
+#define DRWAV_VERSION_REVISION  7
 #define DRWAV_VERSION_STRING    DRWAV_XSTRINGIFY(DRWAV_VERSION_MAJOR) "." DRWAV_XSTRINGIFY(DRWAV_VERSION_MINOR) "." DRWAV_XSTRINGIFY(DRWAV_VERSION_REVISION)
 #include <stddef.h>
 typedef   signed char           drwav_int8;
@@ -58332,7 +58342,7 @@ extern "C" {
 #define DRFLAC_XSTRINGIFY(x)     DRFLAC_STRINGIFY(x)
 #define DRFLAC_VERSION_MAJOR     0
 #define DRFLAC_VERSION_MINOR     12
-#define DRFLAC_VERSION_REVISION  38
+#define DRFLAC_VERSION_REVISION  39
 #define DRFLAC_VERSION_STRING    DRFLAC_XSTRINGIFY(DRFLAC_VERSION_MAJOR) "." DRFLAC_XSTRINGIFY(DRFLAC_VERSION_MINOR) "." DRFLAC_XSTRINGIFY(DRFLAC_VERSION_REVISION)
 #include <stddef.h>
 typedef   signed char           drflac_int8;
@@ -58461,14 +58471,12 @@ typedef enum
     drflac_seek_origin_start,
     drflac_seek_origin_current
 } drflac_seek_origin;
-#pragma pack(2)
 typedef struct
 {
     drflac_uint64 firstPCMFrame;
     drflac_uint64 flacFrameOffset;
     drflac_uint16 pcmFrameCount;
 } drflac_seekpoint;
-#pragma pack()
 typedef struct
 {
     drflac_uint16 minBlockSizeInPCMFrames;
@@ -58655,14 +58663,12 @@ typedef struct
     drflac_uint32 countRemaining;
     const char* pRunningData;
 } drflac_cuesheet_track_iterator;
-#pragma pack(4)
 typedef struct
 {
     drflac_uint64 offset;
     drflac_uint8 index;
     drflac_uint8 reserved[3];
 } drflac_cuesheet_track_index;
-#pragma pack()
 typedef struct
 {
     drflac_uint64 offset;
@@ -58693,7 +58699,7 @@ extern "C" {
 #define DRMP3_XSTRINGIFY(x)     DRMP3_STRINGIFY(x)
 #define DRMP3_VERSION_MAJOR     0
 #define DRMP3_VERSION_MINOR     6
-#define DRMP3_VERSION_REVISION  33
+#define DRMP3_VERSION_REVISION  34
 #define DRMP3_VERSION_STRING    DRMP3_XSTRINGIFY(DRMP3_VERSION_MAJOR) "." DRMP3_XSTRINGIFY(DRMP3_VERSION_MINOR) "." DRMP3_XSTRINGIFY(DRMP3_VERSION_REVISION)
 #include <stddef.h>
 typedef   signed char           drmp3_int8;
@@ -58875,7 +58881,6 @@ typedef struct
 typedef struct
 {
     drmp3dec decoder;
-    drmp3dec_frame_info frameInfo;
     drmp3_uint32 channels;
     drmp3_uint32 sampleRate;
     drmp3_read_proc onRead;
@@ -64677,10 +64682,15 @@ static MA_INLINE ma_uint32 ma_rotl32(ma_uint32 x, ma_int8 r)
 
 static MA_INLINE ma_uint32 ma_hash_getblock(const ma_uint32* blocks, int i)
 {
+    ma_uint32 block;
+
+    /* Try silencing a sanitization warning about unaligned access by doing a memcpy() instead of assignment. */
+    MA_COPY_MEMORY(&block, ma_offset_ptr(blocks, i * sizeof(block)), sizeof(block));
+
     if (ma_is_little_endian()) {
-        return blocks[i];
+        return block;
     } else {
-        return ma_swap_endian_uint32(blocks[i]);
+        return ma_swap_endian_uint32(block);
     }
 }
 
@@ -69024,11 +69034,15 @@ static ma_result ma_node_input_bus_init(ma_uint32 channels, ma_node_input_bus* p
 
 static void ma_node_input_bus_lock(ma_node_input_bus* pInputBus)
 {
+    MA_ASSERT(pInputBus != NULL);
+
     ma_spinlock_lock(&pInputBus->lock);
 }
 
 static void ma_node_input_bus_unlock(ma_node_input_bus* pInputBus)
 {
+    MA_ASSERT(pInputBus != NULL);
+
     ma_spinlock_unlock(&pInputBus->lock);
 }
 
@@ -74415,12 +74429,17 @@ code below please report the bug to the respective repository for the relevant p
 /* dr_wav_c begin */
 #ifndef dr_wav_c
 #define dr_wav_c
+#ifdef __MRC__
+#pragma options opt off
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #ifndef DR_WAV_NO_STDIO
 #include <stdio.h>
+#ifndef DR_WAV_NO_WCHAR
 #include <wchar.h>
+#endif
 #endif
 #ifndef DRWAV_ASSERT
 #include <assert.h>
@@ -77128,6 +77147,7 @@ DRWAV_PRIVATE drwav_result drwav_fopen(FILE** ppFile, const char* pFilePath, con
         #define DRWAV_HAS_WFOPEN
     #endif
 #endif
+#ifndef DR_WAV_NO_WCHAR
 DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath, const wchar_t* pOpenMode, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     if (ppFile != NULL) {
@@ -77152,6 +77172,10 @@ DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath,
         (void)pAllocationCallbacks;
     }
 #else
+	#if defined(__DJGPP__)
+	{
+	}
+	#else
     {
         mbstate_t mbs;
         size_t lenMB;
@@ -77184,12 +77208,14 @@ DRWAV_PRIVATE drwav_result drwav_wfopen(FILE** ppFile, const wchar_t* pFilePath,
         *ppFile = fopen(pFilePathMB, pOpenModeMB);
         drwav__free_from_callbacks(pFilePathMB, pAllocationCallbacks);
     }
+	#endif
     if (*ppFile == NULL) {
         return DRWAV_ERROR;
     }
 #endif
     return DRWAV_SUCCESS;
 }
+#endif
 DRWAV_PRIVATE size_t drwav__on_read_stdio(void* pUserData, void* pBufferOut, size_t bytesToRead)
 {
     return fread(pBufferOut, 1, bytesToRead, (FILE*)pUserData);
@@ -77230,6 +77256,7 @@ DRWAV_API drwav_bool32 drwav_init_file_ex(drwav* pWav, const char* filename, drw
     }
     return drwav_init_file__internal_FILE(pWav, pFile, onChunk, pChunkUserData, flags, drwav_metadata_type_none, pAllocationCallbacks);
 }
+#ifndef DR_WAV_NO_WCHAR
 DRWAV_API drwav_bool32 drwav_init_file_w(drwav* pWav, const wchar_t* filename, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     return drwav_init_file_ex_w(pWav, filename, NULL, NULL, 0, pAllocationCallbacks);
@@ -77242,6 +77269,7 @@ DRWAV_API drwav_bool32 drwav_init_file_ex_w(drwav* pWav, const wchar_t* filename
     }
     return drwav_init_file__internal_FILE(pWav, pFile, onChunk, pChunkUserData, flags, drwav_metadata_type_none, pAllocationCallbacks);
 }
+#endif
 DRWAV_API drwav_bool32 drwav_init_file_with_metadata(drwav* pWav, const char* filename, drwav_uint32 flags, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     FILE* pFile;
@@ -77250,6 +77278,7 @@ DRWAV_API drwav_bool32 drwav_init_file_with_metadata(drwav* pWav, const char* fi
     }
     return drwav_init_file__internal_FILE(pWav, pFile, NULL, NULL, flags, drwav_metadata_type_all_including_unknown, pAllocationCallbacks);
 }
+#ifndef DR_WAV_NO_WCHAR
 DRWAV_API drwav_bool32 drwav_init_file_with_metadata_w(drwav* pWav, const wchar_t* filename, drwav_uint32 flags, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     FILE* pFile;
@@ -77258,6 +77287,7 @@ DRWAV_API drwav_bool32 drwav_init_file_with_metadata_w(drwav* pWav, const wchar_
     }
     return drwav_init_file__internal_FILE(pWav, pFile, NULL, NULL, flags, drwav_metadata_type_all_including_unknown, pAllocationCallbacks);
 }
+#endif
 DRWAV_PRIVATE drwav_bool32 drwav_init_file_write__internal_FILE(drwav* pWav, FILE* pFile, const drwav_data_format* pFormat, drwav_uint64 totalSampleCount, drwav_bool32 isSequential, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     drwav_bool32 result;
@@ -77281,6 +77311,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init_file_write__internal(drwav* pWav, const ch
     }
     return drwav_init_file_write__internal_FILE(pWav, pFile, pFormat, totalSampleCount, isSequential, pAllocationCallbacks);
 }
+#ifndef DR_WAV_NO_WCHAR
 DRWAV_PRIVATE drwav_bool32 drwav_init_file_write_w__internal(drwav* pWav, const wchar_t* filename, const drwav_data_format* pFormat, drwav_uint64 totalSampleCount, drwav_bool32 isSequential, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     FILE* pFile;
@@ -77289,6 +77320,7 @@ DRWAV_PRIVATE drwav_bool32 drwav_init_file_write_w__internal(drwav* pWav, const 
     }
     return drwav_init_file_write__internal_FILE(pWav, pFile, pFormat, totalSampleCount, isSequential, pAllocationCallbacks);
 }
+#endif
 DRWAV_API drwav_bool32 drwav_init_file_write(drwav* pWav, const char* filename, const drwav_data_format* pFormat, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     return drwav_init_file_write__internal(pWav, filename, pFormat, 0, DRWAV_FALSE, pAllocationCallbacks);
@@ -77304,6 +77336,7 @@ DRWAV_API drwav_bool32 drwav_init_file_write_sequential_pcm_frames(drwav* pWav, 
     }
     return drwav_init_file_write_sequential(pWav, filename, pFormat, totalPCMFrameCount*pFormat->channels, pAllocationCallbacks);
 }
+#ifndef DR_WAV_NO_WCHAR
 DRWAV_API drwav_bool32 drwav_init_file_write_w(drwav* pWav, const wchar_t* filename, const drwav_data_format* pFormat, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     return drwav_init_file_write_w__internal(pWav, filename, pFormat, 0, DRWAV_FALSE, pAllocationCallbacks);
@@ -77319,6 +77352,7 @@ DRWAV_API drwav_bool32 drwav_init_file_write_sequential_pcm_frames_w(drwav* pWav
     }
     return drwav_init_file_write_sequential_w(pWav, filename, pFormat, totalPCMFrameCount*pFormat->channels, pAllocationCallbacks);
 }
+#endif
 #endif
 DRWAV_PRIVATE size_t drwav__on_read_memory(void* pUserData, void* pBufferOut, size_t bytesToRead)
 {
@@ -79338,6 +79372,7 @@ DRWAV_API drwav_int32* drwav_open_file_and_read_pcm_frames_s32(const char* filen
     }
     return drwav__read_pcm_frames_and_close_s32(&wav, channelsOut, sampleRateOut, totalFrameCountOut);
 }
+#ifndef DR_WAV_NO_WCHAR
 DRWAV_API drwav_int16* drwav_open_file_and_read_pcm_frames_s16_w(const wchar_t* filename, unsigned int* channelsOut, unsigned int* sampleRateOut, drwav_uint64* totalFrameCountOut, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
     drwav wav;
@@ -79389,6 +79424,7 @@ DRWAV_API drwav_int32* drwav_open_file_and_read_pcm_frames_s32_w(const wchar_t* 
     }
     return drwav__read_pcm_frames_and_close_s32(&wav, channelsOut, sampleRateOut, totalFrameCountOut);
 }
+#endif
 #endif
 DRWAV_API drwav_int16* drwav_open_memory_and_read_pcm_frames_s16(const void* data, size_t dataSize, unsigned int* channelsOut, unsigned int* sampleRateOut, drwav_uint64* totalFrameCountOut, const drwav_allocation_callbacks* pAllocationCallbacks)
 {
@@ -79503,6 +79539,9 @@ DRWAV_API drwav_bool32 drwav_fourcc_equal(const drwav_uint8* a, const char* b)
         a[2] == b[2] &&
         a[3] == b[3];
 }
+#ifdef __MRC__
+#pragma options opt reset
+#endif
 #endif
 /* dr_wav_c end */
 #endif  /* DRWAV_IMPLEMENTATION */
@@ -79659,9 +79698,7 @@ static DRFLAC_INLINE drflac_bool32 drflac_has_sse41(void)
 {
 #if defined(DRFLAC_SUPPORT_SSE41)
     #if (defined(DRFLAC_X64) || defined(DRFLAC_X86)) && !defined(DRFLAC_NO_SSE41)
-        #if defined(DRFLAC_X64)
-            return DRFLAC_TRUE;
-        #elif (defined(_M_IX86_FP) && _M_IX86_FP == 2) || defined(__SSE4_1__)
+        #if defined(__SSE4_1__) || defined(__AVX__)
             return DRFLAC_TRUE;
         #else
             #if defined(DRFLAC_NO_CPUID)
@@ -79723,18 +79760,21 @@ static DRFLAC_INLINE drflac_bool32 drflac_has_sse41(void)
     extern __inline drflac_uint64 _watcom_bswap64(drflac_uint64);
 #pragma aux _watcom_bswap16 = \
     "xchg al, ah" \
-    parm   [ax]   \
-    modify [ax];
+    parm  [ax]    \
+    value [ax]    \
+    modify nomemory;
 #pragma aux _watcom_bswap32 = \
-    "bswap eax"  \
-    parm   [eax] \
-    modify [eax];
+    "bswap eax" \
+    parm  [eax] \
+    value [eax] \
+    modify nomemory;
 #pragma aux _watcom_bswap64 = \
     "bswap eax"     \
     "bswap edx"     \
     "xchg eax,edx"  \
     parm [eax edx]  \
-    modify [eax edx];
+    value [eax edx] \
+    modify nomemory;
 #endif
 #ifndef DRFLAC_ASSERT
 #include <assert.h>
@@ -79826,6 +79866,9 @@ typedef drflac_int32 drflac_result;
 #define DRFLAC_CHANNEL_ASSIGNMENT_LEFT_SIDE             8
 #define DRFLAC_CHANNEL_ASSIGNMENT_RIGHT_SIDE            9
 #define DRFLAC_CHANNEL_ASSIGNMENT_MID_SIDE              10
+#define DRFLAC_SEEKPOINT_SIZE_IN_BYTES                  18
+#define DRFLAC_CUESHEET_TRACK_SIZE_IN_BYTES             36
+#define DRFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES       12
 #define drflac_align(x, a)                              ((((x) + (a) - 1) / (a)) * (a))
 DRFLAC_API void drflac_version(drflac_uint32* pMajor, drflac_uint32* pMinor, drflac_uint32* pRevision)
 {
@@ -80599,6 +80642,10 @@ static drflac_bool32 drflac__find_and_seek_to_next_sync_code(drflac_bs* bs)
 #if  defined(__WATCOMC__) && defined(__386__)
 #define DRFLAC_IMPLEMENT_CLZ_WATCOM
 #endif
+#ifdef __MRC__
+#include <intrinsics.h>
+#define DRFLAC_IMPLEMENT_CLZ_MRC
+#endif
 static DRFLAC_INLINE drflac_uint32 drflac__clz_software(drflac_cache_t x)
 {
     drflac_uint32 n;
@@ -80632,6 +80679,8 @@ static DRFLAC_INLINE drflac_uint32 drflac__clz_software(drflac_cache_t x)
 static DRFLAC_INLINE drflac_bool32 drflac__is_lzcnt_supported(void)
 {
 #if defined(DRFLAC_HAS_LZCNT_INTRINSIC) && defined(DRFLAC_ARM) && (defined(__ARM_ARCH) && __ARM_ARCH >= 5)
+    return DRFLAC_TRUE;
+#elif defined(__MRC__)
     return DRFLAC_TRUE;
 #else
     #ifdef DRFLAC_HAS_LZCNT_INTRINSIC
@@ -80713,12 +80762,20 @@ static DRFLAC_INLINE drflac_uint32 drflac__clz_msvc(drflac_cache_t x)
 #endif
 #ifdef DRFLAC_IMPLEMENT_CLZ_WATCOM
 static __inline drflac_uint32 drflac__clz_watcom (drflac_uint32);
+#ifdef DRFLAC_IMPLEMENT_CLZ_WATCOM_LZCNT
+#pragma aux drflac__clz_watcom_lzcnt = \
+    "db 0F3h, 0Fh, 0BDh, 0C0h"  \
+    parm [eax] \
+    value [eax] \
+    modify nomemory;
+#else
 #pragma aux drflac__clz_watcom = \
     "bsr eax, eax" \
     "xor eax, 31" \
     parm [eax] nomemory \
     value [eax] \
     modify exact [eax] nomemory;
+#endif
 #endif
 static DRFLAC_INLINE drflac_uint32 drflac__clz(drflac_cache_t x)
 {
@@ -80730,8 +80787,12 @@ static DRFLAC_INLINE drflac_uint32 drflac__clz(drflac_cache_t x)
     {
 #ifdef DRFLAC_IMPLEMENT_CLZ_MSVC
         return drflac__clz_msvc(x);
+#elif defined(DRFLAC_IMPLEMENT_CLZ_WATCOM_LZCNT)
+        return drflac__clz_watcom_lzcnt(x);
 #elif defined(DRFLAC_IMPLEMENT_CLZ_WATCOM)
         return (x == 0) ? sizeof(x)*8 : drflac__clz_watcom(x);
+#elif defined(__MRC__)
+        return __cntlzw(x);
 #else
         return drflac__clz_software(x);
 #endif
@@ -82038,6 +82099,9 @@ static drflac_bool32 drflac__decode_samples_with_residual__rice__neon_64(drflac_
     int32x4_t riceParam128;
     int64x1_t shift64;
     uint32x4_t one128;
+    int64x2_t prediction128 = { 0 };
+    uint32x4_t zeroCountPart128;
+    uint32x4_t riceParamPart128;
     const drflac_uint32 t[2] = {0x00000000, 0xFFFFFFFF};
     riceParamMask    = (drflac_uint32)~((~0UL) << riceParam);
     riceParamMask128 = vdupq_n_u32(riceParamMask);
@@ -82095,9 +82159,6 @@ static drflac_bool32 drflac__decode_samples_with_residual__rice__neon_64(drflac_
         coefficients128_8 = drflac__vrevq_s32(coefficients128_8);
     }
     while (pDecodedSamples < pDecodedSamplesEnd) {
-        int64x2_t prediction128;
-        uint32x4_t zeroCountPart128;
-        uint32x4_t riceParamPart128;
         if (!drflac__read_rice_parts_x1(bs, riceParam, &zeroCountParts[0], &riceParamParts[0]) ||
             !drflac__read_rice_parts_x1(bs, riceParam, &zeroCountParts[1], &riceParamParts[1]) ||
             !drflac__read_rice_parts_x1(bs, riceParam, &zeroCountParts[2], &riceParamParts[2]) ||
@@ -83388,7 +83449,7 @@ static void drflac__free_from_callbacks(void* p, const drflac_allocation_callbac
         pAllocationCallbacks->onFree(p, pAllocationCallbacks->pUserData);
     }
 }
-static drflac_bool32 drflac__read_and_decode_metadata(drflac_read_proc onRead, drflac_seek_proc onSeek, drflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, drflac_uint64* pFirstFramePos, drflac_uint64* pSeektablePos, drflac_uint32* pSeektableSize, drflac_allocation_callbacks* pAllocationCallbacks)
+static drflac_bool32 drflac__read_and_decode_metadata(drflac_read_proc onRead, drflac_seek_proc onSeek, drflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, drflac_uint64* pFirstFramePos, drflac_uint64* pSeektablePos, drflac_uint32* pSeekpointCount, drflac_allocation_callbacks* pAllocationCallbacks)
 {
     drflac_uint64 runningFilePos = 42;
     drflac_uint64 seektablePos   = 0;
@@ -83435,26 +83496,28 @@ static drflac_bool32 drflac__read_and_decode_metadata(drflac_read_proc onRead, d
                 seektablePos  = runningFilePos;
                 seektableSize = blockSize;
                 if (onMeta) {
+                    drflac_uint32 seekpointCount;
                     drflac_uint32 iSeekpoint;
                     void* pRawData;
-                    pRawData = drflac__malloc_from_callbacks(blockSize, pAllocationCallbacks);
+                    seekpointCount = blockSize/DRFLAC_SEEKPOINT_SIZE_IN_BYTES;
+                    pRawData = drflac__malloc_from_callbacks(seekpointCount * sizeof(drflac_seekpoint), pAllocationCallbacks);
                     if (pRawData == NULL) {
                         return DRFLAC_FALSE;
                     }
-                    if (onRead(pUserData, pRawData, blockSize) != blockSize) {
-                        drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
-                        return DRFLAC_FALSE;
-                    }
-                    metadata.pRawData = pRawData;
-                    metadata.rawDataSize = blockSize;
-                    metadata.data.seektable.seekpointCount = blockSize/sizeof(drflac_seekpoint);
-                    metadata.data.seektable.pSeekpoints = (const drflac_seekpoint*)pRawData;
-                    for (iSeekpoint = 0; iSeekpoint < metadata.data.seektable.seekpointCount; ++iSeekpoint) {
+                    for (iSeekpoint = 0; iSeekpoint < seekpointCount; ++iSeekpoint) {
                         drflac_seekpoint* pSeekpoint = (drflac_seekpoint*)pRawData + iSeekpoint;
+                        if (onRead(pUserData, pSeekpoint, DRFLAC_SEEKPOINT_SIZE_IN_BYTES) != DRFLAC_SEEKPOINT_SIZE_IN_BYTES) {
+                            drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                            return DRFLAC_FALSE;
+                        }
                         pSeekpoint->firstPCMFrame   = drflac__be2host_64(pSeekpoint->firstPCMFrame);
                         pSeekpoint->flacFrameOffset = drflac__be2host_64(pSeekpoint->flacFrameOffset);
                         pSeekpoint->pcmFrameCount   = drflac__be2host_16(pSeekpoint->pcmFrameCount);
                     }
+                    metadata.pRawData = pRawData;
+                    metadata.rawDataSize = blockSize;
+                    metadata.data.seektable.seekpointCount = seekpointCount;
+                    metadata.data.seektable.pSeekpoints = (const drflac_seekpoint*)pRawData;
                     onMeta(pUserDataMD, &metadata);
                     drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
                 }
@@ -83519,8 +83582,10 @@ static drflac_bool32 drflac__read_and_decode_metadata(drflac_read_proc onRead, d
                     void* pRawData;
                     const char* pRunningData;
                     const char* pRunningDataEnd;
+                    size_t bufferSize;
                     drflac_uint8 iTrack;
                     drflac_uint8 iIndex;
+                    void* pTrackData;
                     pRawData = drflac__malloc_from_callbacks(blockSize, pAllocationCallbacks);
                     if (pRawData == NULL) {
                         return DRFLAC_FALSE;
@@ -83537,29 +83602,61 @@ static drflac_bool32 drflac__read_and_decode_metadata(drflac_read_proc onRead, d
                     metadata.data.cuesheet.leadInSampleCount = drflac__be2host_64(*(const drflac_uint64*)pRunningData); pRunningData += 8;
                     metadata.data.cuesheet.isCD              = (pRunningData[0] & 0x80) != 0;                           pRunningData += 259;
                     metadata.data.cuesheet.trackCount        = pRunningData[0];                                         pRunningData += 1;
-                    metadata.data.cuesheet.pTrackData        = pRunningData;
-                    for (iTrack = 0; iTrack < metadata.data.cuesheet.trackCount; ++iTrack) {
-                        drflac_uint8 indexCount;
-                        drflac_uint32 indexPointSize;
-                        if (pRunningDataEnd - pRunningData < 36) {
-                            drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
-                            return DRFLAC_FALSE;
+                    metadata.data.cuesheet.pTrackData        = NULL;
+                    {
+                        const char* pRunningDataSaved = pRunningData;
+                        bufferSize = metadata.data.cuesheet.trackCount * DRFLAC_CUESHEET_TRACK_SIZE_IN_BYTES;
+                        for (iTrack = 0; iTrack < metadata.data.cuesheet.trackCount; ++iTrack) {
+                            drflac_uint8 indexCount;
+                            drflac_uint32 indexPointSize;
+                            if (pRunningDataEnd - pRunningData < DRFLAC_CUESHEET_TRACK_SIZE_IN_BYTES) {
+                                drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                                return DRFLAC_FALSE;
+                            }
+                            pRunningData += 35;
+                            indexCount = pRunningData[0];
+                            pRunningData += 1;
+                            bufferSize += indexCount * sizeof(drflac_cuesheet_track_index);
+                            indexPointSize = indexCount * DRFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES;
+                            if (pRunningDataEnd - pRunningData < (drflac_int64)indexPointSize) {
+                                drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                                return DRFLAC_FALSE;
+                            }
+                            pRunningData += indexPointSize;
                         }
-                        pRunningData += 35;
-                        indexCount = pRunningData[0]; pRunningData += 1;
-                        indexPointSize = indexCount * sizeof(drflac_cuesheet_track_index);
-                        if (pRunningDataEnd - pRunningData < (drflac_int64)indexPointSize) {
-                            drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
-                            return DRFLAC_FALSE;
-                        }
-                        for (iIndex = 0; iIndex < indexCount; ++iIndex) {
-                            drflac_cuesheet_track_index* pTrack = (drflac_cuesheet_track_index*)pRunningData;
-                            pRunningData += sizeof(drflac_cuesheet_track_index);
-                            pTrack->offset = drflac__be2host_64(pTrack->offset);
-                        }
+                        pRunningData = pRunningDataSaved;
                     }
-                    onMeta(pUserDataMD, &metadata);
+                    {
+                        char* pRunningTrackData;
+                        pTrackData = drflac__malloc_from_callbacks(bufferSize, pAllocationCallbacks);
+                        if (pTrackData == NULL) {
+                            drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                            return DRFLAC_FALSE;
+                        }
+                        pRunningTrackData = (char*)pTrackData;
+                        for (iTrack = 0; iTrack < metadata.data.cuesheet.trackCount; ++iTrack) {
+                            drflac_uint8 indexCount;
+                            DRFLAC_COPY_MEMORY(pRunningTrackData, pRunningData, DRFLAC_CUESHEET_TRACK_SIZE_IN_BYTES);
+                            pRunningData      += DRFLAC_CUESHEET_TRACK_SIZE_IN_BYTES-1;
+                            pRunningTrackData += DRFLAC_CUESHEET_TRACK_SIZE_IN_BYTES-1;
+                            indexCount = pRunningData[0];
+                            pRunningData      += 1;
+                            pRunningTrackData += 1;
+                            for (iIndex = 0; iIndex < indexCount; ++iIndex) {
+                                drflac_cuesheet_track_index* pTrackIndex = (drflac_cuesheet_track_index*)pRunningTrackData;
+                                DRFLAC_COPY_MEMORY(pRunningTrackData, pRunningData, DRFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES);
+                                pRunningData      += DRFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES;
+                                pRunningTrackData += sizeof(drflac_cuesheet_track_index);
+                                pTrackIndex->offset = drflac__be2host_64(pTrackIndex->offset);
+                            }
+                        }
+                        metadata.data.cuesheet.pTrackData = pTrackData;
+                    }
                     drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                    pRawData = NULL;
+                    onMeta(pUserDataMD, &metadata);
+                    drflac__free_from_callbacks(pTrackData, pAllocationCallbacks);
+                    pTrackData = NULL;
                 }
             } break;
             case DRFLAC_METADATA_BLOCK_TYPE_PICTURE:
@@ -83589,13 +83686,13 @@ static drflac_bool32 drflac__read_and_decode_metadata(drflac_read_proc onRead, d
                         drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
                         return DRFLAC_FALSE;
                     }
-                    metadata.data.picture.mime              = pRunningData;                                            pRunningData += metadata.data.picture.mimeLength;
+                    metadata.data.picture.mime              = pRunningData;                                   pRunningData += metadata.data.picture.mimeLength;
                     metadata.data.picture.descriptionLength = drflac__be2host_32_ptr_unaligned(pRunningData); pRunningData += 4;
                     if ((pRunningDataEnd - pRunningData) - 20 < (drflac_int64)metadata.data.picture.descriptionLength) {
                         drflac__free_from_callbacks(pRawData, pAllocationCallbacks);
                         return DRFLAC_FALSE;
                     }
-                    metadata.data.picture.description     = pRunningData;                                            pRunningData += metadata.data.picture.descriptionLength;
+                    metadata.data.picture.description     = pRunningData;                                   pRunningData += metadata.data.picture.descriptionLength;
                     metadata.data.picture.width           = drflac__be2host_32_ptr_unaligned(pRunningData); pRunningData += 4;
                     metadata.data.picture.height          = drflac__be2host_32_ptr_unaligned(pRunningData); pRunningData += 4;
                     metadata.data.picture.colorDepth      = drflac__be2host_32_ptr_unaligned(pRunningData); pRunningData += 4;
@@ -83657,9 +83754,9 @@ static drflac_bool32 drflac__read_and_decode_metadata(drflac_read_proc onRead, d
             break;
         }
     }
-    *pSeektablePos = seektablePos;
-    *pSeektableSize = seektableSize;
-    *pFirstFramePos = runningFilePos;
+    *pSeektablePos   = seektablePos;
+    *pSeekpointCount = seektableSize / DRFLAC_SEEKPOINT_SIZE_IN_BYTES;
+    *pFirstFramePos  = runningFilePos;
     return DRFLAC_TRUE;
 }
 static drflac_bool32 drflac__init_private__native(drflac_init_info* pInit, drflac_read_proc onRead, drflac_seek_proc onSeek, drflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, drflac_bool32 relaxed)
@@ -84410,11 +84507,11 @@ static drflac* drflac_open_with_metadata_private(drflac_read_proc onRead, drflac
     drflac_uint32 wholeSIMDVectorCountPerChannel;
     drflac_uint32 decodedSamplesAllocationSize;
 #ifndef DR_FLAC_NO_OGG
-    drflac_oggbs oggbs;
+    drflac_oggbs* pOggbs = NULL;
 #endif
     drflac_uint64 firstFramePos;
     drflac_uint64 seektablePos;
-    drflac_uint32 seektableSize;
+    drflac_uint32 seekpointCount;
     drflac_allocation_callbacks allocationCallbacks;
     drflac* pFlac;
     drflac__init_cpu_caps();
@@ -84444,22 +84541,24 @@ static drflac* drflac_open_with_metadata_private(drflac_read_proc onRead, drflac
 #ifndef DR_FLAC_NO_OGG
     if (init.container == drflac_container_ogg) {
         allocationSize += sizeof(drflac_oggbs);
-    }
-    DRFLAC_ZERO_MEMORY(&oggbs, sizeof(oggbs));
-    if (init.container == drflac_container_ogg) {
-        oggbs.onRead = onRead;
-        oggbs.onSeek = onSeek;
-        oggbs.pUserData = pUserData;
-        oggbs.currentBytePos = init.oggFirstBytePos;
-        oggbs.firstBytePos = init.oggFirstBytePos;
-        oggbs.serialNumber = init.oggSerial;
-        oggbs.bosPageHeader = init.oggBosHeader;
-        oggbs.bytesRemainingInPage = 0;
+        pOggbs = (drflac_oggbs*)drflac__malloc_from_callbacks(sizeof(*pOggbs), &allocationCallbacks);
+        if (pOggbs == NULL) {
+            return NULL;
+        }
+        DRFLAC_ZERO_MEMORY(pOggbs, sizeof(*pOggbs));
+        pOggbs->onRead = onRead;
+        pOggbs->onSeek = onSeek;
+        pOggbs->pUserData = pUserData;
+        pOggbs->currentBytePos = init.oggFirstBytePos;
+        pOggbs->firstBytePos = init.oggFirstBytePos;
+        pOggbs->serialNumber = init.oggSerial;
+        pOggbs->bosPageHeader = init.oggBosHeader;
+        pOggbs->bytesRemainingInPage = 0;
     }
 #endif
-    firstFramePos = 42;
-    seektablePos  = 0;
-    seektableSize = 0;
+    firstFramePos  = 42;
+    seektablePos   = 0;
+    seekpointCount = 0;
     if (init.hasMetadataBlocks) {
         drflac_read_proc onReadOverride = onRead;
         drflac_seek_proc onSeekOverride = onSeek;
@@ -84468,16 +84567,22 @@ static drflac* drflac_open_with_metadata_private(drflac_read_proc onRead, drflac
         if (init.container == drflac_container_ogg) {
             onReadOverride = drflac__on_read_ogg;
             onSeekOverride = drflac__on_seek_ogg;
-            pUserDataOverride = (void*)&oggbs;
+            pUserDataOverride = (void*)pOggbs;
         }
 #endif
-        if (!drflac__read_and_decode_metadata(onReadOverride, onSeekOverride, onMeta, pUserDataOverride, pUserDataMD, &firstFramePos, &seektablePos, &seektableSize, &allocationCallbacks)) {
+        if (!drflac__read_and_decode_metadata(onReadOverride, onSeekOverride, onMeta, pUserDataOverride, pUserDataMD, &firstFramePos, &seektablePos, &seekpointCount, &allocationCallbacks)) {
+        #ifndef DR_FLAC_NO_OGG
+            drflac__free_from_callbacks(pOggbs, &allocationCallbacks);
+        #endif
             return NULL;
         }
-        allocationSize += seektableSize;
+        allocationSize += seekpointCount * sizeof(drflac_seekpoint);
     }
     pFlac = (drflac*)drflac__malloc_from_callbacks(allocationSize, &allocationCallbacks);
     if (pFlac == NULL) {
+    #ifndef DR_FLAC_NO_OGG
+        drflac__free_from_callbacks(pOggbs, &allocationCallbacks);
+    #endif
         return NULL;
     }
     drflac__init_from_info(pFlac, &init);
@@ -84485,8 +84590,10 @@ static drflac* drflac_open_with_metadata_private(drflac_read_proc onRead, drflac
     pFlac->pDecodedSamples = (drflac_int32*)drflac_align((size_t)pFlac->pExtraData, DRFLAC_MAX_SIMD_VECTOR_SIZE);
 #ifndef DR_FLAC_NO_OGG
     if (init.container == drflac_container_ogg) {
-        drflac_oggbs* pInternalOggbs = (drflac_oggbs*)((drflac_uint8*)pFlac->pDecodedSamples + decodedSamplesAllocationSize + seektableSize);
-        DRFLAC_COPY_MEMORY(pInternalOggbs, &oggbs, sizeof(oggbs));
+        drflac_oggbs* pInternalOggbs = (drflac_oggbs*)((drflac_uint8*)pFlac->pDecodedSamples + decodedSamplesAllocationSize + (seekpointCount * sizeof(drflac_seekpoint)));
+        DRFLAC_COPY_MEMORY(pInternalOggbs, pOggbs, sizeof(*pOggbs));
+        drflac__free_from_callbacks(pOggbs, &allocationCallbacks);
+        pOggbs = NULL;
         pFlac->bs.onRead = drflac__on_read_ogg;
         pFlac->bs.onSeek = drflac__on_seek_ogg;
         pFlac->bs.pUserData = (void*)pInternalOggbs;
@@ -84504,21 +84611,22 @@ static drflac* drflac_open_with_metadata_private(drflac_read_proc onRead, drflac
 #endif
     {
         if (seektablePos != 0) {
-            pFlac->seekpointCount = seektableSize / sizeof(*pFlac->pSeekpoints);
+            pFlac->seekpointCount = seekpointCount;
             pFlac->pSeekpoints = (drflac_seekpoint*)((drflac_uint8*)pFlac->pDecodedSamples + decodedSamplesAllocationSize);
             DRFLAC_ASSERT(pFlac->bs.onSeek != NULL);
             DRFLAC_ASSERT(pFlac->bs.onRead != NULL);
             if (pFlac->bs.onSeek(pFlac->bs.pUserData, (int)seektablePos, drflac_seek_origin_start)) {
-                if (pFlac->bs.onRead(pFlac->bs.pUserData, pFlac->pSeekpoints, seektableSize) == seektableSize) {
-                    drflac_uint32 iSeekpoint;
-                    for (iSeekpoint = 0; iSeekpoint < pFlac->seekpointCount; ++iSeekpoint) {
+                drflac_uint32 iSeekpoint;
+                for (iSeekpoint = 0; iSeekpoint < seekpointCount; iSeekpoint += 1) {
+                    if (pFlac->bs.onRead(pFlac->bs.pUserData, pFlac->pSeekpoints + iSeekpoint, DRFLAC_SEEKPOINT_SIZE_IN_BYTES) == DRFLAC_SEEKPOINT_SIZE_IN_BYTES) {
                         pFlac->pSeekpoints[iSeekpoint].firstPCMFrame   = drflac__be2host_64(pFlac->pSeekpoints[iSeekpoint].firstPCMFrame);
                         pFlac->pSeekpoints[iSeekpoint].flacFrameOffset = drflac__be2host_64(pFlac->pSeekpoints[iSeekpoint].flacFrameOffset);
                         pFlac->pSeekpoints[iSeekpoint].pcmFrameCount   = drflac__be2host_16(pFlac->pSeekpoints[iSeekpoint].pcmFrameCount);
+                    } else {
+                        pFlac->pSeekpoints = NULL;
+                        pFlac->seekpointCount = 0;
+                        break;
                     }
-                } else {
-                    pFlac->pSeekpoints = NULL;
-                    pFlac->seekpointCount = 0;
                 }
                 if (!pFlac->bs.onSeek(pFlac->bs.pUserData, (int)pFlac->firstFLACFramePosInBytes, drflac_seek_origin_start)) {
                     drflac__free_from_callbacks(pFlac, &allocationCallbacks);
@@ -84554,7 +84662,9 @@ static drflac* drflac_open_with_metadata_private(drflac_read_proc onRead, drflac
 }
 #ifndef DR_FLAC_NO_STDIO
 #include <stdio.h>
+#ifndef DR_FLAC_NO_WCHAR
 #include <wchar.h>
+#endif
 #include <errno.h>
 static drflac_result drflac_result_from_errno(int e)
 {
@@ -84998,6 +85108,7 @@ static drflac_result drflac_fopen(FILE** ppFile, const char* pFilePath, const ch
         #define DRFLAC_HAS_WFOPEN
     #endif
 #endif
+#ifndef DR_FLAC_NO_WCHAR
 static drflac_result drflac_wfopen(FILE** ppFile, const wchar_t* pFilePath, const wchar_t* pOpenMode, const drflac_allocation_callbacks* pAllocationCallbacks)
 {
     if (ppFile != NULL) {
@@ -85022,6 +85133,10 @@ static drflac_result drflac_wfopen(FILE** ppFile, const wchar_t* pFilePath, cons
         (void)pAllocationCallbacks;
     }
 #else
+	#if defined(__DJGPP__)
+	{
+	}
+	#else
     {
         mbstate_t mbs;
         size_t lenMB;
@@ -85054,12 +85169,14 @@ static drflac_result drflac_wfopen(FILE** ppFile, const wchar_t* pFilePath, cons
         *ppFile = fopen(pFilePathMB, pOpenModeMB);
         drflac__free_from_callbacks(pFilePathMB, pAllocationCallbacks);
     }
+	#endif
     if (*ppFile == NULL) {
         return DRFLAC_ERROR;
     }
 #endif
     return DRFLAC_SUCCESS;
 }
+#endif
 static size_t drflac__on_read_stdio(void* pUserData, void* bufferOut, size_t bytesToRead)
 {
     return fread(bufferOut, 1, bytesToRead, (FILE*)pUserData);
@@ -85083,6 +85200,7 @@ DRFLAC_API drflac* drflac_open_file(const char* pFileName, const drflac_allocati
     }
     return pFlac;
 }
+#ifndef DR_FLAC_NO_WCHAR
 DRFLAC_API drflac* drflac_open_file_w(const wchar_t* pFileName, const drflac_allocation_callbacks* pAllocationCallbacks)
 {
     drflac* pFlac;
@@ -85097,6 +85215,7 @@ DRFLAC_API drflac* drflac_open_file_w(const wchar_t* pFileName, const drflac_all
     }
     return pFlac;
 }
+#endif
 DRFLAC_API drflac* drflac_open_file_with_metadata(const char* pFileName, drflac_meta_proc onMeta, void* pUserData, const drflac_allocation_callbacks* pAllocationCallbacks)
 {
     drflac* pFlac;
@@ -85111,6 +85230,7 @@ DRFLAC_API drflac* drflac_open_file_with_metadata(const char* pFileName, drflac_
     }
     return pFlac;
 }
+#ifndef DR_FLAC_NO_WCHAR
 DRFLAC_API drflac* drflac_open_file_with_metadata_w(const wchar_t* pFileName, drflac_meta_proc onMeta, void* pUserData, const drflac_allocation_callbacks* pAllocationCallbacks)
 {
     drflac* pFlac;
@@ -85125,6 +85245,7 @@ DRFLAC_API drflac* drflac_open_file_with_metadata_w(const wchar_t* pFileName, dr
     }
     return pFlac;
 }
+#endif
 #endif
 static size_t drflac__on_read_memory(void* pUserData, void* bufferOut, size_t bytesToRead)
 {
@@ -87838,7 +87959,7 @@ DRMP3_API const char* drmp3_version_string(void)
 #if !defined(DR_MP3_ONLY_SIMD) && (defined(_M_X64) || defined(__x86_64__) || defined(__aarch64__) || defined(_M_ARM64))
 #define DR_MP3_ONLY_SIMD
 #endif
-#if ((defined(_MSC_VER) && _MSC_VER >= 1400) && (defined(_M_IX86) || defined(_M_X64))) || ((defined(__i386__) || defined(__x86_64__)) && defined(__SSE2__))
+#if ((defined(_MSC_VER) && _MSC_VER >= 1400) && defined(_M_X64)) || ((defined(__i386) || defined(_M_IX86) || defined(__i386__) || defined(__x86_64__)) && ((defined(_M_IX86_FP) && _M_IX86_FP == 2) || defined(__SSE2__)))
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
@@ -88484,7 +88605,7 @@ static void drmp3_L3_huffman(float *dst, drmp3_bs *bs, const drmp3_L3_gr_info *g
     static const drmp3_uint8 tab33[] = { 252,236,220,204,188,172,156,140,124,108,92,76,60,44,28,12 };
     static const drmp3_int16 tabindex[2*16] = { 0,32,64,98,0,132,180,218,292,364,426,538,648,746,0,1126,1460,1460,1460,1460,1460,1460,1460,1460,1842,1842,1842,1842,1842,1842,1842,1842 };
     static const drmp3_uint8 g_linbits[] =  { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,4,6,8,10,13,4,5,6,7,8,9,11,13 };
-#define DRMP3_PEEK_BITS(n)    (bs_cache >> (32 - n))
+#define DRMP3_PEEK_BITS(n)    (bs_cache >> (32 - (n)))
 #define DRMP3_FLUSH_BITS(n)   { bs_cache <<= (n); bs_sh += (n); }
 #define DRMP3_CHECK_BITS      while (bs_sh >= 0) { bs_cache |= (drmp3_uint32)*bs_next_ptr++ << bs_sh; bs_sh -= 8; }
 #define DRMP3_BSPOS           ((bs_next_ptr - bs->buf)*8 - 24 + bs_sh)
@@ -89000,7 +89121,7 @@ static void drmp3d_DCT_II(float *grbuf, int n)
 #if DRMP3_HAVE_SSE
 #define DRMP3_VSAVE2(i, v) _mm_storel_pi((__m64 *)(void*)&y[i*18], v)
 #else
-#define DRMP3_VSAVE2(i, v) vst1_f32((float32_t *)&y[i*18],  vget_low_f32(v))
+#define DRMP3_VSAVE2(i, v) vst1_f32((float32_t *)&y[(i)*18],  vget_low_f32(v))
 #endif
             for (i = 0; i < 7; i++, y += 4*18)
             {
@@ -89016,7 +89137,7 @@ static void drmp3d_DCT_II(float *grbuf, int n)
             DRMP3_VSAVE2(3, t[3][7]);
         } else
         {
-#define DRMP3_VSAVE4(i, v) DRMP3_VSTORE(&y[i*18], v)
+#define DRMP3_VSAVE4(i, v) DRMP3_VSTORE(&y[(i)*18], v)
             for (i = 0; i < 7; i++, y += 4*18)
             {
                 drmp3_f4 s = DRMP3_VADD(t[3][i], t[3][i + 1]);
@@ -89516,7 +89637,7 @@ DRMP3_API void drmp3dec_f32_to_s16(const float *in, drmp3_int16 *out, size_t num
 #endif
 #define DRMP3_MIN_DATA_CHUNK_SIZE   16384
 #ifndef DRMP3_DATA_CHUNK_SIZE
-#define DRMP3_DATA_CHUNK_SIZE  DRMP3_MIN_DATA_CHUNK_SIZE*4
+#define DRMP3_DATA_CHUNK_SIZE  (DRMP3_MIN_DATA_CHUNK_SIZE*4)
 #endif
 #define DRMP3_COUNTOF(x)        (sizeof(x) / sizeof(x[0]))
 #define DRMP3_CLAMP(x, lo, hi)  (DRMP3_MAX(lo, DRMP3_MIN(x, hi)))
@@ -90348,6 +90469,10 @@ static drmp3_result drmp3_wfopen(FILE** ppFile, const wchar_t* pFilePath, const 
         (void)pAllocationCallbacks;
     }
 #else
+	#if defined(__DJGPP__)
+	{
+	}
+	#else
     {
         mbstate_t mbs;
         size_t lenMB;
@@ -90380,6 +90505,7 @@ static drmp3_result drmp3_wfopen(FILE** ppFile, const wchar_t* pFilePath, const 
         *ppFile = fopen(pFilePathMB, pOpenModeMB);
         drmp3__free_from_callbacks(pFilePathMB, pAllocationCallbacks);
     }
+	#endif
     if (*ppFile == NULL) {
         return DRMP3_ERROR;
     }
