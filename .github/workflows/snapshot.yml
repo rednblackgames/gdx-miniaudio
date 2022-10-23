@@ -83,7 +83,7 @@ jobs:
       - name: Build with Gradle
         run: |
           export NDK_HOME=$ANDROID_NDK_HOME
-         ./gradlew jniGen jnigenBuildLinux64 jnigenBuildLinuxARM jnigenBuildLinuxARM64 jnigenBuildWindows64 jnigenBuildWindows jnigenBuildAndroid
+          ./gradlew jniGen jnigenBuildLinux64 jnigenBuildLinuxARM jnigenBuildLinuxARM64 jnigenBuildWindows64 jnigenBuildWindows jnigenBuildAndroid
       - name: Publish SNAPSHOT artifacts
         env:
           NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
