@@ -112,6 +112,7 @@ public class MiniAudio implements Disposable {
      *                           Set 0 for default.
      * @param sampleRate how many samples your audio interface will capture every second. Set 0 for default.
      * @param formatType devices data format, see {@link MAFormatType}
+     * @param fullDuplex enable/disable full duplex engine (require microphone permission)
      */
     public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType, boolean fullDuplex) {
         if (engineAddress != 0) throw new IllegalStateException("A MiniAudio Engine is already initialized.");
