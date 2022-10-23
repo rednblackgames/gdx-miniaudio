@@ -1,3 +1,9 @@
+[0.3]
+- Full MiniAudio engine customization
+- Enable full duplex (mic input node)
+- Update MiniAudio to 0.11.10
+- Add native log level support
+
 [0.2]
 - Update miniaudio to latest bug fixes
 - Implement libGDX AssetManager Loader
