@@ -69,7 +69,7 @@ jobs:
         run: sudo apt-get -yq install g++-mingw-w64-i686 g++-mingw-w64-x86-64
       - name: Install Linux cross-compilation toolchains
         run: |
-          sudo apt install -y --force-yes gcc g++
+          sudo apt install -y --force-yes gcc g++ gcc-multilib g++-multilib
           sudo apt install -y --force-yes gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
           sudo apt install -y --force-yes gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libc6-dev-armhf-cross
       - name: Download macOS/iOS natives

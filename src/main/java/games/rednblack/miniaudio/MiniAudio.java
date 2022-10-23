@@ -96,7 +96,7 @@ public class MiniAudio implements Disposable {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
 
-        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32);
+        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32, false);
     }
 
     /**
@@ -113,13 +113,13 @@ public class MiniAudio implements Disposable {
      * @param sampleRate how many samples your audio interface will capture every second. Set 0 for default.
      * @param formatType devices data format, see {@link MAFormatType}
      */
-    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType) {
+    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType, boolean fullDuplex) {
         if (engineAddress != 0) throw new IllegalStateException("A MiniAudio Engine is already initialized.");
 
         if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = init_engine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code);
+        int result = init_engine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
@@ -301,9 +301,13 @@ public class MiniAudio implements Disposable {
         return ret;
     */
 
-    private native int init_engine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format);/*
+    private native int init_engine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex);/*
         ma_result res;
-        ma_device_config deviceConfig   = ma_device_config_init(ma_device_type_duplex);
+        ma_device_config deviceConfig;
+        if (fullDuplex)
+            deviceConfig = ma_device_config_init(ma_device_type_duplex);
+        else
+            deviceConfig = ma_device_config_init(ma_device_type_playback);
         deviceConfig.capture.pDeviceID  = playbackId == -1 ? NULL : (ma_device_id*) playbackId;
         deviceConfig.capture.format     = (ma_format) format;
         deviceConfig.capture.channels   = channels;

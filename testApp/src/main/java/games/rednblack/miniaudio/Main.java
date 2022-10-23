@@ -35,12 +35,12 @@ public class Main implements ApplicationListener {
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
         miniAudio = new MiniAudio(false);
-        miniAudio.setLogLevel(MALogLevel.WARNING);
+        miniAudio.setLogLevel(MALogLevel.DEBUG);
         MADeviceInfo[] devices = miniAudio.enumerateDevices();
         for (MADeviceInfo info : devices) {
             System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);
         }
-        miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32);
+        miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32,false);
         miniAudio.setListenerDirection(0, 0, 1);
         miniAudio.setListenerCone(MathUtils.PI / 4f, MathUtils.PI / 4f, 2f);
 
