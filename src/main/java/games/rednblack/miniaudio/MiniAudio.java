@@ -91,7 +91,7 @@ public class MiniAudio implements Disposable {
      * @param initEngine automatic init engine with default parameters
      */
     public MiniAudio(boolean initEngine) {
-        int result = init_context();
+        int result = jniInitContext();
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
@@ -120,14 +120,14 @@ public class MiniAudio implements Disposable {
         if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = init_engine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex);
+        int result = jniInitEngine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
     }
 
-    private native int init_context();/*
+    private native int jniInitContext();/*
         ma_result res = ma_context_init(NULL, 0, NULL, &context);
         if (res != MA_SUCCESS) return res;
         ma_log_register_callback(context.pLog, ma_log_callback_init(ma_log_callback_debug, NULL));
@@ -140,10 +140,10 @@ public class MiniAudio implements Disposable {
      * @param logLevel minimum log level to print
      */
     public void setLogLevel(MALogLevel logLevel) {
-        set_log_level(logLevel.code);
+        jniSetLogLevel(logLevel.code);
     }
 
-    private native void set_log_level(int log);/*
+    private native void jniSetLogLevel(int log);/*
         logLevel = log;
     */
 
@@ -154,10 +154,10 @@ public class MiniAudio implements Disposable {
      * @return array of devices information
      */
     public MADeviceInfo[] enumerateDevices() {
-        return enumerate_devices(MADeviceInfo.class, MADeviceInfo.MADeviceNativeDataFormat.class);
+        return jniEnumerateDevices(MADeviceInfo.class, MADeviceInfo.MADeviceNativeDataFormat.class);
     }
 
-    private native MADeviceInfo[] enumerate_devices(Class infoClass, Class nativeFormatClass);/*
+    private native MADeviceInfo[] jniEnumerateDevices(Class infoClass, Class nativeFormatClass);/*
         ma_device_info* pPlaybackInfos;
         ma_uint32 playbackCount;
         ma_device_info* pCaptureInfos;
@@ -302,7 +302,7 @@ public class MiniAudio implements Disposable {
         return ret;
     */
 
-    private native int init_engine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex);/*
+    private native int jniInitEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex);/*
         ma_result res;
         ma_device_config deviceConfig;
         if (fullDuplex)
