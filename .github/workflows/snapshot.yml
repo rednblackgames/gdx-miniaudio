@@ -32,7 +32,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build macOS natives
-        run: ./gradlew jniGen jnigenBuildIOS jnigenBuildMacOsX64 jnigenBuildMacOsXARM64
+        run: |
+          # See https://github.com/actions/virtual-environments/issues/2557
+          sudo mv /Library/Developer/CommandLineTools/SDKs/* /tmp
+          sudo mv /Applications/Xcode.app /Applications/Xcode.app.bak
+          sudo mv /Applications/Xcode_13.2.app /Applications/Xcode.app
+          sudo xcode-select -switch /Applications/Xcode.app
+          /usr/bin/xcodebuild -version
+          ./gradlew jniGen jnigenBuildIOS jnigenBuildMacOsX64 jnigenBuildMacOsXARM64
       - name: Upload macOS/iOS natives
         uses: actions/upload-artifact@v2.1.4
         with:
