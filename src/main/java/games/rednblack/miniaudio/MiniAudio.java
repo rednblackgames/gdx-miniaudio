@@ -321,6 +321,8 @@ public class MiniAudio implements Disposable {
         deviceConfig.performanceProfile = ma_performance_profile_low_latency;
         deviceConfig.periodSizeInFrames = bufferPeriodFrames;
         deviceConfig.periodSizeInMilliseconds = bufferPeriodMillis;
+        deviceConfig.wasapi.noAutoConvertSRC = true;
+        deviceConfig.coreaudio.allowNominalSampleRateChange = true;
         res = ma_device_init(&context, &deviceConfig, &device);
         if (res != MA_SUCCESS) return res;
 
