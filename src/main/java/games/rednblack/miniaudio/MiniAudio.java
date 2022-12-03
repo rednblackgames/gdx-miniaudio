@@ -96,7 +96,7 @@ public class MiniAudio implements Disposable {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
 
-        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32, false);
+        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32, false, false);
     }
 
     /**
@@ -113,14 +113,15 @@ public class MiniAudio implements Disposable {
      * @param sampleRate how many samples your audio interface will capture every second. Set 0 for default.
      * @param formatType devices data format, see {@link MAFormatType}
      * @param fullDuplex enable/disable full duplex engine (require microphone permission)
+     * @param exclusive enable/disable capture exclusive device mode
      */
-    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType, boolean fullDuplex) {
+    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType, boolean fullDuplex, boolean exclusive) {
         if (engineAddress != 0) throw new IllegalStateException("A MiniAudio Engine is already initialized.");
 
         if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = jniInitEngine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex);
+        int result = jniInitEngine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex, exclusive);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
@@ -149,7 +150,7 @@ public class MiniAudio implements Disposable {
 
     /**
      * Enumerate every device attached to the device with their capabilities,
-     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType, boolean)}
+     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType, boolean, boolean)}
      *
      * @return array of devices information
      */
@@ -302,7 +303,7 @@ public class MiniAudio implements Disposable {
         return ret;
     */
 
-    private native int jniInitEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex);/*
+    private native int jniInitEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex, boolean exclusive);/*
         ma_result res;
         ma_device_config deviceConfig;
         if (fullDuplex)
@@ -312,7 +313,7 @@ public class MiniAudio implements Disposable {
         deviceConfig.capture.pDeviceID  = playbackId == -1 ? NULL : (ma_device_id*) playbackId;
         deviceConfig.capture.format     = (ma_format) format;
         deviceConfig.capture.channels   = channels;
-        deviceConfig.capture.shareMode  = ma_share_mode_shared;
+        deviceConfig.capture.shareMode  = exclusive ? ma_share_mode_exclusive : ma_share_mode_shared;
         deviceConfig.playback.pDeviceID = captureId == -1 ? NULL : (ma_device_id*) captureId;
         deviceConfig.playback.format    = (ma_format) format;
         deviceConfig.playback.channels  = channels;
