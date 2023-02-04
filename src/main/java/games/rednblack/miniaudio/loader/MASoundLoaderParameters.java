@@ -12,4 +12,5 @@ import games.rednblack.miniaudio.MASound;
 public class MASoundLoaderParameters extends AssetLoaderParameters<MASound> {
     public short flags = 0;
     public MAGroup maGroup = null;
+    public boolean external = false;
 }

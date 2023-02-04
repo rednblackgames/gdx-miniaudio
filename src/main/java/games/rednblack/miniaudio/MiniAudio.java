@@ -1,5 +1,7 @@
 package games.rednblack.miniaudio;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
 
@@ -30,6 +32,7 @@ public class MiniAudio implements Disposable {
         #include <stdio.h>
 
         #ifdef MA_ANDROID
+        #define MA_ANDROID_STORAGE_EXTERNAL_PREFIX "external:"
         #include <android/asset_manager_jni.h>
         #include <android/log.h>
         #include "miniaudio_android_assets.h"
@@ -562,14 +565,27 @@ public class MiniAudio implements Disposable {
      * @return status check {@link MAResult}
      */
     public int playSound(String fileName) {
-        return jniPlaySound(fileName);
+        return playSound(fileName, false);
     }
 
-    private native int jniPlaySound(String fileName);/*
+    /**
+     * Play sound with "fire and forget"
+     *
+     * @param fileName path of the file relative to assets folder
+     * @param external true if file needs to be read outside the `assets` directory (only for Android and iOS)
+     * @return status check {@link MAResult}
+     */
+    public int playSound(String fileName, boolean external) {
+        if (external && Gdx.app.getType() == Application.ApplicationType.Android)
+            fileName = "external:" + fileName;
+        return jniPlaySound(fileName, external);
+    }
+
+    private native int jniPlaySound(String fileName, boolean external);/*
         #if defined(MA_APPLE_MOBILE)
         std::string cppStr = getBundlePath(fileName);
         char* cFileName = const_cast<char*>(cppStr.c_str());
-        return ma_engine_play_sound(&engine, cFileName, NULL);
+        return ma_engine_play_sound(&engine, external ? fileName : cFileName, NULL);
         #else
         return ma_engine_play_sound(&engine, fileName, NULL);
         #endif
@@ -600,16 +616,35 @@ public class MiniAudio implements Disposable {
      * @return {@link MASound} object.
      */
     public MASound createSound(String fileName, short flags, MAGroup group) {
-        return new MASound(jniCreateSound(fileName, flags, group == null ? -1 : group.address), this);
+        return createSound(fileName, flags, group, false);
     }
 
-    private native long jniCreateSound(String fileName, short flags, long group); /*
+    /**
+     * Load a new {@link MASound} object and upload sound data into memory. Each {@link MASound} object
+     * represents a single instance of the sound. If you want to play the same sound multiple times at the same time,
+     * you need to initialize a separate {@link MASound} object.
+     *
+     * {@link MASound.Flags} are useful to customize sound loading and managing
+     *
+     * @param fileName path of the file relative to assets folder
+     * @param flags flags for audio loading
+     * @param group where sound should be attached, can be null
+     * @param external true if file needs to be read outside the `assets` directory (only for Android and iOS)
+     * @return {@link MASound} object.
+     */
+    public MASound createSound(String fileName, short flags, MAGroup group, boolean external) {
+        if (external && Gdx.app.getType() == Application.ApplicationType.Android)
+            fileName = "external:" + fileName;
+        return new MASound(jniCreateSound(fileName, flags, group == null ? -1 : group.address, external), this);
+    }
+
+    private native long jniCreateSound(String fileName, short flags, long group, boolean external); /*
         ma_sound_group* pGroup = group == -1 ? NULL : (ma_sound_group*) group;
         ma_sound* sound = (ma_sound*) ma_malloc(sizeof(ma_sound), NULL);
         #if defined(MA_APPLE_MOBILE)
         std::string cppStr = getBundlePath(fileName);
         char* cFileName = const_cast<char*>(cppStr.c_str());
-        ma_result result = ma_sound_init_from_file(&engine, cFileName, flags, pGroup, NULL, sound);
+        ma_result result = ma_sound_init_from_file(&engine, external ? fileName : cFileName, flags, pGroup, NULL, sound);
         #else
         ma_result result = ma_sound_init_from_file(&engine, fileName, flags, pGroup, NULL, sound);
         #endif

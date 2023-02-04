@@ -1,9 +1,10 @@
 [0.3]
 - Full MiniAudio engine customization
 - Enable full duplex (mic input node)
-- Update MiniAudio to 0.11.10
+- Update MiniAudio to 0.11.11
 - Add native log level support
 - Playback/Capture device enumerations
+- Support reading outside assets directory for Android and iOS
 
 [0.2]
 - Update miniaudio to latest bug fixes

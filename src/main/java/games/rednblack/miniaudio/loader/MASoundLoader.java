@@ -28,7 +28,7 @@ public class MASoundLoader extends AsynchronousAssetLoader<MASound, MASoundLoade
     @Override
     public void loadAsync(AssetManager manager, String fileName, FileHandle file, MASoundLoaderParameters parameter) {
         if (parameter != null)
-            sound = miniAudio.createSound(file.path(), parameter.flags, parameter.maGroup);
+            sound = miniAudio.createSound(file.path(), parameter.flags, parameter.maGroup, parameter.external);
         else
             sound = miniAudio.createSound(file.path());
     }

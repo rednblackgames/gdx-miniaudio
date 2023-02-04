@@ -188,8 +188,10 @@ maSound.loop();
 
 ## TODO
 
-- Stream PCM data (like libGDX specs)
-- Audio recording (do we really need this?)
+- Audio encoding node
+- Blocking Stream PCM data (like libGDX specs - maybe)
+
+- MiniAudio has tons of additional features, open a issue to request more bindings
 
 ### License
 
