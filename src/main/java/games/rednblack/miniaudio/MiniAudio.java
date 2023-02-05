@@ -16,6 +16,7 @@ public class MiniAudio implements Disposable {
     }
 
     public static final int MA_ENGINE_MAX_LISTENERS = 4;
+    public static final String MA_ANDROID_STORAGE_EXTERNAL_PREFIX = "external:";
 
     /*JNI
         #define STB_VORBIS_HEADER_ONLY
@@ -32,7 +33,6 @@ public class MiniAudio implements Disposable {
         #include <stdio.h>
 
         #ifdef MA_ANDROID
-        #define MA_ANDROID_STORAGE_EXTERNAL_PREFIX "external:"
         #include <android/asset_manager_jni.h>
         #include <android/log.h>
         #include "miniaudio_android_assets.h"
@@ -577,7 +577,7 @@ public class MiniAudio implements Disposable {
      */
     public int playSound(String fileName, boolean external) {
         if (external && Gdx.app.getType() == Application.ApplicationType.Android)
-            fileName = "external:" + fileName;
+            fileName = MA_ANDROID_STORAGE_EXTERNAL_PREFIX + fileName;
         return jniPlaySound(fileName, external);
     }
 
@@ -634,7 +634,7 @@ public class MiniAudio implements Disposable {
      */
     public MASound createSound(String fileName, short flags, MAGroup group, boolean external) {
         if (external && Gdx.app.getType() == Application.ApplicationType.Android)
-            fileName = "external:" + fileName;
+            fileName = MA_ANDROID_STORAGE_EXTERNAL_PREFIX + fileName;
         return new MASound(jniCreateSound(fileName, flags, group == null ? -1 : group.address, external), this);
     }
 

@@ -1,6 +1,9 @@
 #ifndef MINIAUDIO_ANDROID_ASSETS_H
 #define MINIAUDIO_ANDROID_ASSETS_H
 
+#define MA_ANDROID_STORAGE_EXTERNAL_PREFIX "external:"
+#define MA_ANDROID_STORAGE_EXTERNAL_PREFIX_LEN 9
+
 #include <android/asset_manager.h>
 
 typedef struct {
@@ -19,36 +22,32 @@ typedef struct {
     ma_android_vfs_storage_type storage_type;
 } ma_android_vfs_file;
 
-int prefix(const char *pre, const char *str) {
-    return strncmp(pre, str, strlen(pre));
-}
-
 ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 openMode, ma_vfs_file* pFile) {
+    if (pFile == NULL) {
+        return MA_INVALID_ARGS;
+    }
+
     ma_android_vfs_file* wrapperFile = (ma_android_vfs_file*) ma_malloc(sizeof(ma_android_vfs_file), NULL);
     wrapperFile->file = (ma_vfs_file*) ma_malloc(sizeof(ma_vfs_file), NULL);
 
-    if (prefix(MA_ANDROID_STORAGE_EXTERNAL_PREFIX, pFilePath) == 0) {
+    if (strncmp(MA_ANDROID_STORAGE_EXTERNAL_PREFIX, pFilePath, MA_ANDROID_STORAGE_EXTERNAL_PREFIX_LEN) == 0) {
         wrapperFile->storage_type = storage_type_external;
 
-        int prefixLen = strlen(MA_ANDROID_STORAGE_EXTERNAL_PREFIX);
+        ma_result res = ma_default_vfs_open(pVFS, pFilePath + MA_ANDROID_STORAGE_EXTERNAL_PREFIX_LEN, openMode, wrapperFile->file);
 
-        ma_result res = ma_default_vfs_open(pVFS, pFilePath + prefixLen, openMode, wrapperFile->file);
-
-        if (res == MA_SUCCESS)
+        if (res == MA_SUCCESS) {
             *pFile = (ma_vfs_file*) wrapperFile;
-        else
+        } else {
+            ma_free(wrapperFile->file, NULL);
             ma_free(wrapperFile, NULL);
+        }
         return res;
-    }
-
-    if (pFile == NULL) {
-        ma_free(wrapperFile, NULL);
-        return MA_INVALID_ARGS;
     }
 
     ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
 
     if (androidVfs->asset_manager == NULL) {
+        ma_free(wrapperFile->file, NULL);
         ma_free(wrapperFile, NULL);
         return MA_UNAVAILABLE;
     }
@@ -56,12 +55,14 @@ ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 ope
     *pFile = NULL;
 
     if (pFilePath == NULL || openMode == 0) {
+        ma_free(wrapperFile->file, NULL);
         ma_free(wrapperFile, NULL);
         return MA_INVALID_ARGS;
     }
 
     AAsset* asset = AAssetManager_open(androidVfs->asset_manager, pFilePath, AASSET_MODE_STREAMING);
     if (asset == NULL) {
+        ma_free(wrapperFile->file, NULL);
         ma_free(wrapperFile, NULL);
         return MA_DOES_NOT_EXIST;
     }
@@ -199,11 +200,6 @@ ma_result ma_android_vfs_info(ma_vfs* pVFS, ma_vfs_file file, ma_file_info* pInf
 }
 
 ma_result ma_android_vfs_tell(ma_vfs* pVFS, ma_vfs_file file, ma_int64* pCursor) {
-    ma_android_vfs_file* wrapperFile = (ma_android_vfs_file*) file;
-    if (wrapperFile->storage_type == storage_type_external) {
-        return ma_default_vfs_tell(pVFS, *wrapperFile->file, pCursor);
-    }
-
     if (pCursor == NULL) {
         return MA_INVALID_ARGS;
     }
@@ -212,6 +208,11 @@ ma_result ma_android_vfs_tell(ma_vfs* pVFS, ma_vfs_file file, ma_int64* pCursor)
 
     if (file == NULL) {
         return MA_INVALID_ARGS;
+    }
+
+    ma_android_vfs_file* wrapperFile = (ma_android_vfs_file*) file;
+    if (wrapperFile->storage_type == storage_type_external) {
+        return ma_default_vfs_tell(pVFS, *wrapperFile->file, pCursor);
     }
 
     ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
