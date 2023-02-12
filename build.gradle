@@ -11,7 +11,7 @@ plugins {
 apply plugin: "com.badlogicgames.gdx.gdx-jnigen"
 
 group 'games.rednblack.miniaudio'
-version '0.3'
+version '0.4'
 
 repositories {
     mavenCentral()
