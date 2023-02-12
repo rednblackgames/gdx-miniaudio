@@ -1,10 +1,11 @@
 [0.3]
 - Full MiniAudio engine customization
 - Enable full duplex (mic input node)
+- Add Encoder node (save WAV files)
 - Update MiniAudio to 0.11.11
 - Add native log level support
 - Playback/Capture device enumerations
-- Support reading outside assets directory for Android and iOS
+- Support external storage for Android and iOS
 
 [0.2]
 - Update miniaudio to latest bug fixes

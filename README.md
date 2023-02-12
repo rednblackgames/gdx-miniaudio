@@ -188,7 +188,6 @@ maSound.loop();
 
 ## TODO
 
-- Audio encoding node
 - Blocking Stream PCM data (like libGDX specs - maybe)
 
 - MiniAudio has tons of additional features, open a issue to request more bindings

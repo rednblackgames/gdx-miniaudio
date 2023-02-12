@@ -26,7 +26,7 @@ public class MALTrim extends MANode {
         address = jniCreateNode(miniAudio.getEngineAddress(), threshold, customChannels);
 
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
-            throw new MiniAudioException("Error while creating splitter node", (int) address);
+            throw new MiniAudioException("Error while creating ltrim node", (int) address);
         }
     }
 
