@@ -30,7 +30,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build macOS natives
-        run: ./gradlew jniGen jnigenBuildIOS jnigenBuildMacOsX64 jnigenBuildMacOsXARM64
+        run: |
+          # See https://github.com/actions/virtual-environments/issues/2557
+          sudo mv /Library/Developer/CommandLineTools/SDKs/* /tmp
+          sudo mv /Applications/Xcode.app /Applications/Xcode.app.bak
+          sudo mv /Applications/Xcode_13.2.app /Applications/Xcode.app
+          sudo xcode-select -switch /Applications/Xcode.app
+          /usr/bin/xcodebuild -version
+          ./gradlew jniGen jnigenBuildIOS jnigenBuildMacOsX64 jnigenBuildMacOsXARM64
       - name: Upload macOS/iOS natives
         uses: actions/upload-artifact@v2.1.4
         with:
@@ -39,9 +46,7 @@ jobs:
 
   linux:
     needs: macos
-    runs-on: ubuntu-18.04
-    env:
-      NDK_HOME: /usr/local/lib/android/sdk/ndk-bundle
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -66,12 +71,11 @@ jobs:
       - run: sudo apt-get update || true
       - name: Install Windows compilers
         run: sudo apt-get -yq install g++-mingw-w64-i686 g++-mingw-w64-x86-64
-      - name: Install Linux x86 compilers/libraries
-        run: sudo apt-get -yq install gcc-multilib g++-multilib linux-libc-dev:i386 libstdc++-5-dev:i386
-      - name: Install Linux arm32 compilers/libraries
-        run: sudo apt-get -yq install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
-      - name: Install Linux arm64 compilers/libraries
-        run: sudo apt-get -yq install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
+      - name: Install Linux cross-compilation toolchains
+        run: |
+          sudo apt install -y --force-yes gcc g++ gcc-multilib g++-multilib
+          sudo apt install -y --force-yes gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
+          sudo apt install -y --force-yes gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libc6-dev-armhf-cross
       - name: Download macOS/iOS natives
         uses: actions/download-artifact@v2.0.5
         with:
@@ -80,7 +84,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build with Gradle
-        run: ./gradlew jniGen jnigenBuildLinux64 jnigenBuildLinuxARM jnigenBuildLinuxARM64 jnigenBuildWindows64 jnigenBuildWindows jnigenBuildAndroid
+        run: |
+          export NDK_HOME=$ANDROID_NDK_HOME
+          ./gradlew jniGen jnigenBuildLinux64 jnigenBuildLinuxARM jnigenBuildLinuxARM64 jnigenBuildWindows64 jnigenBuildWindows jnigenBuildAndroid
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v3
