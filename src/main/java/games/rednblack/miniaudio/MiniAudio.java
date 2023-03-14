@@ -69,7 +69,13 @@ public class MiniAudio implements Disposable {
         #ifdef MA_APPLE_MOBILE
         #include <string>
         std::string getBundlePath(const char* fileName) {
-            return [[[NSBundle mainBundle] pathForResource:[NSString stringWithUTF8String: fileName] ofType:nil] UTF8String];
+            NSString* fileNameString = [NSString stringWithUTF8String: fileName];
+            NSString* filePath = [[NSBundle mainBundle] pathForResource:fileNameString ofType:nil];
+            if (filePath != nil) {
+                return [filePath UTF8String];
+            } else {
+                return "";
+            }
         }
         #endif
 
