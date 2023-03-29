@@ -89,7 +89,11 @@ public class MiniAudio implements Disposable {
 
         void sound_end_callback(void* pUserData, ma_sound* pSound) {
             JNIEnv* env;
+            #ifdef MA_ANDROID
+            jvm->AttachCurrentThread(&env, NULL);
+            #else
             jvm->AttachCurrentThread((void**) &env, NULL);
+            #endif
             jclass handlerClass = env->GetObjectClass(jMiniAudio);
             jmethodID jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
             env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) pSound);
