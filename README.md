@@ -20,12 +20,15 @@
 - Sound Spatialization (position, direction, cone, attenuation model, rolloff, etc.)
 - Sound Fading (In/Out/Custom)
 - Sound length and current cursor position
+- Sound end callback
 - Graph Nodes Filters/Effects
 - Play raw PCM data
 - Waves and Noise generation
 - Sound Groups with atomic management
 - Sound Groups Spatialization (position, direction, cone, attenuation model, rolloff, etc.)
 - libGDX AssetManager Loader
+- Audio Input Node (microphone)
+- Audio Encoder Node (only wav)
 
 **Filters**
 - Band Pass
