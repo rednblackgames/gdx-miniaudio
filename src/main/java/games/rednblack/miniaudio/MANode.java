@@ -81,4 +81,12 @@ public abstract class MANode implements Disposable {
      * @return output bus for this node
      */
     public abstract int getSupportedOutputs();
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof MANode) {
+            return ((MANode) obj).address == this.address;
+        }
+        return false;
+    }
 }

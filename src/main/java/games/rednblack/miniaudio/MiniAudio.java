@@ -83,9 +83,23 @@ public class MiniAudio implements Disposable {
             ma_audio_buffer_ref_set_data(&inputBufferData, pInput, frameCount);
             ma_engine_read_pcm_frames(&engine, pOutput, frameCount, NULL);
         }
+
+        static JavaVM* jvm = 0;
+        static jobject jMiniAudio;
+
+        void sound_end_callback(void* pUserData, ma_sound* pSound) {
+            JNIEnv* env;
+            jvm->AttachCurrentThread((void**) &env, NULL);
+            jclass handlerClass = env->GetObjectClass(jMiniAudio);
+            jmethodID jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
+            env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) pSound);
+            jvm->DetachCurrentThread();
+        }
      */
 
     private long engineAddress = 0;
+    private final MASound endCallbackSound;
+    private MASoundEndListener endListener;
 
     /**
      * Create a new MiniAudio Engine Instance
@@ -107,6 +121,7 @@ public class MiniAudio implements Disposable {
         }
 
         if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32, false, false);
+        endCallbackSound = new MASound(this);
     }
 
     /**
@@ -351,6 +366,10 @@ public class MiniAudio implements Disposable {
         if (res != MA_SUCCESS) return res;
         engineConfig.pResourceManagerVFS = androidVFS;
         #endif
+
+
+        env->GetJavaVM(&jvm);
+        jMiniAudio = env->NewGlobalRef(object);
 
 		return ma_engine_init(&engineConfig, &engine);
 	*/
@@ -659,6 +678,7 @@ public class MiniAudio implements Disposable {
             ma_free(sound, NULL);
             return (jlong) result;
         }
+        ma_sound_set_end_callback(sound, sound_end_callback, NULL);
         return (jlong) sound;
     */
 
@@ -1847,4 +1867,23 @@ public class MiniAudio implements Disposable {
         ma_sound_group* group = (ma_sound_group*) groupAddress;
         ma_sound_group_set_fade_in_milliseconds(group, start, end, milliseconds);
     */
+
+    /**
+     * Attach a listener to be notified when a sound is finished playing.
+     * MASound must be created with {@link #createSound(String)}.
+     *
+     * NOTE: Listener is called on MiniAudio thread.
+     *
+     * @param endListener {@link MASoundEndListener}
+     */
+    public void setEndListener(MASoundEndListener endListener) {
+        this.endListener = endListener;
+    }
+
+    public void on_native_sound_end(long soundAddress) {
+        if (endListener != null) {
+            endCallbackSound.setAddress(soundAddress);
+            endListener.onSoundEnd(endCallbackSound);
+        }
+    }
 }

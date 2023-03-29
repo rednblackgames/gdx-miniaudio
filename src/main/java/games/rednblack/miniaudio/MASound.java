@@ -6,8 +6,17 @@ package games.rednblack.miniaudio;
  * @author fgnm
  */
 public class MASound extends MANode {
+
+    MASound(MiniAudio miniAudio) {
+        super(miniAudio);
+    }
+
     public MASound(long address, MiniAudio miniAudio) {
         super(miniAudio);
+        setAddress(address);
+    }
+
+    void setAddress(long address) {
         if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
             throw new MiniAudioException("Error while loading Sound", (int) address);
         }
