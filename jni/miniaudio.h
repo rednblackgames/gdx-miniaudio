@@ -13364,7 +13364,7 @@ MA_API const char* ma_log_level_to_string(ma_uint32 logLevel)
     }
 }
 
-#if defined(MA_DEBUG_OUTPUT)
+
 #if defined(MA_ANDROID)
     #include <android/log.h>
 #endif
@@ -13374,6 +13374,7 @@ MA_API const char* ma_log_level_to_string(ma_uint32 logLevel)
 #define MA_ANDROID_LOG_TAG  "miniaudio"
 #endif
 
+#if defined(MA_DEBUG_OUTPUT)
 void ma_log_callback_debug(void* pUserData, ma_uint32 level, const char* pMessage)
 {
     (void)pUserData;
@@ -37401,6 +37402,7 @@ typedef int32_t                  (* MA_PFN_AAudioStream_getFramesPerDataCallback
 typedef int32_t                  (* MA_PFN_AAudioStream_getFramesPerBurst)               (ma_AAudioStream* pStream);
 typedef ma_aaudio_result_t       (* MA_PFN_AAudioStream_requestStart)                    (ma_AAudioStream* pStream);
 typedef ma_aaudio_result_t       (* MA_PFN_AAudioStream_requestStop)                     (ma_AAudioStream* pStream);
+
 
 static ma_result ma_result_from_aaudio(ma_aaudio_result_t resultAA)
 {
