@@ -37406,12 +37406,12 @@ typedef ma_aaudio_result_t       (* MA_PFN_AAudioStream_requestStop)            
 
 static ma_result ma_result_from_aaudio(ma_aaudio_result_t resultAA)
 {
+    __android_log_print(ANDROID_LOG_DEBUG, "aaudio_miniaudio", "Error %d", resultAA);
+
     switch (resultAA)
     {
         case MA_AAUDIO_OK: return MA_SUCCESS;
-        default:
-            __android_log_print(ANDROID_LOG_DEBUG, "aaudio_miniaudio", "Error %d", resultAA);
-            break;
+        default: break;
     }
 
     return MA_ERROR;
