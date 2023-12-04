@@ -18085,7 +18085,7 @@ MA_API ma_bool32 ma_is_backend_enabled(ma_backend backend)
         #if defined(MA_HAS_AAUDIO)
             #if defined(MA_ANDROID)
             {
-                return ma_android_sdk_version() >= 26;
+                return ma_android_sdk_version() >= 31;
             }
             #else
                 return MA_FALSE;
