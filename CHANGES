@@ -1,6 +1,8 @@
 [0.4]
-- Update MiniAudio to 0.11.14
+- Update MiniAudio to 0.11.21
+- Update libGDX to 1.12.1
 - Support MASound end callback
+- Allow to disable low latency mode
 
 [0.3]
 - Full MiniAudio engine customization

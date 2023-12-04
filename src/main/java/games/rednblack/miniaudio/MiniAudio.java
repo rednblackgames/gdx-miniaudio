@@ -124,7 +124,7 @@ public class MiniAudio implements Disposable {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
 
-        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32, false, false);
+        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32, false, false, true);
         endCallbackSound = new MASound(this);
     }
 
@@ -143,14 +143,15 @@ public class MiniAudio implements Disposable {
      * @param formatType devices data format, see {@link MAFormatType}
      * @param fullDuplex enable/disable full duplex engine (require microphone permission)
      * @param exclusive enable/disable capture exclusive device mode
+     * @param lowLatency enable/disable low latency profile
      */
-    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType, boolean fullDuplex, boolean exclusive) {
+    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType, boolean fullDuplex, boolean exclusive, boolean lowLatency) {
         if (engineAddress != 0) throw new IllegalStateException("A MiniAudio Engine is already initialized.");
 
         if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = jniInitEngine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex, exclusive);
+        int result = jniInitEngine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex, exclusive, lowLatency);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
@@ -179,7 +180,7 @@ public class MiniAudio implements Disposable {
 
     /**
      * Enumerate every device attached to the device with their capabilities,
-     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType, boolean, boolean)}
+     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType, boolean, boolean, boolean)}
      *
      * @return array of devices information
      */
@@ -332,7 +333,7 @@ public class MiniAudio implements Disposable {
         return ret;
     */
 
-    private native int jniInitEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex, boolean exclusive);/*
+    private native int jniInitEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex, boolean exclusive, boolean lowLatency);/*
         ma_result res;
         ma_device_config deviceConfig;
         if (fullDuplex)
@@ -348,7 +349,7 @@ public class MiniAudio implements Disposable {
         deviceConfig.playback.channels  = channels;
         deviceConfig.sampleRate         = sampleRate;
         deviceConfig.dataCallback       = data_callback;
-        deviceConfig.performanceProfile = ma_performance_profile_low_latency;
+        deviceConfig.performanceProfile = lowLatency ? ma_performance_profile_low_latency : ma_performance_profile_conservative;
         deviceConfig.periodSizeInFrames = bufferPeriodFrames;
         deviceConfig.periodSizeInMilliseconds = bufferPeriodMillis;
         deviceConfig.wasapi.noAutoConvertSRC = true;
