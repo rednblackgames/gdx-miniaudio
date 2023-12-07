@@ -74,23 +74,41 @@ public class MiniAudio implements Disposable {
         static jobject jMiniAudio;
         static jmethodID jon_native_sound_end;
         static jmethodID jon_native_log;
-        static JNIEnv* glEnv;
+
+        // Helper macro for platform-specific thread attachment
+        #ifdef MA_ANDROID
+        #define THREAD_ATTACH_MACRO jvm->AttachCurrentThread(&env, NULL);
+        #else
+        #define THREAD_ATTACH_MACRO jvm->AttachCurrentThread((void**)&env, NULL);
+        #endif
+
+        // Attaches a valid JNIEnv instance for the current thread.
+        #define ATTACH_ENV()                                                     \
+            bool _hadToAttach = false;                                           \
+            JNIEnv* env;                                                         \
+            if (jvm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_EDETACHED) {   \
+                THREAD_ATTACH_MACRO                                              \
+                _hadToAttach = true;                                             \
+            }
+
+        // Detaches JNIEnv instance.
+        #define DETACH_ENV()                \
+            if (_hadToAttach) {             \
+                jvm->DetachCurrentThread(); \
+            }
 
         void sound_end_callback(void* pUserData, ma_sound* pSound) {
-            JNIEnv* env;
-            #ifdef MA_ANDROID
-            jvm->AttachCurrentThread(&env, NULL);
-            #else
-            jvm->AttachCurrentThread((void**) &env, NULL);
-            #endif
+            ATTACH_ENV()
             env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) pSound);
-            jvm->DetachCurrentThread();
+            DETACH_ENV()
         }
 
         void ma_log_callback_jni(void* pUserData, ma_uint32 level, const char* pMessage) {
-            jstring javaMessage = glEnv->NewStringUTF(pMessage);
-            glEnv->CallVoidMethod(jMiniAudio, jon_native_log, level, javaMessage);
-            glEnv->DeleteLocalRef(javaMessage);
+            ATTACH_ENV()
+            jstring javaMessage = env->NewStringUTF(pMessage);
+            env->CallVoidMethod(jMiniAudio, jon_native_log, level, javaMessage);
+            env->DeleteLocalRef(javaMessage);
+            DETACH_ENV()
         }
      */
 
@@ -157,12 +175,6 @@ public class MiniAudio implements Disposable {
         jclass handlerClass = env->GetObjectClass(jMiniAudio);
         jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
         jon_native_log = env->GetMethodID(handlerClass, "on_native_log", "(ILjava/lang/String;)V");
-
-        #ifdef MA_ANDROID
-        jvm->AttachCurrentThread(&glEnv, NULL);
-        #else
-        jvm->AttachCurrentThread((void**) &glEnv, NULL);
-        #endif
 
         ma_result res = ma_context_init(NULL, 0, NULL, &context);
         if (res != MA_SUCCESS) return res;
@@ -405,7 +417,7 @@ public class MiniAudio implements Disposable {
      */
     public void resetAAudio() {
         int result = jniResetAAudio();
-        if (result != MAResult.MA_SUCCESS) {
+        if (result != MAResult.MA_SUCCESS && result != MAResult.MA_API_NOT_FOUND) {
             throw new MiniAudioException("Unable to reset AAudio device", result);
         }
     }
