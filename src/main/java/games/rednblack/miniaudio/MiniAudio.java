@@ -11,6 +11,8 @@ import com.badlogic.gdx.utils.SharedLibraryLoader;
  * @author fgnm
  */
 public class MiniAudio implements Disposable {
+    public static final String TAG = "GdxMiniAudio";
+
     static {
         new SharedLibraryLoader().load("gdx-miniaudio");
     }
@@ -22,6 +24,7 @@ public class MiniAudio implements Disposable {
         #define STB_VORBIS_HEADER_ONLY
         #include "stb_vorbis.c"
 
+        #define MA_AAUDIO_MIN_ANDROID_SDK_VERSION 31
         #define MINIAUDIO_IMPLEMENTATION
         #include "miniaudio.h"
 
@@ -43,23 +46,6 @@ public class MiniAudio implements Disposable {
         #ifndef MA_ANDROID_LOG_TAG
         #define MA_ANDROID_LOG_TAG  "miniaudio"
         #endif
-
-        ma_uint32 logLevel = MA_LOG_LEVEL_ERROR;
-
-        void ma_log_callback_debug(void* pUserData, ma_uint32 level, const char* pMessage) {
-            if (logLevel < level) return;
-
-            (void)pUserData;
-            #if defined(MA_ANDROID)
-            {
-                __android_log_print(ANDROID_LOG_DEBUG, MA_ANDROID_LOG_TAG, "%s: %s", ma_log_level_to_string(level), pMessage);
-            }
-            #else
-            {
-                printf("%s: %s", ma_log_level_to_string(level), pMessage);
-            }
-            #endif
-        }
 
         ma_context context;
         ma_device device;
@@ -86,6 +72,9 @@ public class MiniAudio implements Disposable {
 
         static JavaVM* jvm = 0;
         static jobject jMiniAudio;
+        static jmethodID jon_native_sound_end;
+        static jmethodID jon_native_log;
+        static JNIEnv* glEnv;
 
         void sound_end_callback(void* pUserData, ma_sound* pSound) {
             JNIEnv* env;
@@ -94,10 +83,14 @@ public class MiniAudio implements Disposable {
             #else
             jvm->AttachCurrentThread((void**) &env, NULL);
             #endif
-            jclass handlerClass = env->GetObjectClass(jMiniAudio);
-            jmethodID jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
             env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) pSound);
             jvm->DetachCurrentThread();
+        }
+
+        void ma_log_callback_jni(void* pUserData, ma_uint32 level, const char* pMessage) {
+            jstring javaMessage = glEnv->NewStringUTF(pMessage);
+            glEnv->CallVoidMethod(jMiniAudio, jon_native_log, level, javaMessage);
+            glEnv->DeleteLocalRef(javaMessage);
         }
      */
 
@@ -159,23 +152,22 @@ public class MiniAudio implements Disposable {
     }
 
     private native int jniInitContext();/*
+        env->GetJavaVM(&jvm);
+        jMiniAudio = env->NewGlobalRef(object);
+        jclass handlerClass = env->GetObjectClass(jMiniAudio);
+        jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
+        jon_native_log = env->GetMethodID(handlerClass, "on_native_log", "(ILjava/lang/String;)V");
+
+        #ifdef MA_ANDROID
+        jvm->AttachCurrentThread(&glEnv, NULL);
+        #else
+        jvm->AttachCurrentThread((void**) &glEnv, NULL);
+        #endif
+
         ma_result res = ma_context_init(NULL, 0, NULL, &context);
         if (res != MA_SUCCESS) return res;
-        ma_log_register_callback(context.pLog, ma_log_callback_init(ma_log_callback_debug, NULL));
+        ma_log_register_callback(context.pLog, ma_log_callback_init(ma_log_callback_jni, NULL));
         return MA_SUCCESS;
-    */
-
-    /**
-     * Set MiniAudio's  native log level.
-     *
-     * @param logLevel minimum log level to print
-     */
-    public void setLogLevel(MALogLevel logLevel) {
-        jniSetLogLevel(logLevel.code);
-    }
-
-    private native void jniSetLogLevel(int log);/*
-        logLevel = log;
     */
 
     /**
@@ -371,10 +363,6 @@ public class MiniAudio implements Disposable {
         if (res != MA_SUCCESS) return res;
         engineConfig.pResourceManagerVFS = androidVFS;
         #endif
-
-
-        env->GetJavaVM(&jvm);
-        jMiniAudio = env->NewGlobalRef(object);
 
 		return ma_engine_init(&engineConfig, &engine);
 	*/
@@ -1889,6 +1877,21 @@ public class MiniAudio implements Disposable {
         if (endListener != null) {
             endCallbackSound.setAddress(soundAddress);
             endListener.onSoundEnd(endCallbackSound);
+        }
+    }
+
+    public void on_native_log(int level, String message) {
+        switch (level) {
+            case 1:
+            case 2:
+                Gdx.app.error(TAG, message);
+                break;
+            case 3:
+                Gdx.app.log(TAG, message);
+                break;
+            case 4:
+                Gdx.app.debug(TAG, message);
+                break;
         }
     }
 }
