@@ -397,6 +397,27 @@ public class MiniAudio implements Disposable {
     */
 
     /**
+     * Emergency recovery function for AAudio. This backend appears to be buggy on many Android versions.
+     * When exceptions are raised and current platform is Android with AAudio backend calling this function
+     * will most likely recover the engine to its normal state.
+     *
+     * <a href="https://github.com/rednblackgames/gdx-miniaudio/issues/1">...</a>
+     */
+    public void resetAAudio() {
+        int result = jniResetAAudio();
+        if (result != MAResult.MA_SUCCESS) {
+            throw new MiniAudioException("Unable to reset AAudio device", result);
+        }
+    }
+
+    private native int jniResetAAudio();/*
+        #if defined(MA_ANDROID)
+        if (ma_android_sdk_version() >= MA_AAUDIO_MIN_ANDROID_SDK_VERSION) return ma_device_reinit__aaudio(&device, device.type);
+        #endif
+        return MA_API_NOT_FOUND;
+    */
+
+    /**
      * Dispose Engine resources
      */
     @Override
