@@ -48,6 +48,7 @@ public class MiniAudio implements Disposable {
         #endif
 
         ma_context context;
+        ma_device_config deviceConfig;
         ma_device device;
         ma_engine engine;
         ma_audio_buffer_ref inputBufferData;
@@ -339,7 +340,6 @@ public class MiniAudio implements Disposable {
 
     private native int jniInitEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex, boolean exclusive, boolean lowLatency);/*
         ma_result res;
-        ma_device_config deviceConfig;
         if (fullDuplex)
             deviceConfig = ma_device_config_init(ma_device_type_duplex);
         else
@@ -409,24 +409,20 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Emergency recovery function for AAudio. This backend appears to be buggy on many Android versions.
-     * When exceptions are raised and current platform is Android with AAudio backend calling this function
-     * will most likely recover the engine to its normal state.
-     *
+     * Emergency recovery function. AAudio backend appears to be buggy on many Android versions.
+     * When the device fails to restart calling this function will likely bring back engine to a working state.
      * <a href="https://github.com/rednblackgames/gdx-miniaudio/issues/1">...</a>
      */
-    public void resetAAudio() {
-        int result = jniResetAAudio();
-        if (result != MAResult.MA_SUCCESS && result != MAResult.MA_API_NOT_FOUND) {
-            throw new MiniAudioException("Unable to reset AAudio device", result);
+    public void resetAudioDevice() {
+        int result = jniResetAudioDevice();
+        if (result != MAResult.MA_SUCCESS) {
+            throw new MiniAudioException("Unable to reset Audio device", result);
         }
     }
 
-    private native int jniResetAAudio();/*
-        #if defined(MA_ANDROID)
-        if (ma_android_sdk_version() >= MA_AAUDIO_MIN_ANDROID_SDK_VERSION) return ma_device_reinit__aaudio(&device, device.type);
-        #endif
-        return MA_API_NOT_FOUND;
+    private native int jniResetAudioDevice();/*
+        ma_device_uninit(&device);
+        return ma_device_init(&context, &deviceConfig, &device);
     */
 
     /**
@@ -451,6 +447,12 @@ public class MiniAudio implements Disposable {
      */
     public void startEngine() {
         int result = jniStartEngine();
+        //If a generic error occurred during engine start try to recover the state without crashing by resetting audio device
+        if (result == MAResult.MA_ERROR) {
+            resetAudioDevice();
+            result = jniStartEngine();
+        }
+
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to start MiniAudio Engine", result);
         }
