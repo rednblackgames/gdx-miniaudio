@@ -7,6 +7,8 @@ package games.rednblack.miniaudio;
  */
 public class MASound extends MANode {
 
+    private MADataSource dataSource;
+
     MASound(MiniAudio miniAudio) {
         super(miniAudio);
     }
@@ -21,6 +23,12 @@ public class MASound extends MANode {
             throw new MiniAudioException("Error while loading Sound", (int) address);
         }
         this.address = address;
+        dataSource = new MADataSource(miniAudio.getSoundDataSource(this.address), miniAudio) {
+            @Override
+            public void dispose() {
+
+            }
+        };
     }
 
     /**
@@ -319,6 +327,15 @@ public class MASound extends MANode {
     @Override
     public void dispose() {
         miniAudio.disposeSound(address);
+    }
+
+    /**
+     * Get the data source attached to this sound object
+     *
+     * @return An empty {@link MADataSource} to store data source address
+     */
+    public MADataSource getDataSource() {
+        return dataSource;
     }
 
     @Override

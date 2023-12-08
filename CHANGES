@@ -4,6 +4,9 @@
 - Update libGDX to 1.12.1
 - Support MASound end callback
 - Allow to disable low latency mode
+- Support chaining multiple data sources gapless
+- Fix iOS native crash when file doesn't exists
+- Workaround AAudio issues, limit this backend to Android >= 12
 
 [0.3]
 - Full MiniAudio engine customization

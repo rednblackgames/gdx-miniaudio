@@ -740,6 +740,26 @@ public class MiniAudio implements Disposable {
         ma_free(sound, NULL);
     */
 
+    public long getSoundDataSource(long soundAddress) {
+        return jniGetSoundDataSource(soundAddress);
+    }
+
+    private native long jniGetSoundDataSource(long soundAddress);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        return (jlong) sound->pDataSource;
+     */
+
+    public void chainDataSources(MADataSource dataSource, MADataSource nextDataSource) {
+        int result = jniChainDataSources(dataSource.address, nextDataSource.address);
+        if (result != MAResult.MA_SUCCESS) {
+            throw new MiniAudioException("Error while chaining data sources", result);
+        }
+    }
+
+    private native int jniChainDataSources(long dataSource, long nextDataSource);/*
+        return ma_data_source_set_next((ma_data_source*) dataSource, (ma_data_source*) nextDataSource);
+    */
+
     /**
      * Play or resume sound.
      *
