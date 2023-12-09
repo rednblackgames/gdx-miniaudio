@@ -322,6 +322,16 @@ public class MASound extends MANode {
     }
 
     /**
+     * Chain playback of another {@link MASound} gapless. End listener of this sound will be called once all chained
+     * sounds are fully played. Loops of multiple sounds can also be created.
+     *
+     * @param nextSound {@link MASound} to be chained
+     */
+    public void chainSound(MASound nextSound) {
+        miniAudio.chainDataSources(dataSource, nextSound.dataSource);
+    }
+
+    /**
      * Release and dispose sound objects
      */
     @Override

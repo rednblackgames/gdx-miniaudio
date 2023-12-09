@@ -740,6 +740,12 @@ public class MiniAudio implements Disposable {
         ma_free(sound, NULL);
     */
 
+    /**
+     * Get the data source associated to a sound.
+     *
+     * @param soundAddress native address of the sound
+     * @return native address of data source
+     */
     public long getSoundDataSource(long soundAddress) {
         return jniGetSoundDataSource(soundAddress);
     }
@@ -749,6 +755,12 @@ public class MiniAudio implements Disposable {
         return (jlong) sound->pDataSource;
      */
 
+    /**
+     * Chain two data sources to be played gapless, loop of data sources can also be created.
+     *
+     * @param dataSource first data source
+     * @param nextDataSource next data source played at the end of the first one
+     */
     public void chainDataSources(MADataSource dataSource, MADataSource nextDataSource) {
         int result = jniChainDataSources(dataSource.address, nextDataSource.address);
         if (result != MAResult.MA_SUCCESS) {
