@@ -24,7 +24,7 @@ public class MADelayNode extends MANode {
 
         address = jniCreateDelayNode(miniAudio.getEngineAddress(), delay, decay, customChannels);
 
-        if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
+        if (MAResult.checkErrors(address)) {
             throw new MiniAudioException("Error while creating delay node", (int) address);
         }
     }

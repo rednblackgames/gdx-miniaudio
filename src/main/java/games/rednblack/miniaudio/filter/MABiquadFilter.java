@@ -25,7 +25,7 @@ public class MABiquadFilter extends MANode {
 
         address = jniCreateNode(miniAudio.getEngineAddress(), b0, b1, b2, a0, a1, a2, customChannels);
 
-        if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
+        if (MAResult.checkErrors(address)) {
             throw new MiniAudioException("Error while creating biquad filter node", (int) address);
         }
     }

@@ -24,6 +24,6 @@ public class MiniAudioException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return super.getMessage() + " [Code " + maResult + "]";
+        return super.getMessage() + ": " + MAResult.getErrorHumanDescription(maResult) + " [Code " + maResult + "]";
     }
 }

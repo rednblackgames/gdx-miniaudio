@@ -9,7 +9,7 @@ public class MANoise extends MADataSource {
 
     public MANoise(long address, MiniAudio miniAudio) {
         super(address, miniAudio);
-        if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
+        if (MAResult.checkErrors(address)) {
             throw new MiniAudioException("Error while creating Noise", (int) address);
         }
     }

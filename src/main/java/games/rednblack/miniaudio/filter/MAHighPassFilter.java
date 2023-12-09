@@ -25,7 +25,7 @@ public class MAHighPassFilter extends MANode {
 
         address = jniCreateNode(miniAudio.getEngineAddress(), cutoffFrequency, order, customChannels);
 
-        if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
+        if (MAResult.checkErrors(address)) {
             throw new MiniAudioException("Error while creating high pass filter node", (int) address);
         }
     }

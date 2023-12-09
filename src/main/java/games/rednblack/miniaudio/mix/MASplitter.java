@@ -27,7 +27,7 @@ public class MASplitter extends MANode {
 
         address = jniCreateNode(miniAudio.getEngineAddress(), customChannels);
 
-        if (address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR) {
+        if (MAResult.checkErrors(address)) {
             throw new MiniAudioException("Error while creating splitter node", (int) address);
         }
     }
