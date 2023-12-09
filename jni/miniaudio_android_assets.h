@@ -28,11 +28,11 @@ ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 ope
     }
 
     ma_android_vfs_file* wrapperFile = (ma_android_vfs_file*) ma_malloc(sizeof(ma_android_vfs_file), NULL);
-    wrapperFile->file = (ma_vfs_file*) ma_malloc(sizeof(ma_vfs_file), NULL);
 
     if (strncmp(MA_ANDROID_STORAGE_EXTERNAL_PREFIX, pFilePath, MA_ANDROID_STORAGE_EXTERNAL_PREFIX_LEN) == 0) {
         wrapperFile->storage_type = storage_type_external;
 
+        wrapperFile->file = (ma_vfs_file*) ma_malloc(sizeof(ma_vfs_file), NULL);
         ma_result res = ma_default_vfs_open(pVFS, pFilePath + MA_ANDROID_STORAGE_EXTERNAL_PREFIX_LEN, openMode, wrapperFile->file);
 
         if (res == MA_SUCCESS) {
@@ -47,7 +47,6 @@ ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 ope
     ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
 
     if (androidVfs->asset_manager == NULL) {
-        ma_free(wrapperFile->file, NULL);
         ma_free(wrapperFile, NULL);
         return MA_UNAVAILABLE;
     }
@@ -55,14 +54,12 @@ ma_result ma_android_vfs_open(ma_vfs* pVFS, const char* pFilePath, ma_uint32 ope
     *pFile = NULL;
 
     if (pFilePath == NULL || openMode == 0) {
-        ma_free(wrapperFile->file, NULL);
         ma_free(wrapperFile, NULL);
         return MA_INVALID_ARGS;
     }
 
     AAsset* asset = AAssetManager_open(androidVfs->asset_manager, pFilePath, AASSET_MODE_STREAMING);
     if (asset == NULL) {
-        ma_free(wrapperFile->file, NULL);
         ma_free(wrapperFile, NULL);
         return MA_DOES_NOT_EXIST;
     }
@@ -81,18 +78,24 @@ ma_result ma_android_vfs_close(ma_vfs* pVFS, ma_vfs_file file) {
 
     ma_android_vfs_file* wrapperFile = (ma_android_vfs_file*) file;
     if (wrapperFile->storage_type == storage_type_external) {
-        return ma_default_vfs_close(pVFS, *wrapperFile->file);
+        ma_result result = ma_default_vfs_close(pVFS, *wrapperFile->file);
+        ma_free(wrapperFile->file, NULL);
+        ma_free(wrapperFile, NULL);
+        return result;
     }
 
     ma_android_vfs* androidVfs = (ma_android_vfs*) pVFS;
 
     if (androidVfs->asset_manager == NULL) {
+        ma_free(wrapperFile, NULL);
         return MA_UNAVAILABLE;
     }
 
     AAsset* asset = (AAsset*) wrapperFile->file;
 
     AAsset_close(asset);
+
+    ma_free(wrapperFile, NULL);
 
     return MA_SUCCESS;
 }

@@ -7,6 +7,7 @@
 - Support chaining multiple data sources gapless
 - Fix iOS native crash when file doesn't exists
 - Workaround AAudio issues, limit this backend to Android >= 12
+- Fix Android VFS native memory leaks
 
 [0.3]
 - Full MiniAudio engine customization
