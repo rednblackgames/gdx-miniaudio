@@ -15,4 +15,8 @@ public abstract class MADataSource implements Disposable {
         this.address = address;
         this.miniAudio = miniAudio;
     }
+
+    void setAddress(long address) {
+        this.address = address;
+    }
 }
