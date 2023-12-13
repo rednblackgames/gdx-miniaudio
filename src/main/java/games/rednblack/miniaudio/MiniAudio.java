@@ -440,6 +440,7 @@ public class MiniAudio implements Disposable {
         #if defined(MA_ANDROID)
         ma_free(androidVFS, NULL);
         #endif
+        env->DeleteGlobalRef(jMiniAudio);
     */
 
     /**
@@ -1948,6 +1949,8 @@ public class MiniAudio implements Disposable {
     }
 
     public void on_native_log(int level, String message) {
+        if (Gdx.app == null) return;
+
         switch (level) {
             case 1:
             case 2:
