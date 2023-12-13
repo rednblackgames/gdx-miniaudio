@@ -21,6 +21,7 @@
 - Sound Fading (In/Out/Custom)
 - Sound length and current cursor position
 - Sound end callback
+- Chain multiple sounds gapless
 - Graph Nodes Filters/Effects
 - Play raw PCM data
 - Waves and Noise generation
@@ -164,7 +165,7 @@ If your Java code is obfuscated, be sure to keep required JNI methods.
 ```
 -keepclassmembers class games.rednblack.miniaudio.MiniAudio {
     public void on_native_sound_end(long);
-    public void on_native_log(int, String);
+    public void on_native_log(int, java.lang.String);
 }
 ```
 
