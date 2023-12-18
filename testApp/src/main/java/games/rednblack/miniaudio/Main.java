@@ -35,6 +35,12 @@ public class Main implements ApplicationListener {
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
         miniAudio = new MiniAudio(null, false);
+        miniAudio.setDeviceNotificationListener(new MADeviceNotificationListener() {
+            @Override
+            public void onNotification(MADeviceNotificationType type) {
+                System.out.println(type);
+            }
+        });
         MADeviceInfo[] devices = miniAudio.enumerateDevices();
         for (MADeviceInfo info : devices) {
             System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);

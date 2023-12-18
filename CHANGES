@@ -8,6 +8,7 @@
 - Fix iOS native crash when file doesn't exists
 - Workaround AAudio issues, limit this backend to Android >= 12
 - Fix Android VFS native memory leaks
+- Bind native Device Notification listeners (allow to detect interruptions or rerouting)
 
 [0.3]
 - Full MiniAudio engine customization

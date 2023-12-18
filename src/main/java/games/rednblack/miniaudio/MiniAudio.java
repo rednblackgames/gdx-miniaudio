@@ -75,6 +75,7 @@ public class MiniAudio implements Disposable {
         static jobject jMiniAudio;
         static jmethodID jon_native_sound_end;
         static jmethodID jon_native_log;
+        static jmethodID jon_native_notification;
 
         // Helper macro for platform-specific thread attachment
         #ifdef MA_ANDROID
@@ -111,12 +112,19 @@ public class MiniAudio implements Disposable {
             env->DeleteLocalRef(javaMessage);
             DETACH_ENV()
         }
+
+        void notification_callback_jni(const ma_device_notification* pNotification) {
+            ATTACH_ENV()
+            env->CallVoidMethod(jMiniAudio, jon_native_notification, pNotification->type);
+            DETACH_ENV()
+        }
      */
 
     private long engineAddress = 0;
     private final MASound endCallbackSound;
     private MASoundEndListener endListener;
     private MALogCallback logCallback;
+    private MADeviceNotificationListener deviceNotificationListener;
 
     /**
      * Create a new MiniAudio Engine Instance
@@ -180,6 +188,7 @@ public class MiniAudio implements Disposable {
         jclass handlerClass = env->GetObjectClass(jMiniAudio);
         jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
         jon_native_log = env->GetMethodID(handlerClass, "on_native_log", "(ILjava/lang/String;)V");
+        jon_native_notification = env->GetMethodID(handlerClass, "on_native_notification", "(I)V");
 
         ma_result res = ma_context_init(NULL, 0, NULL, &context);
         if (res != MA_SUCCESS) return res;
@@ -357,6 +366,7 @@ public class MiniAudio implements Disposable {
         deviceConfig.playback.channels  = channels;
         deviceConfig.sampleRate         = sampleRate;
         deviceConfig.dataCallback       = data_callback;
+        deviceConfig.notificationCallback = notification_callback_jni;
         deviceConfig.performanceProfile = lowLatency ? ma_performance_profile_low_latency : ma_performance_profile_conservative;
         deviceConfig.periodSizeInFrames = bufferPeriodFrames;
         deviceConfig.periodSizeInMilliseconds = bufferPeriodMillis;
@@ -1955,7 +1965,7 @@ public class MiniAudio implements Disposable {
     /**
      * Set a custom log callback function. If null, default libGDX logging will be used.
      *
-     * @param logCallback custom log callback
+     * @param logCallback {@link MALogCallback} custom log callback
      */
     public void setLogCallback(MALogCallback logCallback) {
         this.logCallback = logCallback;
@@ -1980,6 +1990,21 @@ public class MiniAudio implements Disposable {
             case 4:
                 Gdx.app.debug(TAG, message);
                 break;
+        }
+    }
+
+    /**
+     * Set a listener to be notified when the device change its state, i.e. when an interruption begins.
+     *
+     * @param deviceNotificationListener {@link MADeviceNotificationListener}
+     */
+    public void setDeviceNotificationListener(MADeviceNotificationListener deviceNotificationListener) {
+        this.deviceNotificationListener = deviceNotificationListener;
+    }
+
+    public void on_native_notification(int type) {
+        if (deviceNotificationListener != null) {
+            deviceNotificationListener.onNotification(MADeviceNotificationType.decode(type));
         }
     }
 }
