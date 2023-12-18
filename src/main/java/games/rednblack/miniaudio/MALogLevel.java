@@ -17,4 +17,19 @@ public enum MALogLevel {
     MALogLevel(int code) {
         this.code = code;
     }
+
+    public static MALogLevel decode (int code) {
+        switch (code) {
+            case 1:
+                return MALogLevel.ERROR;
+            case 2:
+                return MALogLevel.WARNING;
+            case 3:
+                return MALogLevel.INFO;
+            case 4:
+                return MALogLevel.DEBUG;
+            default:
+                return MALogLevel.NONE;
+        }
+    }
 }

@@ -116,21 +116,25 @@ public class MiniAudio implements Disposable {
     private long engineAddress = 0;
     private final MASound endCallbackSound;
     private MASoundEndListener endListener;
+    private MALogCallback logCallback;
 
     /**
      * Create a new MiniAudio Engine Instance
      *
      */
     public MiniAudio() {
-        this(true);
+        this(null, true);
     }
 
     /**
      * Create a new MiniAudio Engine Instance
      *
+     * @param logCallback callback to forward native logs
      * @param initEngine automatic init engine with default parameters
      */
-    public MiniAudio(boolean initEngine) {
+    public MiniAudio(MALogCallback logCallback, boolean initEngine) {
+        this.logCallback = logCallback;
+
         int result = jniInitContext();
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
@@ -1948,7 +1952,21 @@ public class MiniAudio implements Disposable {
         }
     }
 
+    /**
+     * Set a custom log callback function. If null, default libGDX logging will be used.
+     *
+     * @param logCallback custom log callback
+     */
+    public void setLogCallback(MALogCallback logCallback) {
+        this.logCallback = logCallback;
+    }
+
     public void on_native_log(int level, String message) {
+        if (logCallback != null) {
+            logCallback.onLog(MALogLevel.decode(level), message);
+            return;
+        }
+
         if (Gdx.app == null) return;
 
         switch (level) {

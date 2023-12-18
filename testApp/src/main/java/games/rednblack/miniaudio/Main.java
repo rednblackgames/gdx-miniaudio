@@ -34,13 +34,12 @@ public class Main implements ApplicationListener {
     @Override
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
-        miniAudio = new MiniAudio(false);
-        miniAudio.setLogLevel(MALogLevel.DEBUG);
+        miniAudio = new MiniAudio(null, false);
         MADeviceInfo[] devices = miniAudio.enumerateDevices();
         for (MADeviceInfo info : devices) {
             System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);
         }
-        miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32,false);
+        miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32,false, false, false);
         miniAudio.setListenerDirection(0, 0, 1);
         miniAudio.setListenerCone(MathUtils.PI / 4f, MathUtils.PI / 4f, 2f);
 
@@ -49,7 +48,7 @@ public class Main implements ApplicationListener {
         //int res = miniAudio.playSound("Median_test.ogg");
         //int res = miniAudio.playSound("piano2.wav");
         //System.out.println(res);
-        maSound = miniAudio.createSound("Legendary.mp3");
+        maSound = miniAudio.createSound("piano2.wav");
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //maSound = miniAudio.createInputSound((short) 0, null);
         maSound.setSpatialization(false);
@@ -103,9 +102,9 @@ public class Main implements ApplicationListener {
         assetManager = new AssetManager();
         assetManager.getLogger().setLevel(Logger.DEBUG);
         assetManager.setLoader(MASound.class, new MASoundLoader(miniAudio, assetManager.getFileHandleResolver()));
-        assetManager.load("game.ogg", MASound.class);
+        //assetManager.load("game.ogg", MASound.class);
         assetManager.load("Median_test.ogg", MASound.class);
-        assetManager.load("Perfect_Mishap.ogg", MASound.class);
+        //assetManager.load("Perfect_Mishap.ogg", MASound.class);
         assetManager.load("piano2.wav", MASound.class);
     }
 
