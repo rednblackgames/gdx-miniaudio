@@ -166,6 +166,7 @@ If your Java code is obfuscated, be sure to keep required JNI methods.
 -keepclassmembers class games.rednblack.miniaudio.MiniAudio {
     public void on_native_sound_end(long);
     public void on_native_log(int, java.lang.String);
+    public void on_native_notification(int);
 }
 ```
 
