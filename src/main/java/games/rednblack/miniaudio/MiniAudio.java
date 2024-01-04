@@ -51,6 +51,8 @@ public class MiniAudio implements Disposable {
         ma_device_config deviceConfig;
         ma_device device;
         ma_engine engine;
+        ma_log maLog;
+        ma_log_callback pLogCallback;
         ma_audio_buffer_ref inputBufferData;
 
         #ifdef MA_APPLE_MOBILE
@@ -131,19 +133,20 @@ public class MiniAudio implements Disposable {
      *
      */
     public MiniAudio() {
-        this(null, true);
+        this(null, false, true);
     }
 
     /**
      * Create a new MiniAudio Engine Instance
      *
      * @param logCallback callback to forward native logs
+     * @param overrideRingerSwitch ONLY FOR iOS, Whether to override the ringer/mute switch, see https://github.com/libgdx/libgdx/issues/4430
      * @param initEngine automatic init engine with default parameters
      */
-    public MiniAudio(MALogCallback logCallback, boolean initEngine) {
+    public MiniAudio(MALogCallback logCallback, boolean overrideRingerSwitch, boolean initEngine) {
         this.logCallback = logCallback;
 
-        int result = jniInitContext();
+        int result = jniInitContext(overrideRingerSwitch);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
@@ -182,7 +185,7 @@ public class MiniAudio implements Disposable {
         engineAddress = jniEngineAddress();
     }
 
-    private native int jniInitContext();/*
+    private native int jniInitContext(boolean overrideRingerSwitch);/*
         env->GetJavaVM(&jvm);
         jMiniAudio = env->NewGlobalRef(object);
         jclass handlerClass = env->GetObjectClass(jMiniAudio);
@@ -190,9 +193,17 @@ public class MiniAudio implements Disposable {
         jon_native_log = env->GetMethodID(handlerClass, "on_native_log", "(ILjava/lang/String;)V");
         jon_native_notification = env->GetMethodID(handlerClass, "on_native_notification", "(I)V");
 
-        ma_result res = ma_context_init(NULL, 0, NULL, &context);
+        ma_log_init(NULL, &maLog);
+        pLogCallback = ma_log_callback_init(ma_log_callback_jni, NULL);
+        ma_log_register_callback(&maLog, pLogCallback);
+
+        ma_context_config config = ma_context_config_init();
+        config.pLog = &maLog;
+        config.coreaudio.sessionCategory = overrideRingerSwitch ? ma_ios_session_category_ambient : ma_ios_session_category_solo_ambient;
+
+        ma_result res = ma_context_init(NULL, 0, &config, &context);
         if (res != MA_SUCCESS) return res;
-        ma_log_register_callback(context.pLog, ma_log_callback_init(ma_log_callback_jni, NULL));
+
         return MA_SUCCESS;
     */
 
@@ -451,6 +462,8 @@ public class MiniAudio implements Disposable {
         ma_device_uninit(&device);
         ma_engine_uninit(&engine);
         ma_context_uninit(&context);
+        ma_log_unregister_callback(&maLog, pLogCallback);
+        ma_log_uninit(&maLog);
         #if defined(MA_ANDROID)
         ma_free(androidVFS, NULL);
         #endif
