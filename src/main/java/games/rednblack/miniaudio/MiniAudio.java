@@ -133,7 +133,7 @@ public class MiniAudio implements Disposable {
      *
      */
     public MiniAudio() {
-        this(null, false, true);
+        this(null, false, true, true);
     }
 
     /**
@@ -141,12 +141,13 @@ public class MiniAudio implements Disposable {
      *
      * @param logCallback callback to forward native logs
      * @param overrideRingerSwitch ONLY FOR iOS, Whether to override the ringer/mute switch, see https://github.com/libgdx/libgdx/issues/4430
+     * @param enableAAudioBackend ONLY FOR Android, Enable or disable AAudio backend, see https://github.com/rednblackgames/gdx-miniaudio/issues/1
      * @param initEngine automatic init engine with default parameters
      */
-    public MiniAudio(MALogCallback logCallback, boolean overrideRingerSwitch, boolean initEngine) {
+    public MiniAudio(MALogCallback logCallback, boolean overrideRingerSwitch, boolean enableAAudioBackend, boolean initEngine) {
         this.logCallback = logCallback;
 
-        int result = jniInitContext(overrideRingerSwitch);
+        int result = jniInitContext(overrideRingerSwitch, enableAAudioBackend);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
@@ -185,7 +186,7 @@ public class MiniAudio implements Disposable {
         engineAddress = jniEngineAddress();
     }
 
-    private native int jniInitContext(boolean overrideRingerSwitch);/*
+    private native int jniInitContext(boolean overrideRingerSwitch, boolean enableAAudioBackend);/*
         env->GetJavaVM(&jvm);
         jMiniAudio = env->NewGlobalRef(object);
         jclass handlerClass = env->GetObjectClass(jMiniAudio);
@@ -201,7 +202,43 @@ public class MiniAudio implements Disposable {
         config.pLog = &maLog;
         config.coreaudio.sessionCategory = overrideRingerSwitch ? ma_ios_session_category_ambient : ma_ios_session_category_solo_ambient;
 
-        ma_result res = ma_context_init(NULL, 0, &config, &context);
+        ma_backend fullBackends[] = {
+            ma_backend_wasapi,
+            ma_backend_dsound,
+            ma_backend_winmm,
+            ma_backend_coreaudio,
+            ma_backend_sndio,
+            ma_backend_audio4,
+            ma_backend_oss,
+            ma_backend_pulseaudio,
+            ma_backend_alsa,
+            ma_backend_jack,
+            ma_backend_aaudio,
+            ma_backend_opensl,
+            ma_backend_webaudio,
+            ma_backend_null
+        };
+
+        ma_backend noAAudioBackends[] = {
+            ma_backend_wasapi,
+            ma_backend_dsound,
+            ma_backend_winmm,
+            ma_backend_coreaudio,
+            ma_backend_sndio,
+            ma_backend_audio4,
+            ma_backend_oss,
+            ma_backend_pulseaudio,
+            ma_backend_alsa,
+            ma_backend_jack,
+            ma_backend_opensl,
+            ma_backend_webaudio,
+            ma_backend_null
+        };
+
+        ma_result res = enableAAudioBackend ?
+                            ma_context_init(fullBackends, sizeof(fullBackends) / sizeof(fullBackends[0]), &config, &context)
+                            :
+                            ma_context_init(noAAudioBackends, sizeof(noAAudioBackends) / sizeof(noAAudioBackends[0]), &config, &context);
         if (res != MA_SUCCESS) return res;
 
         return MA_SUCCESS;
