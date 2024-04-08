@@ -646,6 +646,28 @@ public class MiniAudio implements Disposable {
         ma_engine_listener_set_world_up(&engine, listenerIndex, x, y, z);
     */
 
+    public void setListenerVelocity(float x, float y, float z) {
+        setListenerVelocity(0, x, y, z);
+    }
+
+    /**
+     * The listener's velocity vector can also be specified to be used with spatialization
+     * for the Doppler effect.
+     * Default 0, 0, 0.
+     *
+     * @param listenerIndex index of the listener
+     * @param x velocity
+     * @param y velocity
+     * @param z velocity
+     */
+    public void setListenerVelocity(int listenerIndex, float x, float y, float z) {
+        jniSetListenerWorldUp(listenerIndex, x, y, z);
+    }
+
+    private native void jniSetListenerVelocity(int listenerIndex, float x, float y, float z);/*
+        ma_engine_listener_set_velocity(&engine, listenerIndex, x, y, z);
+    */
+
     /**
      * The engine supports directional attenuation. The listener can have a cone the controls how sound is
      * attenuated based on the listener's direction. When a sound is between the inner and outer cones, it

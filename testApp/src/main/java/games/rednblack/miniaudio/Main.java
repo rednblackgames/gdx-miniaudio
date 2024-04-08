@@ -34,7 +34,7 @@ public class Main implements ApplicationListener {
     @Override
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
-        miniAudio = new MiniAudio(null, false);
+        miniAudio = new MiniAudio();
         miniAudio.setDeviceNotificationListener(new MADeviceNotificationListener() {
             @Override
             public void onNotification(MADeviceNotificationType type) {
