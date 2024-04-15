@@ -62,10 +62,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 11
-      - run: sudo sed -i 's/deb http/deb [arch=amd64,i386] http/' /etc/apt/sources.list
-      - run: sudo grep "ubuntu.com/ubuntu" /etc/apt/sources.list | sudo tee /etc/apt/sources.list.d/ports.list
-      - run: sudo sed -i 's/amd64,i386/armhf,arm64/' /etc/apt/sources.list.d/ports.list
-      - run: sudo sed -i 's#http://.*/ubuntu#http://ports.ubuntu.com/ubuntu-ports#' /etc/apt/sources.list.d/ports.list
+      - run: echo "http://ports.ubuntu.com/ubuntu-ports" | sudo tee -a /etc/apt/apt-mirrors.txt
       - name: Add extra platform architectures
         run: sudo dpkg --add-architecture i386; sudo dpkg --add-architecture armhf; sudo dpkg --add-architecture arm64
       - run: sudo apt-get update || true
@@ -73,9 +70,9 @@ jobs:
         run: sudo apt-get -yq install g++-mingw-w64-i686 g++-mingw-w64-x86-64
       - name: Install Linux cross-compilation toolchains
         run: |
-          sudo apt install -y --force-yes gcc g++ gcc-multilib g++-multilib
-          sudo apt install -y --force-yes gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
-          sudo apt install -y --force-yes gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libc6-dev-armhf-cross
+          sudo apt-get -yq install gcc g++ gcc-multilib g++-multilib linux-libc-dev:i386
+          sudo apt-get -yq install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          sudo apt-get -yq install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
       - name: Download macOS/iOS natives
         uses: actions/download-artifact@v2.0.5
         with:
