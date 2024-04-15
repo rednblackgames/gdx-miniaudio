@@ -6,3 +6,4 @@ Application.mk
 jni-headers
 target
 memcpy_wrap.c
+Info.plist
