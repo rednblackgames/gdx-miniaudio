@@ -7,8 +7,10 @@
 - Support chaining multiple data sources gapless
 - Fix iOS native crash when file doesn't exists
 - Workaround AAudio issues, limit this backend to Android >= 12
+- Allow to disable AAudio backend on Android (active by default but may causes random crashes on some devices)
 - Fix Android VFS native memory leaks
 - Bind native Device Notification listeners (allow to detect interruptions or rerouting)
+- Add missing `setListenerVelocity` binding
 
 [0.3]
 - Full MiniAudio engine customization
