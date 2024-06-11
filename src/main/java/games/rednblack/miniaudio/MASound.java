@@ -378,16 +378,22 @@ public class MASound extends MANode {
         /** If you want to load the sound asynchronously */
         public static final short MA_SOUND_FLAG_ASYNC                 = 0x00000004;
 
-        /** MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_WAIT_INIT */
+        /** When set, waits for initialization of the underlying data source before returning from ma_resource_manager_data_source_init(). */
         public static final short MA_SOUND_FLAG_WAIT_INIT             = 0x00000008;
 
+        /** Gives the resource manager a hint that the length of the data source is unknown and calling `ma_data_source_get_length_in_pcm_frames()` should be avoided. */
+        public static final short MA_SOUND_FLAG_UNKNOWN_LENGTH        = 0x00000010;
+
+        /* When set, configures the data source to loop by default. */
+        public static final short MA_SOUND_FLAG_LOOPING               = 0x00000020;
+
         /** Do not attach to the endpoint by default. Useful for when setting up nodes in a complex graph system. */
-        public static final short MA_SOUND_FLAG_NO_DEFAULT_ATTACHMENT = 0x00000010;
+        public static final short MA_SOUND_FLAG_NO_DEFAULT_ATTACHMENT = 0x00001000;
 
         /** Disable pitch shifting with ma_sound_set_pitch() and ma_sound_group_set_pitch(). This is an optimization. */
-        public static final short MA_SOUND_FLAG_NO_PITCH              = 0x00000020;
+        public static final short MA_SOUND_FLAG_NO_PITCH              = 0x00002000;
 
         /* Disable spatialization. */
-        public static final short MA_SOUND_FLAG_NO_SPATIALIZATION     = 0x00000040;
+        public static final short MA_SOUND_FLAG_NO_SPATIALIZATION     = 0x00004000;
     }
 }
