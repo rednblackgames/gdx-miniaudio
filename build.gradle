@@ -56,7 +56,7 @@ jnigen {
 
     all {
         cFlags += " -lm -lpthread -ldl "
-        cIncludes = ["miniaudio.h", "stb_vorbis.c"]
+        cIncludes = ["stb_vorbis.c"]
     }
 
     add(Windows, x32)
