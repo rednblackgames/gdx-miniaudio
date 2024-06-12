@@ -10,7 +10,7 @@ buildscript {
         maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
     }
     dependencies {
-        classpath "com.github.Berstanio.gdx-jnigen:gdx-jnigen-gradle:$jniGenVersion"
+        classpath "com.badlogicgames.gdx:gdx-jnigen-gradle:$jniGenVersion"
     }
 }
 
@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    implementation "com.github.Berstanio.gdx-jnigen:gdx-jnigen-loader:$jniGenVersion"
+    implementation "com.badlogicgames.gdx:gdx-jnigen-loader:$jniGenVersion"
     implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
 }
 
