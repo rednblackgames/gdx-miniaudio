@@ -661,7 +661,7 @@ public class MiniAudio implements Disposable {
      * @param z velocity
      */
     public void setListenerVelocity(int listenerIndex, float x, float y, float z) {
-        jniSetListenerWorldUp(listenerIndex, x, y, z);
+        jniSetListenerVelocity(listenerIndex, x, y, z);
     }
 
     private native void jniSetListenerVelocity(int listenerIndex, float x, float y, float z);/*
