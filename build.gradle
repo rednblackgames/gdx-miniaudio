@@ -1,6 +1,16 @@
 buildscript {
+    repositories {
+        maven { url 'https://jitpack.io' }
+        mavenCentral()
+        maven { url 'https://s01.oss.sonatype.org' }
+        gradlePluginPortal()
+        mavenLocal()
+        google()
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
+    }
     dependencies {
-        classpath "com.badlogicgames.gdx:gdx-jnigen-gradle:$jniGenVersion"
+        classpath "com.github.Berstanio.gdx-jnigen:gdx-jnigen-gradle:$jniGenVersion"
     }
 }
 
@@ -14,11 +24,13 @@ group 'games.rednblack.miniaudio'
 version '0.5'
 
 repositories {
+    maven { url 'https://jitpack.io' }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     mavenCentral()
 }
 
 dependencies {
-    implementation "com.badlogicgames.gdx:gdx-jnigen-loader:$jniGenVersion"
+    implementation "com.github.Berstanio.gdx-jnigen:gdx-jnigen-loader:$jniGenVersion"
     implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
 }
 
