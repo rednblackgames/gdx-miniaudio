@@ -1,5 +1,9 @@
 [0.5]
 - Update jniGen to 2.5.1
+- Update MiniAudio to 0.11.22 [dev-fc45d8c]
+- Add Low Pass Filter re-init binding
+- Fix `setListenerVelocity` incorrect jni call
+- Fix Android AAsset deadlock due to incorrect Dalvik AssetManager native reference
 
 [0.4]
 - [BREAK] Remove native logs and forward them to libGDX Logging
