@@ -41,6 +41,7 @@ public class MiniAudio implements Disposable {
         #include <android/log.h>
         #include "miniaudio_android_assets.h"
         ma_android_vfs* androidVFS;
+        static jobject assetManagerGlobalRef;
         #endif
 
         #ifndef MA_ANDROID_LOG_TAG
@@ -466,6 +467,7 @@ public class MiniAudio implements Disposable {
 
     private native void jniSetupAndroid(Object assetManager);/*
         #if defined(MA_ANDROID)
+        assetManagerGlobalRef = env->NewGlobalRef(assetManager);
         androidVFS->asset_manager = AAssetManager_fromJava(env, assetManager);
         #endif
     */
@@ -503,6 +505,7 @@ public class MiniAudio implements Disposable {
         ma_log_uninit(&maLog);
         #if defined(MA_ANDROID)
         ma_free(androidVFS, NULL);
+        env->DeleteGlobalRef(assetManagerGlobalRef);
         #endif
         env->DeleteGlobalRef(jMiniAudio);
     */
