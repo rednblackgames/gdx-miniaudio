@@ -1,5 +1,10 @@
 package games.rednblack.miniaudio;
 
+/**
+ * Wrapper enum to map native MiniAudio device's notifications.
+ *
+ * @author fgnm
+ */
 public enum MADeviceNotificationType {
     STARTED(0),
     STOPPED(1),

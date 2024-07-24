@@ -2083,6 +2083,15 @@ public class MiniAudio implements Disposable {
         }
     }
 
+    /**
+     * Decode a bytes array into a {@link MAAudioBuffer} using MiniAudio's decoder, useful when there's no direct access
+     * to files.
+     *
+     * @param data bytes array input data
+     * @param outputSize size of the decoded PCM frames
+     * @param outputChannels how many channels (usually 2)
+     * @return {@link MAAudioBuffer} with decoded data inside
+     */
     public MAAudioBuffer decodeBytes(byte[] data, int outputSize, int outputChannels) {
         long dataBuffer = jniCreateFloatBuffer(outputSize * outputChannels);
         int decodedFrames = jniDecodeBytes(data, data.length, dataBuffer, outputSize, outputChannels);

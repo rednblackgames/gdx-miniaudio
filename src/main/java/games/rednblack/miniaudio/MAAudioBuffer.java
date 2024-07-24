@@ -40,4 +40,13 @@ public class MAAudioBuffer extends MADataSource {
     public void dispose() {
         miniAudio.disposeAudioBuffer(address, dataBufferAddress);
     }
+
+    /**
+     * Get the length of the buffer in PCM frames.
+     *
+     * @return max length of the buffer
+     */
+    public int getBufferSize() {
+        return bufferSize;
+    }
 }

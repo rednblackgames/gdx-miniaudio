@@ -119,7 +119,7 @@ public class Main implements ApplicationListener {
         assetManager.getLogger().setLevel(Logger.DEBUG);
         assetManager.setLoader(MASound.class, new MASoundLoader(miniAudio, assetManager.getFileHandleResolver()));
         //assetManager.load("game.ogg", MASound.class);
-        assetManager.load("Median_test.ogg", MASound.class);
+        //assetManager.load("Median_test.ogg", MASound.class);
         //assetManager.load("Perfect_Mishap.ogg", MASound.class);
         //assetManager.load("piano2.wav", MASound.class);
     }
