@@ -2082,4 +2082,44 @@ public class MiniAudio implements Disposable {
             deviceNotificationListener.onNotification(MADeviceNotificationType.decode(type));
         }
     }
+
+    public MAAudioBuffer decodeBytes(byte[] data, int outputSize, int outputChannels) {
+        long dataBuffer = jniCreateFloatBuffer(outputSize * outputChannels);
+        int decodedFrames = jniDecodeBytes(data, data.length, dataBuffer, outputSize, outputChannels);
+        if (MAResult.checkErrors(decodedFrames)) {
+            throw new MiniAudioException("Error while decoding byte array", decodedFrames);
+        }
+
+        if (decodedFrames == 0) {
+            throw new MiniAudioException("Could not decode any frame from data", MAResult.MA_ERROR);
+        }
+
+        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, decodedFrames, outputChannels), dataBuffer, decodedFrames, this);
+    }
+
+    private native int jniDecodeBytes(byte[] data, int length, long outBuffer, int frameCount, int outputChannels);/*
+        ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
+
+        void* framesOut = (void*) outBuffer;
+
+        ma_decoder decoder;
+        ma_decoder_config config = ma_decoder_config_init(ma_format_f32, outputChannels, sampleRate);
+
+        ma_result result = ma_decoder_init_memory(data, length, &config, &decoder);
+        if (result != MA_SUCCESS) {
+            ma_decoder_uninit(&decoder);
+            return result;
+        }
+
+        ma_uint64 framesOutCount = 0;
+
+        result = ma_decoder_read_pcm_frames(&decoder, framesOut, frameCount, &framesOutCount);
+        if (result != MA_SUCCESS) {
+            ma_decoder_uninit(&decoder);
+            return result;
+        }
+
+        ma_decoder_uninit(&decoder);
+        return framesOutCount;
+    */
 }

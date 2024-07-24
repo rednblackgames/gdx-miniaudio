@@ -30,6 +30,8 @@ public class Main implements ApplicationListener {
     MAGroup maGroup;
     MANode effectNode;
 
+    MALowPassFilter lowPassFilter;
+
     AssetManager assetManager;
     @Override
     public void create() {
@@ -45,19 +47,24 @@ public class Main implements ApplicationListener {
         for (MADeviceInfo info : devices) {
             System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);
         }
-        miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32,false, false, false);
+
+        byte[] data = Gdx.files.internal("piano2.wav").readBytes();
+        System.out.println("data length: " + data.length);
+        MAAudioBuffer decodedBuffer = miniAudio.decodeBytes(data, data.length * 2, 2);
+       /* miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32,false, false, false);
         miniAudio.setListenerDirection(0, 0, 1);
-        miniAudio.setListenerCone(MathUtils.PI / 4f, MathUtils.PI / 4f, 2f);
+        miniAudio.setListenerCone(MathUtils.PI / 4f, MathUtils.PI / 4f, 2f);*/
 
         maGroup = miniAudio.createGroup();
         maGroup.setSpatialization(true);
         //int res = miniAudio.playSound("Median_test.ogg");
         //int res = miniAudio.playSound("piano2.wav");
         //System.out.println(res);
-        maSound = miniAudio.createSound("piano2.wav");
+        //maSound = miniAudio.createSound("Median_test.ogg");
+        maSound = miniAudio.createSound(decodedBuffer);
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //maSound = miniAudio.createInputSound((short) 0, null);
-        maSound.setSpatialization(false);
+        //maSound.setSpatialization(false);
 
         //effectNode = new MADelayNode(miniAudio, 0.25f, 0.45f, 1);
         effectNode = new MAReverbNode(miniAudio);
@@ -90,7 +97,10 @@ public class Main implements ApplicationListener {
         splitter.attachToThisNode(maSound, 0);*/
 
         //maSound.setVolume(1);
-        maSound.play();
+        /*lowPassFilter = new MALowPassFilter(miniAudio, 100000, 1);
+        miniAudio.attachToEngineOutput(lowPassFilter, 0);
+        lowPassFilter.attachToThisNode(maSound, 0);*/
+        maSound.loop();
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //MAWaveform waveform = miniAudio.createWaveform(2, MAWaveformType.SAWTOOTH, 1, 400);
         //maSound = miniAudio.createSound(waveform);
@@ -111,7 +121,7 @@ public class Main implements ApplicationListener {
         //assetManager.load("game.ogg", MASound.class);
         assetManager.load("Median_test.ogg", MASound.class);
         //assetManager.load("Perfect_Mishap.ogg", MASound.class);
-        assetManager.load("piano2.wav", MASound.class);
+        //assetManager.load("piano2.wav", MASound.class);
     }
 
     @Override
@@ -120,6 +130,7 @@ public class Main implements ApplicationListener {
     }
     private float angle;
     boolean loaded = false;
+    float time = 0;
     @Override
     public void render() {
         if (!assetManager.update(60)) {
@@ -140,6 +151,9 @@ public class Main implements ApplicationListener {
         }*/
         //if (Gdx.graphics.getFrameId() == 500) maSound.setPitch(1);
         angle += MathUtils.PI / 4f / 100f;
+        time += Gdx.graphics.getDeltaTime();
+        float a = (float) ((Math.cos(time) + 1f) / 2f);
+        //lowPassFilter.reinit(550 * a);
         //miniAudio.setListenerDirection(0, 0, MathUtils.sin(angle));
         //maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
         //miniAudio.setListenerPosition(MathUtils.cosDeg(i)*5, 0, 0);
