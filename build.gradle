@@ -48,7 +48,9 @@ task dist(type: Jar) {
 }
 
 tasks.withType(JavaCompile) {
-    options.compilerArgs += ["--release", "7"]
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.compilerArgs += ["--release", "7"]
+    }
 }
 
 jnigen {
