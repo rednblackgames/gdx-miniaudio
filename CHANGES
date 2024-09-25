@@ -1,5 +1,5 @@
 [0.5]
-- Update jniGen to 2.5.2-SNAPSHOT
+- Update jniGen to 2.5.2
 - Update MiniAudio to 0.11.22 [dev-6ab4567]
 - Add Low Pass Filter re-init binding
 - Add `MiniAudio#decodeBytes` to decode directly bytes into an Audio Buffer
