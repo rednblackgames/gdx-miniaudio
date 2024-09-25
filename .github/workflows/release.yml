@@ -39,7 +39,7 @@ jobs:
           /usr/bin/xcodebuild -version
           ./gradlew jniGen jnigenBuildIOS jnigenBuildMacOsX64 jnigenBuildMacOsXARM64
       - name: Upload macOS/iOS natives
-        uses: actions/upload-artifact@v2.1.4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: macos-natives
           path: libs
@@ -74,7 +74,7 @@ jobs:
           sudo apt-get -yq install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
           sudo apt-get -yq install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
       - name: Download macOS/iOS natives
-        uses: actions/download-artifact@v2.0.5
+        uses: actions/download-artifact@v4.1.8
         with:
           name: macos-natives
           path: libs
@@ -101,7 +101,7 @@ jobs:
           NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: ./gradlew publish -PRELEASE=true -Psigning.gnupg.keyId=${{ secrets.GPG_KEYID }} -Psigning.gnupg.passphrase=${{ secrets.GPG_PASSPHRASE }} -Psigning.gnupg.keyName=${{ secrets.GPG_KEYID }}
       - name: Upload all output libs
-        uses: actions/upload-artifact@v2.1.4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: output-libs
           path: build/libs/
