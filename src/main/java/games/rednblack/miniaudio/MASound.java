@@ -1,11 +1,13 @@
 package games.rednblack.miniaudio;
 
+import com.badlogic.gdx.utils.Pool;
+
 /**
  * Wrapper class for mange native sound objects.
  *
  * @author fgnm
  */
-public class MASound extends MANode {
+public class MASound extends MANode implements Pool.Poolable {
 
     private final MADataSource dataSource = new MADataSource(-1, miniAudio) {
         @Override
@@ -356,6 +358,11 @@ public class MASound extends MANode {
     @Override
     public int getSupportedOutputs() {
         return 1;
+    }
+
+    @Override
+    public void reset() {
+        stop();
     }
 
     /**

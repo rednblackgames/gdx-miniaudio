@@ -100,7 +100,7 @@ public class Main implements ApplicationListener {
         /*lowPassFilter = new MALowPassFilter(miniAudio, 100000, 1);
         miniAudio.attachToEngineOutput(lowPassFilter, 0);
         lowPassFilter.attachToThisNode(maSound, 0);*/
-        maSound.loop();
+        //maSound.loop();
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //MAWaveform waveform = miniAudio.createWaveform(2, MAWaveformType.SAWTOOTH, 1, 400);
         //maSound = miniAudio.createSound(waveform);
@@ -122,6 +122,15 @@ public class Main implements ApplicationListener {
         //assetManager.load("Median_test.ogg", MASound.class);
         //assetManager.load("Perfect_Mishap.ogg", MASound.class);
         //assetManager.load("piano2.wav", MASound.class);
+
+        MASoundPool soundPool = new MASoundPool(miniAudio, "piano2.wav");
+        for (int i = 0; i < 10; i++) {
+            MASound sound = soundPool.obtain();
+            sound.loop();
+            if (i == 5) {
+                soundPool.free(sound);
+            }
+        }
     }
 
     @Override

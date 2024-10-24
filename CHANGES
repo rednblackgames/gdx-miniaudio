@@ -5,6 +5,7 @@
 - Add `MiniAudio#decodeBytes` to decode directly bytes into an Audio Buffer
 - Fix `setListenerVelocity` incorrect jni call
 - Fix Android AAsset deadlock due to incorrect Dalvik AssetManager native reference
+- Add MASoundPool API
 
 [0.4]
 - [BREAK] Remove native logs and forward them to libGDX Logging

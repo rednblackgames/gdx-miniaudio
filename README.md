@@ -28,6 +28,7 @@
 - Sound Groups with atomic management
 - Sound Groups Spatialization (position, direction, cone, attenuation model, rolloff, etc.)
 - libGDX AssetManager Loader
+- MASoundPool with libGDX Pool API
 - Audio Input Node (microphone)
 - Audio Encoder Node (only wav)
 
