@@ -79,6 +79,7 @@ public class MiniAudio implements Disposable {
         static jmethodID jon_native_sound_end;
         static jmethodID jon_native_log;
         static jmethodID jon_native_notification;
+        static JNIEnv* soundEnv;
 
         // Helper macro for platform-specific thread attachment
         #ifdef MA_ANDROID
@@ -103,9 +104,15 @@ public class MiniAudio implements Disposable {
             }
 
         void sound_end_callback(void* pUserData, ma_sound* pSound) {
-            ATTACH_ENV()
-            env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) pSound);
-            DETACH_ENV()
+            if (jvm->GetEnv((void**)&soundEnv, JNI_VERSION_1_6) == JNI_EDETACHED) {
+                #ifdef MA_ANDROID
+                jvm->AttachCurrentThread(&soundEnv, NULL);
+                #else
+                jvm->AttachCurrentThread((void**)&soundEnv, NULL);
+                #endif
+            }
+
+            soundEnv->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) pSound);
         }
 
         void ma_log_callback_jni(void* pUserData, ma_uint32 level, const char* pMessage) {
@@ -120,6 +127,13 @@ public class MiniAudio implements Disposable {
             ATTACH_ENV()
             env->CallVoidMethod(jMiniAudio, jon_native_notification, pNotification->type);
             DETACH_ENV()
+
+            if (pNotification->type == ma_device_notification_type_stopped) {
+                JNIEnv* env;
+                if (jvm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_EDETACHED) {
+                    jvm->DetachCurrentThread();
+                }
+            }
         }
      */
 
