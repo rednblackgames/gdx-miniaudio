@@ -106,9 +106,9 @@ public class MiniAudio implements Disposable {
         void sound_end_callback(void* pUserData, ma_sound* pSound) {
             if (jvm->GetEnv((void**)&soundEnv, JNI_VERSION_1_6) == JNI_EDETACHED) {
                 #ifdef MA_ANDROID
-                jvm->AttachCurrentThread(&soundEnv, NULL);
+                jvm->AttachCurrentThreadAsDaemon(&soundEnv, NULL);
                 #else
-                jvm->AttachCurrentThread((void**)&soundEnv, NULL);
+                jvm->AttachCurrentThreadAsDaemon((void**)&soundEnv, NULL);
                 #endif
             }
 
@@ -127,13 +127,6 @@ public class MiniAudio implements Disposable {
             ATTACH_ENV()
             env->CallVoidMethod(jMiniAudio, jon_native_notification, pNotification->type);
             DETACH_ENV()
-
-            if (pNotification->type == ma_device_notification_type_stopped) {
-                JNIEnv* env;
-                if (jvm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_EDETACHED) {
-                    jvm->DetachCurrentThread();
-                }
-            }
         }
      */
 
