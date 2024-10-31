@@ -111,7 +111,7 @@ public class MiniAudio implements Disposable {
             event->type = 0;
             event->sound = pSound;
             while (enqueue(lock_free_queue, event) == -1) {
-                usleep(100000); // 0.1 seconds
+                ma_sleep(100); // 0.1 seconds
             }
         }
 
@@ -121,7 +121,7 @@ public class MiniAudio implements Disposable {
             event->message = strdup(pMessage);
             event->level = level;
             while (enqueue(lock_free_queue, event) == -1) {
-                usleep(100000); // 0.1 seconds
+                ma_sleep(100); // 0.1 seconds
             }
         }
 
@@ -130,7 +130,7 @@ public class MiniAudio implements Disposable {
             event->type = 2;
             event->notificationType = pNotification->type;
             while (enqueue(lock_free_queue, event) == -1) {
-                usleep(100000); // 0.1 seconds
+                ma_sleep(100); // 0.1 seconds
             }
         }
 
@@ -152,7 +152,7 @@ public class MiniAudio implements Disposable {
                     ma_free(event, NULL);
                 } else {
                     // Queue is empty, wait a bit
-                    usleep(100000); // 0.1 seconds
+                    ma_sleep(100); // 0.1 seconds
                 }
             }
 
