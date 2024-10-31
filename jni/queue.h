@@ -1,13 +1,6 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdatomic.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <string.h>
-
 #define QUEUE_SIZE 100
 
 typedef struct {
