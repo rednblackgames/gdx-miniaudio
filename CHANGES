@@ -1,3 +1,6 @@
+[0.6]
+- Fix memory leaks and wrong logic in Native -> Java callbacks
+
 [0.5]
 - Update jniGen to 2.5.2
 - Update MiniAudio to 0.11.22 [dev-6ab4567]

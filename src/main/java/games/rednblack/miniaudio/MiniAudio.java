@@ -35,6 +35,7 @@ public class MiniAudio implements Disposable {
         #include "ma_encoder_node.c"
 
         #include <stdio.h>
+        #include <queue.h>
 
         #ifdef MA_ANDROID
         #include <android/asset_manager_jni.h>
@@ -79,7 +80,9 @@ public class MiniAudio implements Disposable {
         static jmethodID jon_native_sound_end;
         static jmethodID jon_native_log;
         static jmethodID jon_native_notification;
-        static JNIEnv* soundEnv;
+        static LockFreeQueue* lock_free_queue;
+        static ma_thread* callback_thread;
+        static int running_callback_thread = 1;
 
         // Helper macro for platform-specific thread attachment
         #ifdef MA_ANDROID
@@ -104,29 +107,75 @@ public class MiniAudio implements Disposable {
             }
 
         void sound_end_callback(void* pUserData, ma_sound* pSound) {
-            if (jvm->GetEnv((void**)&soundEnv, JNI_VERSION_1_6) == JNI_EDETACHED) {
-                #ifdef MA_ANDROID
-                jvm->AttachCurrentThreadAsDaemon(&soundEnv, NULL);
-                #else
-                jvm->AttachCurrentThreadAsDaemon((void**)&soundEnv, NULL);
-                #endif
+            Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
+            event->type = 0;
+            event->sound = pSound;
+            while (enqueue(lock_free_queue, event) == -1) {
+                usleep(100000); // 0.1 seconds
             }
-
-            soundEnv->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) pSound);
         }
 
         void ma_log_callback_jni(void* pUserData, ma_uint32 level, const char* pMessage) {
-            ATTACH_ENV()
-            jstring javaMessage = env->NewStringUTF(pMessage);
-            env->CallVoidMethod(jMiniAudio, jon_native_log, level, javaMessage);
-            env->DeleteLocalRef(javaMessage);
-            DETACH_ENV()
+            Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
+            event->type = 1;
+            event->message = strdup(pMessage);
+            event->level = level;
+            while (enqueue(lock_free_queue, event) == -1) {
+                usleep(100000); // 0.1 seconds
+            }
         }
 
         void notification_callback_jni(const ma_device_notification* pNotification) {
+            Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
+            event->type = 2;
+            event->notificationType = pNotification->type;
+            while (enqueue(lock_free_queue, event) == -1) {
+                usleep(100000); // 0.1 seconds
+            }
+        }
+
+        static ma_thread_result MA_THREADCALL post_event_to_jni(void* pUserData) {
             ATTACH_ENV()
-            env->CallVoidMethod(jMiniAudio, jon_native_notification, pNotification->type);
+            Event* event;
+            while (running_callback_thread) {
+                if (dequeue(lock_free_queue, &event) == 0) {
+                    if (event->type == 0) {
+                        env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
+                    } else if (event->type == 1) {
+                        jstring javaMessage = env->NewStringUTF(event->message);
+                        env->CallVoidMethod(jMiniAudio, jon_native_log, event->level, javaMessage);
+                        env->DeleteLocalRef(javaMessage);
+                        free(event->message);
+                    } else if (event->type == 2) {
+                        env->CallVoidMethod(jMiniAudio, jon_native_notification, event->notificationType);
+                    }
+                    ma_free(event, NULL);
+                } else {
+                    // Queue is empty, wait a bit
+                    usleep(100000); // 0.1 seconds
+                }
+            }
+
+            //Drain queue before exit
+            while (dequeue(lock_free_queue, &event) == 0) {
+                if (event->type == 0) {
+                    env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
+                } else if (event->type == 1) {
+                    jstring javaMessage = env->NewStringUTF(event->message);
+                    env->CallVoidMethod(jMiniAudio, jon_native_log, event->level, javaMessage);
+                    env->DeleteLocalRef(javaMessage);
+                    free(event->message);
+                } else if (event->type == 2) {
+                    env->CallVoidMethod(jMiniAudio, jon_native_notification, event->notificationType);
+                }
+                ma_free(event, NULL);
+            }
+
+            env->DeleteGlobalRef(jMiniAudio);
             DETACH_ENV()
+            ma_free(lock_free_queue, NULL);
+            ma_free(callback_thread, NULL);
+            return (ma_thread_result)0;
         }
      */
 
@@ -201,6 +250,13 @@ public class MiniAudio implements Disposable {
         jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
         jon_native_log = env->GetMethodID(handlerClass, "on_native_log", "(ILjava/lang/String;)V");
         jon_native_notification = env->GetMethodID(handlerClass, "on_native_notification", "(I)V");
+
+        lock_free_queue = (LockFreeQueue*) ma_malloc(sizeof(LockFreeQueue), NULL);
+        init_queue(lock_free_queue);
+        callback_thread = (ma_thread*) ma_malloc(sizeof(ma_thread), NULL);
+        running_callback_thread = 1;
+        ma_result thread_res = ma_thread_create(callback_thread, ma_thread_priority_normal, 0, post_event_to_jni, NULL, NULL);
+        if (thread_res != MA_SUCCESS) return thread_res;
 
         ma_log_init(NULL, &maLog);
         pLogCallback = ma_log_callback_init(ma_log_callback_jni, NULL);
@@ -514,7 +570,7 @@ public class MiniAudio implements Disposable {
         ma_free(androidVFS, NULL);
         env->DeleteGlobalRef(assetManagerGlobalRef);
         #endif
-        env->DeleteGlobalRef(jMiniAudio);
+        running_callback_thread = 0;
     */
 
     /**
