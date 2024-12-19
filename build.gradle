@@ -66,6 +66,7 @@ jnigen {
     add(Linux, x64)
     add(Linux, x32, ARM)
     add(Linux, x64, ARM)
+    add(Linux, x64, RISCV)
     add(MacOsX, x64) {
         linkerFlags += " -framework CoreFoundation -framework CoreAudio -framework Foundation -framework AVFAudio -framework AudioToolbox "
     }
