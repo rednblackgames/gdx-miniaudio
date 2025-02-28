@@ -197,14 +197,14 @@ public class MiniAudio implements Disposable {
      * Create a new MiniAudio Engine Instance
      *
      * @param logCallback callback to forward native logs
-     * @param overrideRingerSwitch ONLY FOR iOS, Whether to override the ringer/mute switch, see https://github.com/libgdx/libgdx/issues/4430
+     * @param allowBackgroundMusic ONLY FOR iOS, Whether to allow other apps play in background
      * @param enableAAudioBackend ONLY FOR Android, Enable or disable AAudio backend, see https://github.com/rednblackgames/gdx-miniaudio/issues/1
      * @param initEngine automatic init engine with default parameters
      */
-    public MiniAudio(MALogCallback logCallback, boolean overrideRingerSwitch, boolean enableAAudioBackend, boolean initEngine) {
+    public MiniAudio(MALogCallback logCallback, boolean allowBackgroundMusic, boolean enableAAudioBackend, boolean initEngine) {
         this.logCallback = logCallback;
 
-        int result = jniInitContext(overrideRingerSwitch, enableAAudioBackend);
+        int result = jniInitContext(allowBackgroundMusic, enableAAudioBackend);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
@@ -243,7 +243,7 @@ public class MiniAudio implements Disposable {
         engineAddress = jniEngineAddress();
     }
 
-    private native int jniInitContext(boolean overrideRingerSwitch, boolean enableAAudioBackend);/*
+    private native int jniInitContext(boolean allowBackgroundMusic, boolean enableAAudioBackend);/*
         env->GetJavaVM(&jvm);
         jMiniAudio = env->NewGlobalRef(object);
         jclass handlerClass = env->GetObjectClass(jMiniAudio);
@@ -264,7 +264,7 @@ public class MiniAudio implements Disposable {
 
         ma_context_config config = ma_context_config_init();
         config.pLog = &maLog;
-        config.coreaudio.sessionCategory = overrideRingerSwitch ? ma_ios_session_category_ambient : ma_ios_session_category_solo_ambient;
+        config.coreaudio.sessionCategory = allowBackgroundMusic ? ma_ios_session_category_ambient : ma_ios_session_category_solo_ambient;
 
         ma_backend fullBackends[] = {
             ma_backend_wasapi,
