@@ -62,8 +62,12 @@ jnigen {
         libraries  += ["-lm", "-lpthread", "-ldl"]
     }
 
-    addWindows(x32, x86)
-    addWindows(x64, x86)
+    addWindows(x32, x86) {
+        libraries  = ["-lm", "-lpthread"]
+    }
+    addWindows(x64, x86) {
+        libraries  = ["-lm", "-lpthread"]
+    }
 
     addLinux(x64, x86)
     addLinux(x32, ARM)
