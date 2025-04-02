@@ -37,7 +37,7 @@ jobs:
           sudo mv /Applications/Xcode_15.4.0.app /Applications/Xcode.app
           sudo xcode-select -switch /Applications/Xcode.app
           /usr/bin/xcodebuild -version
-          ./gradlew jniGen jnigenBuildIOS jnigenBuildMacOsX64 jnigenBuildMacOsXARM64
+          ./gradlew jnigen jnigenBuildAllIOS jnigenBuildAllMacOsX
       - name: Upload macOS/iOS natives
         uses: actions/upload-artifact@v4.4.0
         with:
@@ -89,7 +89,7 @@ jobs:
           echo "NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
       - name: Build with Gradle
         run: |
-          ./gradlew jniGen jnigenBuildLinux64 jnigenBuildLinuxARM jnigenBuildLinuxARM64 jnigenBuildLinuxRISCV64 jnigenBuildWindows64 jnigenBuildWindows jnigenBuildAndroid
+          ./gradlew jnigen jnigenBuildAllLinux jnigenBuildAllWindows jnigenBuildAllAndroid
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v3
