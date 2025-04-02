@@ -49,6 +49,22 @@ if(isReleaseBuild) {
     }
 }
 
+artifacts {
+    def packageTasks = [
+            tasks.named("jnigenPackageAllAndroid"),
+            tasks.named("jnigenPackageAllIOS"),
+            tasks.named("jnigenPackageAllDesktop")
+    ]
+
+    packageTasks.each { packageTask ->
+        packageTask.get().outputs.files.each { file ->
+            archives(file) {
+                builtBy packageTask
+            }
+        }
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -60,13 +76,6 @@ publishing {
                 usage('java-runtime') {
                     fromResolutionResult()
                 }
-            }
-
-            artifact jnigenJarNativesDesktop { }
-            artifact jnigenJarNativesIOS { }
-
-            ['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86'].each { id ->
-                artifact "jnigenJarNativesAndroid${id}" { }
             }
 
             artifactId = artifact
