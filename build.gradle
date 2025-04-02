@@ -71,14 +71,14 @@ jnigen {
     addLinux(x64, RISCV)
 
     addMac(x64, x86) {
-        linkerFlags += ["-framework CoreFoundation", "-framework CoreAudio", "-framework Foundation", "-framework AVFAudio", "-framework AudioToolbox"]
+        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
     }
     addMac(x64, ARM) {
-        linkerFlags += ["-framework CoreFoundation", "-framework CoreAudio", "-framework Foundation", "-framework AVFAudio", "-framework AudioToolbox"]
+        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
     }
     addIOS() {
-        linkerFlags += ["-framework CoreFoundation", "-framework CoreAudio", "-framework Foundation", "-framework AVFAudio", "-framework AudioToolbox"]
-        cppFlags += ["-x objective-c++"]
+        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
+        cppFlags += ["-x", "objective-c++"]
     }
     addAndroid() {
         libraries = ["-llog", "-landroid", "-lm", "-ldl"]
