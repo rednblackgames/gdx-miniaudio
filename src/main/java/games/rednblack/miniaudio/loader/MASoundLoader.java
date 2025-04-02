@@ -7,6 +7,7 @@ import com.badlogic.gdx.assets.loaders.AsynchronousAssetLoader;
 import com.badlogic.gdx.assets.loaders.FileHandleResolver;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Array;
+import games.rednblack.miniaudio.MAAudioBuffer;
 import games.rednblack.miniaudio.MASound;
 import games.rednblack.miniaudio.MiniAudio;
 
@@ -27,10 +28,17 @@ public class MASoundLoader extends AsynchronousAssetLoader<MASound, MASoundLoade
 
     @Override
     public void loadAsync(AssetManager manager, String fileName, FileHandle file, MASoundLoaderParameters parameter) {
-        if (parameter != null)
-            sound = miniAudio.createSound(file.path(), parameter.flags, parameter.maGroup, parameter.external);
-        else
+        if (parameter != null) {
+            if (parameter.loadFromMemory) {
+                byte[] data = file.readBytes();
+                MAAudioBuffer decodedBuffer = miniAudio.decodeBytes(data, data.length * 2, 2);
+                sound = miniAudio.createSound(decodedBuffer);
+            } else {
+                sound = miniAudio.createSound(file.path(), parameter.flags, parameter.maGroup, parameter.external);
+            }
+        } else {
             sound = miniAudio.createSound(file.path());
+        }
     }
 
     @Override
