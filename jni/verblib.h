@@ -29,7 +29,7 @@ extern "C" {
 
     /* The maximum sample rate that should be supported, specified as a multiple of 44100. */
 #ifndef verblib_max_sample_rate_multiplier
-#define verblib_max_sample_rate_multiplier 4
+#define verblib_max_sample_rate_multiplier 5
 #endif
 
     /* The silence threshold which is used when calculating decay time. */
