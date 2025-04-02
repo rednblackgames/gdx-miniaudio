@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4.4.0
         with:
           name: macos-natives
-          path: libs
+          path: build/jnigen/libs
 
   linux:
     needs: macos
@@ -78,7 +78,7 @@ jobs:
         uses: actions/download-artifact@v4.1.8
         with:
           name: macos-natives
-          path: libs
+          path: build/jnigen/libs
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Download Android NDK
