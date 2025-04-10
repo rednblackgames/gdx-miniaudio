@@ -3,7 +3,10 @@ package games.rednblack.miniaudio;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.Null;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
+import games.rednblack.miniaudio.config.MAContextConfiguration;
+import games.rednblack.miniaudio.config.MAEngineConfiguration;
 
 /**
  * Main Audio Engine interface that handle calls with native library.
@@ -190,60 +193,67 @@ public class MiniAudio implements Disposable {
      *
      */
     public MiniAudio() {
-        this(null, false, true, true);
+        this(new MAContextConfiguration(), new MAEngineConfiguration());
     }
 
     /**
      * Create a new MiniAudio Engine Instance
      *
-     * @param logCallback callback to forward native logs
-     * @param allowBackgroundMusic ONLY FOR iOS, Whether to allow other apps play in background
-     * @param enableAAudioBackend ONLY FOR Android, Enable or disable AAudio backend, see https://github.com/rednblackgames/gdx-miniaudio/issues/1
-     * @param initEngine automatic init engine with default parameters
+     * @param contextConfiguration configuration for the audio context
+     * @param engineConfiguration configuration for engine,
+     *                            or null if more customization is needed before engine initialization
      */
-    public MiniAudio(MALogCallback logCallback, boolean allowBackgroundMusic, boolean enableAAudioBackend, boolean initEngine) {
-        this.logCallback = logCallback;
+    public MiniAudio(MAContextConfiguration contextConfiguration, @Null MAEngineConfiguration engineConfiguration) {
+        if (contextConfiguration == null)
+            throw new IllegalArgumentException("contextConfiguration cannot be null");
 
-        int result = jniInitContext(allowBackgroundMusic, enableAAudioBackend);
+        this.logCallback = contextConfiguration.logCallback;
+
+        int result = jniInitContext(contextConfiguration.iOSSessionCategory.code, contextConfiguration.iOSSessionCategoryOptions, contextConfiguration.androidUseAAudio);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
 
-        if (initEngine) initEngine(1, -1, -1, 0, 0, 0, 0, MAFormatType.F32, false, false, true);
+        if (engineConfiguration != null)
+            initEngine(engineConfiguration);
+
         endCallbackSound = new MASound(this);
     }
 
     /**
      * Initialize MiniAudio Engine
      *
-     * @param listenerCount number of listeners in 3D Spatialization.
-     * @param playbackId native address of playback device (use -1 for default).
-     * @param captureId native address of capture device (use -1 for default).
-     * @param channels The number of channels to use when mixing and spatializing.
-     *                 When set to 0, will use the native channel count of the device.
-     * @param bufferPeriodMillis the size of input buffer in millis. Set 0 for default.
-     * @param bufferPeriodFrames the size of input buffer in PCM frames, use it to change latency (bufferSize / sampleRate).
-     *                           Set 0 for default.
-     * @param sampleRate how many samples your audio interface will capture every second. Set 0 for default.
-     * @param formatType devices data format, see {@link MAFormatType}
-     * @param fullDuplex enable/disable full duplex engine (require microphone permission)
-     * @param exclusive enable/disable capture exclusive device mode
-     * @param lowLatency enable/disable low latency profile
+     * @param engineConfiguration configuration for engine
      */
-    public void initEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, MAFormatType formatType, boolean fullDuplex, boolean exclusive, boolean lowLatency) {
+    public void initEngine(MAEngineConfiguration engineConfiguration) {
         if (engineAddress != 0) throw new IllegalStateException("A MiniAudio Engine is already initialized.");
 
-        if (listenerCount < 1 || listenerCount > MA_ENGINE_MAX_LISTENERS)
+        if (engineConfiguration == null)
+            throw new IllegalArgumentException("engineConfiguration cannot be null.");
+
+        if (engineConfiguration.listenerCount < 1 || engineConfiguration.listenerCount > MA_ENGINE_MAX_LISTENERS)
             throw new IllegalArgumentException("Listeners must be between 1 and MA_ENGINE_MAX_LISTENERS");
 
-        int result = jniInitEngine(listenerCount, playbackId, captureId, channels, bufferPeriodMillis, bufferPeriodFrames, sampleRate, formatType.code, fullDuplex, exclusive, lowLatency);
+        int result = jniInitEngine(
+                engineConfiguration.listenerCount,
+                engineConfiguration.playbackId,
+                engineConfiguration.captureId,
+                engineConfiguration.channels,
+                engineConfiguration.bufferPeriodMillis,
+                engineConfiguration.bufferPeriodFrames,
+                engineConfiguration.sampleRate,
+                engineConfiguration.formatType.code,
+                engineConfiguration.fullDuplex,
+                engineConfiguration.exclusive,
+                engineConfiguration.lowLatency
+        );
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
     }
 
-    private native int jniInitContext(boolean allowBackgroundMusic, boolean enableAAudioBackend);/*
+    private native int jniInitContext(int iOSSessionCategory, short iOSSessionCategoryOptions, boolean enableAAudioBackend);/*
         env->GetJavaVM(&jvm);
         jMiniAudio = env->NewGlobalRef(object);
         jclass handlerClass = env->GetObjectClass(jMiniAudio);
@@ -264,7 +274,8 @@ public class MiniAudio implements Disposable {
 
         ma_context_config config = ma_context_config_init();
         config.pLog = &maLog;
-        config.coreaudio.sessionCategory = allowBackgroundMusic ? ma_ios_session_category_ambient : ma_ios_session_category_solo_ambient;
+        config.coreaudio.sessionCategory = (ma_ios_session_category) iOSSessionCategory;
+        config.coreaudio.sessionCategoryOptions = iOSSessionCategoryOptions;
 
         ma_backend fullBackends[] = {
             ma_backend_wasapi,
@@ -310,7 +321,7 @@ public class MiniAudio implements Disposable {
 
     /**
      * Enumerate every device attached to the device with their capabilities,
-     * check devices before {@link #initEngine(int, long, long, int, int, int, int, MAFormatType, boolean, boolean, boolean)}
+     * check devices before {@link #initEngine(MAEngineConfiguration)}
      *
      * @return array of devices information
      */
