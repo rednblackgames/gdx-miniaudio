@@ -11,7 +11,7 @@ public class MASoundPool extends Pool<MASound> {
 
     private final MiniAudio miniAudio;
     private final String fileName;
-    private final short flogs;
+    private final short flags;
     private final MAGroup group;
     private final boolean external;
 
@@ -35,14 +35,14 @@ public class MASoundPool extends Pool<MASound> {
         super(initialCapacity, max);
         this.miniAudio = miniAudio;
         this.fileName = fileName;
-        this.flogs = flags;
+        this.flags = flags;
         this.group = group;
         this.external = external;
     }
 
     @Override
     protected MASound newObject() {
-        return miniAudio.createSound(fileName, flogs, group, external);
+        return miniAudio.createSound(fileName, flags, group, external);
     }
 
     @Override
