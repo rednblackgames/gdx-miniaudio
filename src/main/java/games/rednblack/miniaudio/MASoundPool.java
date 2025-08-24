@@ -44,4 +44,10 @@ public class MASoundPool extends Pool<MASound> {
     protected MASound newObject() {
         return miniAudio.createSound(fileName, flogs, group, external);
     }
+
+    @Override
+    protected void discard(MASound object) {
+        object.dispose();
+        super.discard(object);
+    }
 }
