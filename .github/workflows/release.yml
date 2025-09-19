@@ -106,3 +106,9 @@ jobs:
         with:
           name: output-libs
           path: build/jnigen/libs
+      - name: Trigger manual upload to Central Repository
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $(echo -n '${{ secrets.NEXUS_USERNAME }}:${{ secrets.NEXUS_PASSWORD }}' | base64)" \
+            -H "Content-Type: application/json" \
+            https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/games.rednblack

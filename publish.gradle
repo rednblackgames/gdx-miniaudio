@@ -13,12 +13,12 @@ def sonatypeRepositoryUrl
 //set build variables based on build type (release, continuous integration, development)
 if(hasProperty("RELEASE")) {
     isReleaseBuild = true
-    sonatypeRepositoryUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+    sonatypeRepositoryUrl = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
     println "Performing release build"
 } else if (hasProperty("SNAPSHOT")) {
     isCiBuild = true
     version += "-SNAPSHOT"
-    sonatypeRepositoryUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+    sonatypeRepositoryUrl = "https://central.sonatype.com/repository/maven-snapshots/"
     println "Performing snapshot build"
 } else {
     version += "-LOCAL"
