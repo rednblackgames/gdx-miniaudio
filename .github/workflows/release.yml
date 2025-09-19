@@ -8,7 +8,7 @@ on:
 
 jobs:
   macos:
-    runs-on: macos-latest
+    runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v2
@@ -31,11 +31,6 @@ jobs:
         run: chmod +x gradlew
       - name: Build macOS natives
         run: |
-          # See https://github.com/actions/virtual-environments/issues/2557
-          sudo mv /Library/Developer/CommandLineTools/SDKs/* /tmp
-          sudo mv /Applications/Xcode.app /Applications/Xcode.app.bak
-          sudo mv /Applications/Xcode_15.4.0.app /Applications/Xcode.app
-          sudo xcode-select -switch /Applications/Xcode.app
           /usr/bin/xcodebuild -version
           ./gradlew jnigen jnigenBuildAllIOS jnigenBuildAllMacOsX
       - name: Upload macOS/iOS natives
