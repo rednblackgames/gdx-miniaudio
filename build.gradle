@@ -6,7 +6,7 @@ buildscript {
         gradlePluginPortal()
         mavenLocal()
         google()
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
         maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
     }
     dependencies {
