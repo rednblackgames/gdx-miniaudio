@@ -14,7 +14,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * spectrum. An LFO continuously sweeps the position of these notches,
  * producing the characteristic sweeping sound.
  *
- * <h3>Key Parameters:</h3>
+ * <h1>Key Parameters:</h1>
  * <ul>
  * <li><b>Stages:</b> The number of all-pass filters in the chain (more stages create a more complex sound).</li>
  * <li><b>Rate:</b> The speed (in Hz) of the LFO sweep.</li>

@@ -25,7 +25,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * Examples: dialogue, narration, a kick drum beat.</li>
  * </ul>
  *
- * <h3>Modes of Operation</h3>
+ * <h1>Modes of Operation</h1>
  * <ol>
  * <li><strong>Standard Compression:</strong> If you only connect a node to
  * <strong>Input Bus 0</strong>, the compressor works in a standard mode.
@@ -39,7 +39,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * (a technique called "ducking").</li>
  * </ol>
  *
- * <h3>Side-chain Ducking Example</h3>
+ * <h1>Side-chain Ducking Example</h1>
  * The following example demonstrates how to make background music "duck"
  * (lower in volume) whenever a dialogue sound is playing.
  *

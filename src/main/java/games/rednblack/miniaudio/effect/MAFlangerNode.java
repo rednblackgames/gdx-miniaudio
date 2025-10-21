@@ -14,7 +14,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * <b>feedback</b> circuit, which feeds a portion of the output back into the
  * input, creating a more intense and resonant tonal sweep.
  *
- * <h3>Key Parameters:</h3>
+ * <h1>Key Parameters:</h1>
  * <ul>
  * <li><b>Rate:</b> The speed (in Hz) of the LFO sweep.</li>
  * <li><b>Depth:</b> The range of the delay time modulation.</li>
