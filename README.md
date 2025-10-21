@@ -49,6 +49,7 @@
 - Chorus
 - Flanger
 - Phaser
+- Compressor (with side-chain control)
 
 **Mixers**
 
