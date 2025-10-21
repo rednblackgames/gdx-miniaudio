@@ -21,6 +21,7 @@ typedef struct {
 void init_queue(LockFreeQueue *queue) {
     ma_atomic_uint32_set(&queue->head, 0);
     ma_atomic_uint32_set(&queue->tail, 0);
+    MA_ZERO_MEMORY(&queue->buffer, sizeof(Event*) * QUEUE_SIZE);
 }
 
 // Add an event to the queue (non-blocking, multi-producer safe)
