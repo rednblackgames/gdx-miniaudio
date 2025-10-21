@@ -531,6 +531,7 @@ public class MiniAudio implements Disposable {
         #if defined(MA_ANDROID)
         androidVFS = (ma_android_vfs*) ma_malloc(sizeof(ma_android_vfs), NULL);
         res = ma_android_vfs_init(androidVFS, NULL);
+        androidVFS->pLog = &maLog;
         if (res != MA_SUCCESS) return res;
         engineConfig.pResourceManagerVFS = androidVFS;
         #endif

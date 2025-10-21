@@ -10,6 +10,7 @@ typedef struct {
     ma_vfs_callbacks cb;
     ma_allocation_callbacks allocationCallbacks;
     AAssetManager* asset_manager;
+    ma_log* pLog;
 } ma_android_vfs;
 
 typedef enum {
@@ -123,16 +124,17 @@ ma_result ma_android_vfs_read(ma_vfs* pVFS, ma_vfs_file file, void* pDst, size_t
     AAsset* asset = (AAsset*) wrapperFile->file;
     int result = AAsset_read(asset, pDst, sizeInBytes);
 
-    if (pBytesRead != NULL) {
-        *pBytesRead = result;
+    if (result < 0) {
+        ma_log_postf(androidVfs->pLog, MA_LOG_LEVEL_ERROR, "AAsset_read failed with error code %d.\n", result);
+        return MA_ERROR; // This is a real error.
     }
 
-    if (result != sizeInBytes) {
-        if (result == 0) {
-            return MA_AT_END;
-        } else {
-            return MA_ERROR;
-        }
+    if (pBytesRead != NULL) {
+        *pBytesRead = (size_t) result;
+    }
+
+    if (result == 0) {
+        return MA_AT_END;
     }
 
     return MA_SUCCESS;
@@ -167,6 +169,7 @@ ma_result ma_android_vfs_seek(ma_vfs* pVFS, ma_vfs_file file, ma_int64 offset, m
     off_t result = AAsset_seek(asset, offset, whence);
 
     if (result == -1) {
+        ma_log_postf(androidVfs->pLog, MA_LOG_LEVEL_ERROR, "AAsset_seek returned -1.\n");
         return MA_ERROR;
     }
 
