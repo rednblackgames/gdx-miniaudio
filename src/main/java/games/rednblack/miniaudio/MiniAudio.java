@@ -119,10 +119,32 @@ public class MiniAudio implements Disposable {
         }
 
         void ma_log_callback_jni(void* pUserData, ma_uint32 level, const char* pMessage) {
+            if (pMessage == NULL) {
+                return;
+            }
+
+            size_t len = strlen(pMessage);
+            size_t new_len = len;
+            if (len > 0 && pMessage[len - 1] == '\n') {
+                new_len = len - 1;
+            }
+
             Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
+            if (event == NULL) {
+                return;
+            }
+
+            event->message = (char*) ma_malloc(new_len + 1, NULL);
+            if (event->message == NULL) {
+                ma_free(event, NULL);
+                return;
+            }
+
+            memcpy(event->message, pMessage, new_len);
+            event->message[new_len] = '\0';
             event->type = 1;
-            event->message = strdup(pMessage);
             event->level = level;
+
             while (enqueue(lock_free_queue, event) == -1) {
                 ma_sleep(100); // 0.1 seconds
             }
