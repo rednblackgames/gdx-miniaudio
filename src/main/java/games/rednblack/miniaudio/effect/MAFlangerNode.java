@@ -5,6 +5,24 @@ import games.rednblack.miniaudio.MAResult;
 import games.rednblack.miniaudio.MiniAudio;
 import games.rednblack.miniaudio.MiniAudioException;
 
+/**
+ * Represents a flanger audio effect node.
+ * <p>
+ * The flanger produces a characteristic "swooshing" or "jet engine" sound.
+ * It works by mixing the original signal with a delayed copy, where the delay
+ * time is very short and is modulated by an LFO. A key component is the
+ * <b>feedback</b> circuit, which feeds a portion of the output back into the
+ * input, creating a more intense and resonant tonal sweep.
+ *
+ * <h3>Key Parameters:</h3>
+ * <ul>
+ * <li><b>Rate:</b> The speed (in Hz) of the LFO sweep.</li>
+ * <li><b>Depth:</b> The range of the delay time modulation.</li>
+ * <li><b>Feedback:</b> The amount of processed signal fed back into the input (-1.0 to 1.0).</li>
+ * </ul>
+ *
+ * @author fgnm
+ */
 public class MAFlangerNode extends MANode {
     /*JNI
         #include "miniaudio.h"

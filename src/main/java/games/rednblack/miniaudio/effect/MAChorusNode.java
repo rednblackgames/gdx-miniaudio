@@ -5,6 +5,23 @@ import games.rednblack.miniaudio.MAResult;
 import games.rednblack.miniaudio.MiniAudio;
 import games.rednblack.miniaudio.MiniAudioException;
 
+/**
+ * Represents a chorus audio effect node.
+ * <p>
+ * This effect creates a thicker, shimmering sound by mixing the original audio
+ * with one or more delayed and pitch-modulated copies. It simulates the sound
+ * of multiple voices or instruments playing the same part, adding richness
+ * and texture to the signal.
+ *
+ * <h3>Key Parameters:</h3>
+ * <ul>
+ * <li><b>Rate:</b> The speed (in Hz) of the LFO that modulates the delay time.</li>
+ * <li><b>Depth:</b> The intensity of the pitch/delay modulation.</li>
+ * <li><b>Delay:</b> The base delay time (in ms) for the copied signals.</li>
+ * </ul>
+ *
+ * @author fgnm
+ */
 public class MAChorusNode extends MANode {
     /*JNI
         #include "miniaudio.h"
