@@ -13,7 +13,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * of multiple voices or instruments playing the same part, adding richness
  * and texture to the signal.
  *
- * <h1>Key Parameters:</h1>
+ * Key Parameters:
  * <ul>
  * <li><b>Rate:</b> The speed (in Hz) of the LFO that modulates the delay time.</li>
  * <li><b>Depth:</b> The intensity of the pitch/delay modulation.</li>

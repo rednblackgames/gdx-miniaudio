@@ -13,7 +13,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * is particularly powerful because it supports both standard and side-chain
  * compression through its two-input bus system.
  *
- * <h3>How the Two Inputs Work</h3>
+ * How the Two Inputs Work
  * The compressor's behavior is determined by which input buses are connected:
  * <ul>
  * <li><strong>Input Bus 0 (Main Signal):</strong> This is the primary audio signal
@@ -25,7 +25,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * Examples: dialogue, narration, a kick drum beat.</li>
  * </ul>
  *
- * <h1>Modes of Operation</h1>
+ * Modes of Operation
  * <ol>
  * <li><strong>Standard Compression:</strong> If you only connect a node to
  * <strong>Input Bus 0</strong>, the compressor works in a standard mode.
@@ -39,7 +39,7 @@ import games.rednblack.miniaudio.MiniAudioException;
  * (a technique called "ducking").</li>
  * </ol>
  *
- * <h1>Side-chain Ducking Example</h1>
+ * Side-chain Ducking Example
  * The following example demonstrates how to make background music "duck"
  * (lower in volume) whenever a dialogue sound is playing.
  *
