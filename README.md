@@ -48,6 +48,7 @@
 - Reverb
 - Chorus
 - Flanger
+- Phaser
 
 **Mixers**
 

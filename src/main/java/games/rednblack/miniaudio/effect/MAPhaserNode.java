@@ -1,0 +1,175 @@
+package games.rednblack.miniaudio.effect;
+
+import games.rednblack.miniaudio.MANode;
+import games.rednblack.miniaudio.MAResult;
+import games.rednblack.miniaudio.MiniAudio;
+import games.rednblack.miniaudio.MiniAudioException;
+
+public class MAPhaserNode extends MANode {
+    /*JNI
+        #include "miniaudio.h"
+        #include "ma_phaser_node.h"
+     */
+
+    public MAPhaserNode(MiniAudio miniAudio) {
+        this(miniAudio, -1);
+    }
+
+    public MAPhaserNode(MiniAudio miniAudio, int customChannels) {
+        super(miniAudio);
+
+        address = jniCreateNode(miniAudio.getEngineAddress(), customChannels);
+
+        if (MAResult.checkErrors(address)) {
+            throw new MiniAudioException("Error while creating phaser node", (int) address);
+        }
+    }
+
+    private native long jniCreateNode(long graphAddress, int customChannels);/*
+        ma_engine* g_engine = (ma_engine*) graphAddress;
+        ma_phaser_node_config nodeConfig;
+        ma_uint32 channels;
+        ma_uint32 sampleRate;
+
+        channels   = customChannels == -1 ? ma_engine_get_channels(g_engine) : customChannels;
+        sampleRate = ma_engine_get_sample_rate(g_engine);
+
+        nodeConfig = ma_phaser_node_config_init(channels, sampleRate);
+
+        ma_phaser_node* g_Node = (ma_phaser_node*) ma_malloc(sizeof(ma_phaser_node), NULL);
+        ma_result result = ma_phaser_node_init(ma_engine_get_node_graph(g_engine), &nodeConfig, NULL, g_Node);
+        if (result != MA_SUCCESS) {
+            ma_free(g_Node, NULL);
+            return (jlong) result;
+        }
+        return (jlong) g_Node;
+    */
+
+    @Override
+    public int getSupportedOutputs() {
+        return 1;
+    }
+
+    @Override
+    public void dispose() {
+        jniDispose(address);
+    }
+
+    private native void jniDispose(long nodeAddress); /*
+        ma_phaser_node* node = (ma_phaser_node*) nodeAddress;
+        ma_phaser_node_uninit(node, NULL);
+        ma_free(node, NULL);
+    */
+
+    /**
+     * LFO rate in Hz. (Default: 0.5)
+     *
+     * @param rate in Hz
+     */
+    public void setRate(float rate) {
+        jniSetRate(address, rate);
+    }
+
+    private native void jniSetRate(long address, float rate);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->rate = rate;
+    */
+
+    /**
+     * Modulation depth in milliseconds. (Default: 1.0).
+     *
+     * @param depth in milliseconds
+     */
+    public void setDepth(float depth) {
+        jniSetDepth(address, depth);
+    }
+
+    private native void jniSetDepth(long address, float depth);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->depth = depth;
+    */
+
+    /**
+     * Wet signal mix level. (Default: 0.5).
+     *
+     * @param wet from 0.0 to 1.0
+     */
+    public void setWet(float wet) {
+        jniSetWet(address, wet);
+    }
+
+    private native void jniSetWet(long address, float wet);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->wet = wet;
+    */
+
+    /**
+     * Dry signal mix level. (Default: 0.5).
+     *
+     * @param dry from 0.0 to 1.0
+     */
+    public void setDry(float dry) {
+        jniSetDry(address, dry);
+    }
+
+    private native void jniSetDry(long address, float dry);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->dry = dry;
+    */
+
+    /**
+     * Number of all-pass filter stages. Default: 4.
+     *
+     * @param stages 2 to 12 is typical
+     */
+    public void setStages(int stages) {
+        jniSetStages(address, stages);
+    }
+
+    private native void jniSetStages(long address, float stages);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->numStages = stages;
+    */
+
+    /**
+     * Feedback level. Default: 0.5
+     *
+     * @param feedback from -1.0 to 1.0
+     */
+    public void setFeedback(float feedback) {
+        jniSetFeedback(address, feedback);
+    }
+
+    private native void jniSetFeedback(long address, float feedback);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->feedback = feedback;
+    */
+
+    /**
+     * LFO sweep range start. Default: 440.0
+     *
+     * @param frequencyRangeMin in Hz
+     */
+    public void setFrequencyRangeMin(float frequencyRangeMin) {
+        jniFrequencyRangeMin(address, frequencyRangeMin);
+    }
+
+    private native void jniFrequencyRangeMin(long address, float frequencyRangeMin);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->rangeMin = frequencyRangeMin;
+    */
+
+    /**
+     * LFO sweep range end. Default: 1600.0
+     *
+     * @param frequencyRangeMax in Hz
+     */
+    public void setFrequencyRangeMax(float frequencyRangeMax) {
+        jniFrequencyRangeMax(address, frequencyRangeMax);
+    }
+
+    private native void jniFrequencyRangeMax(long address, float frequencyRangeMax);/*
+        ma_phaser_node* node = (ma_phaser_node*) address;
+        node->rangeMax = frequencyRangeMax;
+    */
+}
