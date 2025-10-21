@@ -50,6 +50,7 @@
 - Flanger
 - Phaser
 - Compressor (with side-chain control)
+- Peak Limiter
 
 **Mixers**
 
