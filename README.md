@@ -46,6 +46,7 @@
 
 - Delay/Echo
 - Reverb
+- Chorus
 
 **Mixers**
 
