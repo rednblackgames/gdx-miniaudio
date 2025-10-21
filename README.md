@@ -47,6 +47,7 @@
 - Delay/Echo
 - Reverb
 - Chorus
+- Flanger
 
 **Mixers**
 

@@ -4,7 +4,7 @@
 - Fix memory leaks and wrong logic in Native -> Java callbacks
 - Update MiniAudio to 0.11.23
 - Add `MASoundLoaderParameters#loadFromMemory` as a workaround to not able to load files from jar package
-- Add MAChorusNode effect
+- Add MAChorusNode, MAFlangerNode effects
 
 [0.5]
 - Update jniGen to 2.5.2

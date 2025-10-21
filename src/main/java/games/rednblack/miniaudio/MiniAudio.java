@@ -37,6 +37,7 @@ public class MiniAudio implements Disposable {
         #include "ma_ltrim_node.c"
         #include "ma_encoder_node.c"
         #include "ma_chorus_node.c"
+        #include "ma_flanger_node.c"
 
         #include <stdio.h>
         #include <queue.h>
