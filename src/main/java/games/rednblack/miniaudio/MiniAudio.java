@@ -1346,8 +1346,7 @@ public class MiniAudio implements Disposable {
 
     private native void jniSeekSoundTo(long soundAddress, float seconds);/*
         ma_sound* sound = (ma_sound*) soundAddress;
-        ma_uint64 frameIndex = ma_engine_get_sample_rate(&engine) * ma_engine_get_channels(&engine) * seconds;
-        ma_sound_seek_to_pcm_frame(sound, frameIndex);
+        ma_sound_seek_to_second(sound, seconds);
     */
 
     /**
