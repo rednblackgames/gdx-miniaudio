@@ -1,6 +1,7 @@
 [0.6]
-- [BREAK] Update gdx-jnigen to 3.0.0
+- [BREAK] Update gdx-jnigen to 3.1.1
 - [BREAK] Introduce `MAContextConfiguration` and `MAEngineConfiguration` classes
+- [BREAK] Update libGDX to 1.14.0 (remove Java 7 support)
 - Fix memory leaks and wrong logic in Native -> Java callbacks
 - Update MiniAudio to 0.11.23
 - Add `MASoundLoaderParameters#loadFromMemory` as a workaround to not able to load files from jar package

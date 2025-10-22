@@ -54,14 +54,13 @@ public class MALowPassFilter extends MANode {
     */
 
     public void reinit(double cutoffFrequency) {
-        int result = jniReinitNode(miniAudio.getEngineAddress(), address, cutoffFrequency, order);
+        int result = jniReinitNode(address, cutoffFrequency, order);
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable reinit low pass filter", result);
         }
     }
 
-    private native int jniReinitNode(long graphAddress, long nodeAddress, double cutoffFrequency, int order);/*
-        ma_engine* g_engine = (ma_engine*) graphAddress;
+    private native int jniReinitNode(long nodeAddress, double cutoffFrequency, int order);/*
         ma_lpf_node* g_Node = (ma_lpf_node*) nodeAddress;
 
         ma_lpf_config config = ma_lpf_config_init(g_Node->lpf.format, g_Node->lpf.channels, g_Node->lpf.sampleRate, cutoffFrequency, order);

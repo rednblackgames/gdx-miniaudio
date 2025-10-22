@@ -2,12 +2,10 @@ buildscript {
     repositories {
         maven { url 'https://jitpack.io' }
         mavenCentral()
-        maven { url 'https://s01.oss.sonatype.org' }
         gradlePluginPortal()
         mavenLocal()
         google()
         maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
-        maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
     }
     dependencies {
         classpath "com.badlogicgames.jnigen:jnigen-gradle:$jniGenVersion"
@@ -38,8 +36,8 @@ java {
     withJavadocJar()
     withSourcesJar()
 
-    sourceCompatibility = JavaVersion.VERSION_1_7
-    targetCompatibility = JavaVersion.VERSION_1_7
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 task dist(type: Jar) {
@@ -49,7 +47,7 @@ task dist(type: Jar) {
 
 tasks.withType(JavaCompile) {
     if (JavaVersion.current().isJava9Compatible()) {
-        options.compilerArgs += ["--release", "7"]
+        options.compilerArgs += ["--release", "8"]
     }
 }
 
