@@ -22,6 +22,15 @@ public class MAAudioBuffer extends MADataSource {
      * Write to data buffer.
      *
      * @param data array of raw PCM data.
+     */
+    public void write(float[] data) {
+        write(data, data.length);
+    }
+
+    /**
+     * Write to data buffer.
+     *
+     * @param data array of raw PCM data.
      * @param size size of data to be written
      */
     public void write(float[] data, int size) {

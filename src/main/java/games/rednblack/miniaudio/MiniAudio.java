@@ -1505,16 +1505,17 @@ public class MiniAudio implements Disposable {
      * @return {@link MAAudioBuffer} that can be used for create a new Sound with {@link #createSound(MADataSource)}
      */
     public MAAudioBuffer createAudioBuffer(int size, int channels) {
-        long dataBuffer = jniCreateFloatBuffer(size * channels);
+        long dataBuffer = jniCreateDataBuffer(size, channels);
         return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, size, channels), dataBuffer, size, this);
     }
 
-    private native long jniCreateFloatBuffer(int size);/*
-        return (jlong) calloc(size, sizeof(float));
+    private native long jniCreateDataBuffer(int size, int channels);/*
+        ma_uint64 bpf = ma_get_bytes_per_frame(ma_format_f32, channels);
+        return (jlong) ma_calloc((size_t)(size * bpf), NULL);
     */
 
     private native long jniCreateAudioBuffer(long dataBuffer, int size, int channels);/*
-        float* pExistingData = (float*) dataBuffer;
+        void* pExistingData = (void*) dataBuffer;
         ma_audio_buffer_config config = ma_audio_buffer_config_init(ma_format_f32, channels, size, pExistingData, NULL);
 
         ma_audio_buffer* buffer = (ma_audio_buffer*) ma_malloc(sizeof(ma_audio_buffer), NULL);
@@ -1539,11 +1540,11 @@ public class MiniAudio implements Disposable {
 
     private native void jniDisposeAudioBuffer(long audioBuffer, long dataBuffer);/*
         ma_audio_buffer* buffer = (ma_audio_buffer*) audioBuffer;
-        float* pExistingData = (float*) dataBuffer;
+        void* pExistingData = (void*) dataBuffer;
 
         ma_audio_buffer_uninit(buffer);
         ma_free(buffer, NULL);
-        free(pExistingData);
+        ma_free(pExistingData, NULL);
     */
 
     /**
@@ -2214,62 +2215,21 @@ public class MiniAudio implements Disposable {
         }
 
         ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
-
-        ma_decoder decoder;
         ma_decoder_config config = ma_decoder_config_init(ma_format_f32, outputChannels, sampleRate);
 
-        ma_result result = ma_decoder_init_memory(data, length, &config, &decoder);
+        ma_uint64 frameCountOut = 0;
+        void* pPcmFramesOut = NULL;
+
+        ma_result result = ma_decode_memory(data, length, &config, &frameCountOut, &pPcmFramesOut);
+
         if (result != MA_SUCCESS) {
             jlong nativeValues[] = {(jlong) result, 0L};
             env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
-            return returnArray;
-        }
-
-        ma_uint64 totalFrames = 0;
-        result = ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
-        if (result != MA_SUCCESS) {
-            ma_decoder_uninit(&decoder);
-            jlong nativeValues[] = {(jlong) result, 0L};
+        } else {
+            jlong nativeValues[] = {(jlong) pPcmFramesOut, (jlong) frameCountOut};
             env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
-            return returnArray;
         }
 
-        if (totalFrames == 0) {
-            ma_decoder_uninit(&decoder);
-            jlong nativeValues[] = {(jlong) MA_INVALID_DATA, 0L};
-            env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
-            return returnArray;
-        }
-
-        //Size = total frames * number of channels * size of one sample (float).
-        size_t bufferSizeBytes = (size_t)(totalFrames * outputChannels);
-        void* pPcmFrames = calloc(bufferSizeBytes, sizeof(float));
-        if (pPcmFrames == NULL) {
-            ma_decoder_uninit(&decoder);
-            jlong nativeValues[] = {(jlong) MA_OUT_OF_MEMORY, 0L};
-            env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
-            return returnArray;
-        }
-
-        ma_uint64 framesRead = 0;
-        result = ma_decoder_read_pcm_frames(&decoder, pPcmFrames, totalFrames, &framesRead);
-        ma_decoder_uninit(&decoder);
-
-        if (result != MA_SUCCESS && result != MA_AT_END) {
-            jlong nativeValues[] = {(jlong) result, 0L};
-            env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
-            return returnArray;
-        }
-
-        if (framesRead != totalFrames) {
-            free(pPcmFrames); // Something is inconsistent. Free buffer and fail.
-            jlong nativeValues[] = {(jlong) MA_ERROR, 0L};
-            env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
-            return returnArray;
-        }
-
-        jlong nativeValues[] = {(jlong) pPcmFrames, (jlong) framesRead};
-        env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
         return returnArray;
     */
 }
