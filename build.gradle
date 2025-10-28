@@ -19,7 +19,7 @@ plugins {
 apply plugin: "com.badlogicgames.jnigen.jnigen-gradle"
 
 group 'games.rednblack.miniaudio'
-version '0.6'
+version '0.7'
 
 repositories {
     maven { url 'https://jitpack.io' }

@@ -77,10 +77,10 @@ dependencies {
 
 ```groovy
 dependencies {
-    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-armeabi-v7a"
-    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-arm64-v8a"
-    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-x86"
-    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-x86_64"
+    natives "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-armeabi-v7a"
+    natives "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-arm64-v8a"
+    natives "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-x86"
+    natives "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-x86_64"
 }
 ```
 
@@ -88,7 +88,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-ios"
+    implementation "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-ios"
 }
 ```
 
@@ -96,7 +96,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-desktop"
+    implementation "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-desktop"
 }
 ```
 
