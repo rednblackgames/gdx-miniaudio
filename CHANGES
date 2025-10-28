@@ -5,6 +5,7 @@
 - Fix memory leaks and wrong logic in Native -> Java callbacks
 - Update MiniAudio to 0.11.23
 - Add `MASoundLoaderParameters#loadFromMemory` as a workaround to not able to load files from jar package
+- Automatic detection of PCM frames length when decoding from bytes
 - Add MAChorusNode, MAFlangerNode, MAPhaserNode, MACompressorNode (with side-chain control), MALimiterNode
 - Improve Android VFS
 

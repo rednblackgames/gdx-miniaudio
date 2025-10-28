@@ -16,6 +16,8 @@ public class MASound extends MANode implements Pool.Poolable {
         }
     };
 
+    private MAAudioBuffer linkedAudioBuffer;
+
     MASound(MiniAudio miniAudio) {
         super(miniAudio);
     }
@@ -339,6 +341,8 @@ public class MASound extends MANode implements Pool.Poolable {
     @Override
     public void dispose() {
         miniAudio.disposeSound(address);
+        if (linkedAudioBuffer != null)
+            linkedAudioBuffer.dispose();
     }
 
     /**
@@ -348,6 +352,14 @@ public class MASound extends MANode implements Pool.Poolable {
      */
     public MADataSource getDataSource() {
         return dataSource;
+    }
+
+    public void setLinkedAudioBuffer(MAAudioBuffer linkedAudioBuffer) {
+        this.linkedAudioBuffer = linkedAudioBuffer;
+    }
+
+    public MAAudioBuffer getLinkedAudioBuffer() {
+        return linkedAudioBuffer;
     }
 
     @Override

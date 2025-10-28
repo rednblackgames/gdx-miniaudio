@@ -31,8 +31,9 @@ public class MASoundLoader extends AsynchronousAssetLoader<MASound, MASoundLoade
         if (parameter != null) {
             if (parameter.loadFromMemory) {
                 byte[] data = file.readBytes();
-                MAAudioBuffer decodedBuffer = miniAudio.decodeBytes(data, data.length * 2, 2);
+                MAAudioBuffer decodedBuffer = miniAudio.decodeBytes(data, 2);
                 sound = miniAudio.createSound(decodedBuffer, parameter.flags, parameter.maGroup);
+                sound.setLinkedAudioBuffer(decodedBuffer);
             } else {
                 sound = miniAudio.createSound(file.path(), parameter.flags, parameter.maGroup, parameter.external);
             }
