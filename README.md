@@ -1,7 +1,7 @@
 # gdx-miniaudio
 
 ![maven-central](https://img.shields.io/maven-central/v/games.rednblack.miniaudio/miniaudio?color=blue&label=release)
-![sonatype-nexus](https://img.shields.io/nexus/s/games.rednblack.miniaudio/miniaudio?label=snapshot&server=https%3A%2F%2Foss.sonatype.org)
+![sonatype-nexus](https://img.shields.io/maven-metadata/v?label=snapshot&metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fgames%2Frednblack%2Fminiaudio%2Fminiaudio%2Fmaven-metadata.xml)
 
 `gdx-miniaudio` is a cross-platform Audio Engine for libGDX based on [MiniAudio](https://miniaud.io/) library.
 
