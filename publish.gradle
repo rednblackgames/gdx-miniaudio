@@ -65,6 +65,33 @@ artifacts {
     }
 }
 
+def configurePom = { pom ->
+    pom.with {
+        name = "MiniAudio extension for libGDX"
+        description = "Advanced Audio Engine for libGDX based on MiniAudio"
+        url = "https://github.com/rednblackgames/gdx-miniaudio"
+        licenses {
+            license {
+                name = "The Apache Software License, Version 2.0"
+                url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "repo"
+            }
+        }
+        developers {
+            developer {
+                id = "fgnm"
+                name = "Francesco Marongiu"
+                email = "fgnm.dev@gmail.com"
+            }
+        }
+        scm {
+            connection = "scm:git@github.com:rednblackgames/gdx-miniaudio.git"
+            developerConnection = "scm:git@github.com:rednblackgames/gdx-miniaudio.git"
+            url = "scm:git@github.com:rednblackgames/gdx-miniaudio.git"
+        }
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -79,29 +106,12 @@ publishing {
             }
 
             artifactId = artifact
-            pom {
-                name = "MiniAudio extension for libGDX"
-                description = "Advanced Audio Engine for libGDX based on MiniAudio"
-                url = "https://github.com/rednblackgames/gdx-miniaudio"
-                licenses {
-                    license {
-                        name = "The Apache Software License, Version 2.0"
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                        distribution = "repo"
-                    }
-                }
-                developers {
-                    developer {
-                        id = "fgnm"
-                        name = "Francesco Marongiu"
-                        email = "fgnm.dev@gmail.com"
-                    }
-                }
-                scm {
-                    connection = "scm:git@github.com:rednblackgames/gdx-miniaudio.git"
-                    developerConnection = "scm:git@github.com:rednblackgames/gdx-miniaudio.git"
-                    url = "scm:git@github.com:rednblackgames/gdx-miniaudio.git"
-                }
+            pom(configurePom)
+        }
+
+        matching { it.name == 'jniPlatform' }.configureEach {
+            if (it instanceof MavenPublication) {
+                it.pom(configurePom)
             }
         }
     }
