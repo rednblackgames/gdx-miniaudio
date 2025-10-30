@@ -1373,7 +1373,11 @@ public class MiniAudio implements Disposable {
      * @return cursor position in seconds
      */
     public float getSoundCursorPosition(long soundAddress) {
-        return jniGetSoundCursorPosition(soundAddress);
+        float position = jniGetSoundCursorPosition(soundAddress);
+        if (MAResult.checkErrors(position)) {
+            throw new MiniAudioException("Error while getting sound position", (int) position);
+        }
+        return position;
     }
 
     private native float jniGetSoundCursorPosition(long soundAddress);/*
@@ -1391,7 +1395,11 @@ public class MiniAudio implements Disposable {
      * @return cursor position in PCM frames
      */
     public int getSoundCursorPCMPosition(long soundAddress) {
-        return jniGetSoundCursorPCMPosition(soundAddress);
+        int position = jniGetSoundCursorPCMPosition(soundAddress);
+        if (MAResult.checkErrors(position)) {
+            throw new MiniAudioException("Error while getting sound PCM position", (int) position);
+        }
+        return position;
     }
 
     private native int jniGetSoundCursorPCMPosition(long soundAddress);/*
@@ -1409,7 +1417,11 @@ public class MiniAudio implements Disposable {
      * @return sound length in seconds
      */
     public float getSoundLength(long soundAddress) {
-        return jniGetSoundLength(soundAddress);
+        float length = jniGetSoundLength(soundAddress);
+        if (MAResult.checkErrors(length)) {
+            throw new MiniAudioException("Error while getting sound length", (int) length);
+        }
+        return length;
     }
 
     private native float jniGetSoundLength(long soundAddress);/*

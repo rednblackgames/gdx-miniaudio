@@ -98,6 +98,10 @@ public class MAResult {
         return address >= MAResult.MA_FAILED_TO_STOP_BACKEND_DEVICE && address <= MAResult.MA_ERROR;
     }
 
+    public static boolean checkErrors(float value) {
+        return checkErrors((long) value);
+    }
+
     public static String getErrorHumanDescription(int error) {
         switch (error) {
             case MA_ERROR:                         return "Generic error";
