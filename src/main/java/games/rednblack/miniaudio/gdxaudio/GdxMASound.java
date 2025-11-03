@@ -7,7 +7,7 @@ import games.rednblack.miniaudio.MASound;
 import games.rednblack.miniaudio.MASoundPool;
 
 public class GdxMASound implements Sound, GdxEndListener {
-    private final LongMap<MASound> soundsMap = new LongMap<>();
+    private final LongMap<MASound> activeSoundsMap = new LongMap<>();
     private final MASoundPool soundPool;
     private final MAGroup group;
 
@@ -20,7 +20,7 @@ public class GdxMASound implements Sound, GdxEndListener {
     public long play() {
         MASound sound = soundPool.obtain();
         sound.play();
-        soundsMap.put(sound.getAddress(), sound);
+        activeSoundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
@@ -29,7 +29,7 @@ public class GdxMASound implements Sound, GdxEndListener {
         MASound sound = soundPool.obtain();
         sound.play();
         sound.setVolume(volume);
-        soundsMap.put(sound.getAddress(), sound);
+        activeSoundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
@@ -40,7 +40,7 @@ public class GdxMASound implements Sound, GdxEndListener {
         sound.setVolume(volume);
         sound.setPitch(pitch);
         sound.setPan(pan);
-        soundsMap.put(sound.getAddress(), sound);
+        activeSoundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
@@ -48,7 +48,7 @@ public class GdxMASound implements Sound, GdxEndListener {
     public long loop() {
         MASound sound = soundPool.obtain();
         sound.loop();
-        soundsMap.put(sound.getAddress(), sound);
+        activeSoundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
@@ -57,7 +57,7 @@ public class GdxMASound implements Sound, GdxEndListener {
         MASound sound = soundPool.obtain();
         sound.loop();
         sound.setVolume(volume);
-        soundsMap.put(sound.getAddress(), sound);
+        activeSoundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
@@ -68,15 +68,16 @@ public class GdxMASound implements Sound, GdxEndListener {
         sound.setVolume(volume);
         sound.setPitch(pitch);
         sound.setPan(pan);
-        soundsMap.put(sound.getAddress(), sound);
+        activeSoundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
     @Override
     public void stop() {
-        for (MASound sound : soundsMap.values()) {
-            sound.stop();
+        for (MASound sound : activeSoundsMap.values()) {
+            soundPool.free(sound);
         }
+        activeSoundsMap.clear();
     }
 
     @Override
@@ -91,61 +92,60 @@ public class GdxMASound implements Sound, GdxEndListener {
 
     @Override
     public void dispose() {
-        for (MASound sound : soundsMap.values()) {
-            sound.dispose();
-        }
+        stop();
+        soundPool.clear();
         group.dispose();
-        soundsMap.clear();
     }
 
     @Override
     public void stop(long soundId) {
-        MASound sound = soundsMap.get(soundId);
-        sound.stop();
+        MASound sound = activeSoundsMap.get(soundId);
+        activeSoundsMap.remove(soundId);
+        soundPool.free(sound);
     }
 
     @Override
     public void pause(long soundId) {
-        MASound sound = soundsMap.get(soundId);
+        MASound sound = activeSoundsMap.get(soundId);
         sound.pause();
     }
 
     @Override
     public void resume(long soundId) {
-        MASound sound = soundsMap.get(soundId);
+        MASound sound = activeSoundsMap.get(soundId);
         sound.play();
     }
 
     @Override
     public void setLooping(long soundId, boolean looping) {
-        MASound sound = soundsMap.get(soundId);
+        MASound sound = activeSoundsMap.get(soundId);
         sound.setLooping(looping);
     }
 
     @Override
     public void setPitch(long soundId, float pitch) {
-        MASound sound = soundsMap.get(soundId);
+        MASound sound = activeSoundsMap.get(soundId);
         sound.setPitch(pitch);
     }
 
     @Override
     public void setVolume(long soundId, float volume) {
-        MASound sound = soundsMap.get(soundId);
+        MASound sound = activeSoundsMap.get(soundId);
         sound.setVolume(volume);
     }
 
     @Override
     public void setPan(long soundId, float pan, float volume) {
-        MASound sound = soundsMap.get(soundId);
+        MASound sound = activeSoundsMap.get(soundId);
         sound.setPan(pan);
         sound.setVolume(volume);
     }
 
     @Override
     public void onSoundEnd(long address) {
-        MASound sound = soundsMap.get(address);
+        MASound sound = activeSoundsMap.get(address);
         if (sound != null) {
-            soundsMap.remove(address);
+            activeSoundsMap.remove(address);
             soundPool.free(sound);
         }
     }
