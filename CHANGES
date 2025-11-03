@@ -1,3 +1,7 @@
+[0.7]
+- Add `MASound#stop(milliseconds)` API to stop sound with fade effect
+- Bind `MASound#getVolume()`, `MASound#getFadeVolume()`, `MAGroup#getVolume()`, `MAGroup#getFadeVolume()` API
+
 [0.6]
 - [BREAK] Update gdx-jnigen to 3.1.1
 - [BREAK] Introduce `MAContextConfiguration` and `MAEngineConfiguration` classes

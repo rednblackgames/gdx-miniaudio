@@ -39,6 +39,20 @@ public class MAGroup extends MANode {
     }
 
     /**
+     * Get sound group volume
+     */
+    public float getVolume() {
+        return miniAudio.getSoundGroupVolume(address);
+    }
+
+    /**
+     * Get sound group fade volume
+     */
+    public float getFadeVolume() {
+        return miniAudio.getSoundGroupFadeVolume(address);
+    }
+
+    /**
      * Control Sound Group Pitch A larger value will result in a higher pitch. The pitch must be greater than 0.
      *
      * @param pitch value, 1 default

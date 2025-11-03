@@ -993,7 +993,7 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Pause and rewind sound to beginning.
+     * Stop the sound. Loop, if any, will be disabled.
      *
      * @param soundAddress native address to sound object
      */
@@ -1003,8 +1003,25 @@ public class MiniAudio implements Disposable {
 
     private native void jniStopSound(long soundAddress); /*
         ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_looping(sound, MA_FALSE);
         ma_sound_stop(sound);
+        ma_sound_set_at_end(sound, MA_TRUE);
         ma_sound_seek_to_pcm_frame(sound, 0);
+    */
+
+    /**
+     * Stop with a fade effect. Loop, if any, will be disabled.
+     *
+     * @param soundAddress native address to sound object
+     */
+    public void stopSound(long soundAddress, int milliseconds) {
+        jniStopSoundWithFade(soundAddress, milliseconds);
+    }
+
+    private native void jniStopSoundWithFade(long soundAddress, int milliseconds); /*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        ma_sound_set_looping(sound, MA_FALSE);
+        ma_sound_stop_with_fade_in_milliseconds(sound, milliseconds);
     */
 
     /**
@@ -1096,6 +1113,34 @@ public class MiniAudio implements Disposable {
     private native void jniSetSoundVolume(long soundAddress, float volume);/*
         ma_sound* sound = (ma_sound*) soundAddress;
         ma_sound_set_volume(sound, volume);
+    */
+
+    /**
+     * Get sound volume.
+     *
+     * @param soundAddress native address to sound object
+     */
+    public float getSoundVolume(long soundAddress) {
+        return jniGetSoundVolume(soundAddress);
+    }
+
+    private native float jniGetSoundVolume(long soundAddress);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        return ma_sound_get_volume(sound);
+    */
+
+    /**
+     * Get sound fade volume.
+     *
+     * @param soundAddress native address to sound object
+     */
+    public float getSoundFadeVolume(long soundAddress) {
+        return jniGetSoundFadeVolume(soundAddress);
+    }
+
+    private native float jniGetSoundFadeVolume(long soundAddress);/*
+        ma_sound* sound = (ma_sound*) soundAddress;
+        return ma_sound_get_current_fade_volume(sound);
     */
 
     /**
@@ -1861,6 +1906,34 @@ public class MiniAudio implements Disposable {
     private native void jniSetGroupVolume(long groupAddress, float volume);/*
         ma_sound_group* group = (ma_sound_group*) groupAddress;
         ma_sound_group_set_volume(group, volume);
+    */
+
+    /**
+     * Get sound group volume.
+     *
+     * @param groupAddress native address to group object
+     */
+    public float getSoundGroupVolume(long groupAddress) {
+        return jniGetSoundGroupVolume(groupAddress);
+    }
+
+    private native float jniGetSoundGroupVolume(long groupAddress);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        return ma_sound_group_get_volume(group);
+    */
+
+    /**
+     * Get sound group fade volume.
+     *
+     * @param groupAddress native address to group object
+     */
+    public float getSoundGroupFadeVolume(long groupAddress) {
+        return jniGetSoundGroupFadeVolume(groupAddress);
+    }
+
+    private native float jniGetSoundGroupFadeVolume(long groupAddress);/*
+        ma_sound_group* group = (ma_sound_group*) groupAddress;
+        return ma_sound_group_get_current_fade_volume(group);
     */
 
     /**

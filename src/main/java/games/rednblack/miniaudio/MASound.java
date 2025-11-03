@@ -65,6 +65,14 @@ public class MASound extends MANode implements Pool.Poolable {
     }
 
     /**
+     * Stop audio with fade out effect.
+     * @param milliseconds fade duration in milliseconds
+     */
+    public void stop(int milliseconds) {
+        miniAudio.stopSound(address, milliseconds);
+    }
+
+    /**
      * Check if audio is currently playing.
      *
      * @return true if audio is playing
@@ -115,6 +123,20 @@ public class MASound extends MANode implements Pool.Poolable {
      */
     public void setVolume(float volume) {
         miniAudio.setSoundVolume(address, volume);
+    }
+
+    /**
+     * Get sound volume
+     */
+    public float getVolume() {
+        return miniAudio.getSoundVolume(address);
+    }
+
+    /**
+     * Get sound fade volume
+     */
+    public float getFadeVolume() {
+        return miniAudio.getSoundFadeVolume(address);
     }
 
     /**
