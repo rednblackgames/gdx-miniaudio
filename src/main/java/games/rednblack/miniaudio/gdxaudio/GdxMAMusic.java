@@ -3,7 +3,7 @@ package games.rednblack.miniaudio.gdxaudio;
 import com.badlogic.gdx.audio.Music;
 import games.rednblack.miniaudio.MASound;
 
-public class GdxMAMusic implements Music {
+public class GdxMAMusic implements Music, GdxEndListener {
     private final GdxMiniAudio gdxMiniAudio;
     private final MASound sound;
 
@@ -82,7 +82,8 @@ public class GdxMAMusic implements Music {
         gdxMiniAudio.addCompletionListener(sound.getAddress(), this);
     }
 
-    void onSoundEnd() {
+    @Override
+    public void onSoundEnd(long address) {
         if (listener != null) listener.onCompletion(this);
     }
 }

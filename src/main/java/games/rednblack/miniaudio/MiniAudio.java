@@ -1005,7 +1005,6 @@ public class MiniAudio implements Disposable {
         ma_sound* sound = (ma_sound*) soundAddress;
         ma_sound_set_looping(sound, MA_FALSE);
         ma_sound_stop(sound);
-        ma_sound_set_at_end(sound, MA_TRUE);
         ma_sound_seek_to_pcm_frame(sound, 0);
     */
 

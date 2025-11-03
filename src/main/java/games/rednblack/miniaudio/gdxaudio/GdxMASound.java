@@ -1,112 +1,152 @@
 package games.rednblack.miniaudio.gdxaudio;
 
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.utils.LongMap;
+import games.rednblack.miniaudio.MAGroup;
 import games.rednblack.miniaudio.MASound;
+import games.rednblack.miniaudio.MASoundPool;
 
-public class GdxMASound implements Sound {
+public class GdxMASound implements Sound, GdxEndListener {
+    private final LongMap<MASound> soundsMap = new LongMap<>();
+    private final MASoundPool soundPool;
+    private final MAGroup group;
 
-    private final MASound sound;
-
-    public GdxMASound(MASound sound) {
-        this.sound = sound;
+    public GdxMASound(MASoundPool soundPool, MAGroup group) {
+        this.soundPool = soundPool;
+        this.group = group;
     }
 
     @Override
     public long play() {
+        MASound sound = soundPool.obtain();
         sound.play();
+        soundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
     @Override
     public long play(float volume) {
+        MASound sound = soundPool.obtain();
         sound.play();
         sound.setVolume(volume);
+        soundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
     @Override
     public long play(float volume, float pitch, float pan) {
+        MASound sound = soundPool.obtain();
         sound.play();
         sound.setVolume(volume);
         sound.setPitch(pitch);
         sound.setPan(pan);
+        soundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
     @Override
     public long loop() {
+        MASound sound = soundPool.obtain();
         sound.loop();
+        soundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
     @Override
     public long loop(float volume) {
+        MASound sound = soundPool.obtain();
         sound.loop();
         sound.setVolume(volume);
+        soundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
     @Override
     public long loop(float volume, float pitch, float pan) {
+        MASound sound = soundPool.obtain();
         sound.loop();
         sound.setVolume(volume);
         sound.setPitch(pitch);
         sound.setPan(pan);
+        soundsMap.put(sound.getAddress(), sound);
         return sound.getAddress();
     }
 
     @Override
     public void stop() {
-        sound.stop();
+        for (MASound sound : soundsMap.values()) {
+            sound.stop();
+        }
     }
 
     @Override
     public void pause() {
-        sound.pause();
+        group.pause();
     }
 
     @Override
     public void resume() {
-        sound.play();
+        group.play();
     }
 
     @Override
     public void dispose() {
-        sound.dispose();
+        for (MASound sound : soundsMap.values()) {
+            sound.dispose();
+        }
+        group.dispose();
+        soundsMap.clear();
     }
 
     @Override
     public void stop(long soundId) {
-        throw new UnsupportedOperationException("soundId is not supported.");
+        MASound sound = soundsMap.get(soundId);
+        sound.stop();
     }
 
     @Override
     public void pause(long soundId) {
-        throw new UnsupportedOperationException("soundId is not supported.");
+        MASound sound = soundsMap.get(soundId);
+        sound.pause();
     }
 
     @Override
     public void resume(long soundId) {
-        throw new UnsupportedOperationException("soundId is not supported.");
+        MASound sound = soundsMap.get(soundId);
+        sound.play();
     }
 
     @Override
     public void setLooping(long soundId, boolean looping) {
-        throw new UnsupportedOperationException("soundId is not supported.");
+        MASound sound = soundsMap.get(soundId);
+        sound.setLooping(looping);
     }
 
     @Override
     public void setPitch(long soundId, float pitch) {
-        throw new UnsupportedOperationException("soundId is not supported.");
+        MASound sound = soundsMap.get(soundId);
+        sound.setPitch(pitch);
     }
 
     @Override
     public void setVolume(long soundId, float volume) {
-        throw new UnsupportedOperationException("soundId is not supported.");
+        MASound sound = soundsMap.get(soundId);
+        sound.setVolume(volume);
     }
 
     @Override
     public void setPan(long soundId, float pan, float volume) {
-        throw new UnsupportedOperationException("soundId is not supported.");
+        MASound sound = soundsMap.get(soundId);
+        sound.setPan(pan);
+        sound.setVolume(volume);
+    }
+
+    @Override
+    public void onSoundEnd(long address) {
+        MASound sound = soundsMap.get(address);
+        if (sound != null) {
+            soundsMap.remove(address);
+            soundPool.free(sound);
+        }
     }
 }

@@ -7,20 +7,23 @@ import com.badlogic.gdx.audio.AudioRecorder;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
-import games.rednblack.miniaudio.MADeviceInfo;
-import games.rednblack.miniaudio.MASoundEndListener;
-import games.rednblack.miniaudio.MiniAudio;
+import games.rednblack.miniaudio.*;
 
 public class GdxMiniAudio implements Audio {
     private final MiniAudio miniAudio;
-    private final LongMap<GdxMAMusic> completionListeners = new LongMap<>();
+    private final LongMap<GdxEndListener> completionListeners = new LongMap<>();
+    private final Array<GdxEndListener> listeners = new Array<>();
 
     public GdxMiniAudio() {
         this.miniAudio = new MiniAudio();
         MASoundEndListener endListener = maSound -> {
-            GdxMAMusic music = completionListeners.get(maSound.getAddress());
-            if (music != null) music.onSoundEnd();
+            GdxEndListener music = completionListeners.get(maSound.getAddress());
+            if (music != null) music.onSoundEnd(maSound.getAddress());
+            for(GdxEndListener listener : listeners) {
+                listener.onSoundEnd(maSound.getAddress());
+            }
         };
         miniAudio.setEndListener(endListener);
     }
@@ -29,7 +32,7 @@ public class GdxMiniAudio implements Audio {
         return miniAudio;
     }
 
-    public void addCompletionListener(long address, GdxMAMusic music) {
+    public void addCompletionListener(long address, GdxEndListener music) {
         completionListeners.put(address, music);
     }
 
@@ -45,18 +48,18 @@ public class GdxMiniAudio implements Audio {
 
     @Override
     public Sound newSound(FileHandle fileHandle) {
-        if (fileHandle.type() == Files.FileType.Absolute) {
-            return new GdxMASound(miniAudio.createSound(fileHandle.path(), (short) 0, null, true));
-        }
-        return new GdxMASound(miniAudio.createSound(fileHandle.path()));
+        MAGroup group = miniAudio.createGroup();
+        boolean external = fileHandle.type() == Files.FileType.Absolute;
+        MASoundPool soundPool = new MASoundPool(miniAudio, fileHandle.path(), (short) 0, group, external);
+        GdxMASound gdxMASound = new GdxMASound(soundPool, group);
+        listeners.add(gdxMASound);
+        return gdxMASound;
     }
 
     @Override
     public Music newMusic(FileHandle file) {
-        if (file.type() == Files.FileType.Absolute) {
-            return new GdxMAMusic(miniAudio.createSound(file.path(), (short) 0, null, true), this);
-        }
-        return new GdxMAMusic(miniAudio.createSound(file.path()), this);
+        boolean external = file.type() == Files.FileType.Absolute;
+        return new GdxMAMusic(miniAudio.createSound(file.path(), MASound.Flags.MA_SOUND_FLAG_STREAM, null, external), this);
     }
 
     @Override
