@@ -5,6 +5,12 @@
 
 `gdx-miniaudio` is a cross-platform Audio Engine for libGDX based on [MiniAudio](https://miniaud.io/) library.
 
+| gdx-miniaudio | libGDX |
+|---------------|--------|
+| 0.6           | 1.14.0 |
+| <=0.5         | 1.12.1 |
+| <=0.3         | 1.11.0 |
+
 ## Features
 
 - Reading files from internal Assets
@@ -84,6 +90,19 @@ dependencies {
 }
 ```
 
+<details>
+  <summary>Until v0.5</summary>
+
+```groovy
+dependencies {
+    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-armeabi-v7a"
+    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-arm64-v8a"
+    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-x86"
+    natives "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-x86_64"
+}
+```
+</details>
+
 #### iOS
 
 ```groovy
@@ -92,6 +111,16 @@ dependencies {
 }
 ```
 
+<details>
+  <summary>Until v0.5</summary>
+
+```groovy
+dependencies {
+    implementation "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-ios"
+}
+```
+</details>
+
 #### Desktop
 
 ```groovy
@@ -99,6 +128,16 @@ dependencies {
     implementation "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-desktop"
 }
 ```
+
+<details>
+  <summary>Until v0.5</summary>
+
+```groovy
+dependencies {
+    implementation "games.rednblack.miniaudio:miniaudio:$miniaudioVersion:natives-desktop"
+}
+```
+</details>
 
 ### Usage
 
