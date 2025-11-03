@@ -16,19 +16,19 @@ public class MASoundPool extends Pool<MASound> {
     private final boolean external;
 
     public MASoundPool(MiniAudio miniAudio, String fileName) {
-        this(miniAudio, fileName, (short) 0, null, false,16, 100);
+        this(miniAudio, fileName, (short) 0, null, false,16, Integer.MAX_VALUE);
     }
 
     public MASoundPool(MiniAudio miniAudio, String fileName, short flags) {
-        this(miniAudio, fileName, flags, null, false,16, 100);
+        this(miniAudio, fileName, flags, null, false,16, Integer.MAX_VALUE);
     }
 
     public MASoundPool(MiniAudio miniAudio, String fileName, short flags, MAGroup group) {
-        this(miniAudio, fileName, flags, group, false,16, 100);
+        this(miniAudio, fileName, flags, group, false,16, Integer.MAX_VALUE);
     }
 
     public MASoundPool(MiniAudio miniAudio, String fileName, short flags, MAGroup group, boolean external) {
-        this(miniAudio, fileName, flags, group, external,16, 100);
+        this(miniAudio, fileName, flags, group, external,16, Integer.MAX_VALUE);
     }
 
     public MASoundPool(MiniAudio miniAudio, String fileName, short flags, MAGroup group, boolean external, int initialCapacity, int max) {
