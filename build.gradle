@@ -84,6 +84,7 @@ jnigen {
     }
     addAndroid() {
         libraries = ["-llog", "-landroid", "-lm", "-ldl"]
+        androidApplicationMk += ["APP_STRIP_MODE := none"]
     }
 }
 
