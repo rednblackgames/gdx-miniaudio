@@ -100,6 +100,7 @@ public class GdxMASound implements Sound, GdxEndListener {
     @Override
     public void stop(long soundId) {
         MASound sound = activeSoundsMap.get(soundId);
+        if (sound == null) return;
         activeSoundsMap.remove(soundId);
         soundPool.free(sound);
     }
@@ -107,36 +108,42 @@ public class GdxMASound implements Sound, GdxEndListener {
     @Override
     public void pause(long soundId) {
         MASound sound = activeSoundsMap.get(soundId);
+        if (sound == null) return;
         sound.pause();
     }
 
     @Override
     public void resume(long soundId) {
         MASound sound = activeSoundsMap.get(soundId);
+        if (sound == null) return;
         sound.play();
     }
 
     @Override
     public void setLooping(long soundId, boolean looping) {
         MASound sound = activeSoundsMap.get(soundId);
+        if (sound == null) return;
         sound.setLooping(looping);
     }
 
     @Override
     public void setPitch(long soundId, float pitch) {
         MASound sound = activeSoundsMap.get(soundId);
+        if (sound == null) return;
         sound.setPitch(pitch);
     }
 
     @Override
     public void setVolume(long soundId, float volume) {
         MASound sound = activeSoundsMap.get(soundId);
+        if (sound == null) return;
         sound.setVolume(volume);
     }
 
     @Override
     public void setPan(long soundId, float pan, float volume) {
         MASound sound = activeSoundsMap.get(soundId);
+        if (sound == null) return;
         sound.setPan(pan);
         sound.setVolume(volume);
     }
