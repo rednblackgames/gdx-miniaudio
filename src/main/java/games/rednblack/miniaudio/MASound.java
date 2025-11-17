@@ -397,6 +397,9 @@ public class MASound extends MANode implements Pool.Poolable {
     @Override
     public void reset() {
         stop();
+        setVolume(1);
+        setPan(0);
+        setPitch(1);
     }
 
     /**
