@@ -603,6 +603,7 @@ public class MiniAudio implements Disposable {
         ma_device_uninit(&device);
         ma_engine_uninit(&engine);
         ma_context_uninit(&context);
+        ma_audio_buffer_ref_uninit(&inputBufferData);
         ma_log_unregister_callback(&maLog, pLogCallback);
         ma_log_uninit(&maLog);
         #if defined(MA_ANDROID)
