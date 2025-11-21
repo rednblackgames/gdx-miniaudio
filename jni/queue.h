@@ -54,8 +54,19 @@ int dequeue(LockFreeQueue *queue, Event **event) {
         return -1; // Queue is empty
     }
 
-    // Retrieve the event
-    *event = queue->buffer[tail];
+    // Tail and head are different but item might not be ready yet
+    Event* item = queue->buffer[tail];
+
+    if (item == NULL) {
+        return -1; // Item is not ready! Wait the next dequeue request
+    }
+
+    // Assign the event
+    *event = item;
+
+    // Reset the slot to NULL to prepare the next cycle
+    queue->buffer[tail] = NULL;
+
     ma_atomic_uint32_set(&queue->tail, (tail + 1) % QUEUE_SIZE); // Advance tail
     return 0;
 }
