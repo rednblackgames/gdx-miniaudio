@@ -119,7 +119,7 @@ public class MiniAudio implements Disposable {
             event->type = 0;
             event->sound = pSound;
             while (enqueue(lock_free_queue, event) == -1) {
-                ma_sleep(100); // 0.1 seconds
+                ma_sleep(10); // 10ms
             }
         }
 
@@ -151,7 +151,7 @@ public class MiniAudio implements Disposable {
             event->level = level;
 
             while (enqueue(lock_free_queue, event) == -1) {
-                ma_sleep(100); // 0.1 seconds
+                ma_sleep(10); // 10ms
             }
         }
 
@@ -160,52 +160,47 @@ public class MiniAudio implements Disposable {
             event->type = 2;
             event->notificationType = pNotification->type;
             while (enqueue(lock_free_queue, event) == -1) {
-                ma_sleep(100); // 0.1 seconds
+                ma_sleep(10); // 10ms
             }
+        }
+
+        void process_single_event(JNIEnv* env, Event* event) {
+            if (event->type == 0) {
+                env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
+            } else if (event->type == 1) {
+                jstring javaMessage = env->NewStringUTF(event->message);
+                env->CallVoidMethod(jMiniAudio, jon_native_log, event->level, javaMessage);
+                env->DeleteLocalRef(javaMessage);
+                ma_free(event->message, NULL);
+            } else if (event->type == 2) {
+                env->CallVoidMethod(jMiniAudio, jon_native_notification, event->notificationType);
+            }
+            ma_free(event, NULL);
         }
 
         static ma_thread_result MA_THREADCALL post_event_to_jni(void* pUserData) {
             ATTACH_ENV()
             Event* event;
             while (running_callback_thread) {
-                if (dequeue(lock_free_queue, &event) == 0) {
-                    if (event->type == 0) {
-                        env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
-                    } else if (event->type == 1) {
-                        jstring javaMessage = env->NewStringUTF(event->message);
-                        env->CallVoidMethod(jMiniAudio, jon_native_log, event->level, javaMessage);
-                        env->DeleteLocalRef(javaMessage);
-                        free(event->message);
-                    } else if (event->type == 2) {
-                        env->CallVoidMethod(jMiniAudio, jon_native_notification, event->notificationType);
-                    }
-                    ma_free(event, NULL);
-                } else {
-                    // Queue is empty, wait a bit
-                    ma_sleep(100); // 0.1 seconds
+                //Wait semaphore
+                ma_semaphore_wait(&lock_free_queue->sem);
+
+                if (!running_callback_thread) break;
+
+                while (dequeue(lock_free_queue, &event) == 0) {
+                    process_single_event(env, event);
                 }
             }
 
             //Drain queue before exit
             while (dequeue(lock_free_queue, &event) == 0) {
-                if (event->type == 0) {
-                    env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
-                } else if (event->type == 1) {
-                    jstring javaMessage = env->NewStringUTF(event->message);
-                    env->CallVoidMethod(jMiniAudio, jon_native_log, event->level, javaMessage);
-                    env->DeleteLocalRef(javaMessage);
-                    free(event->message);
-                } else if (event->type == 2) {
-                    env->CallVoidMethod(jMiniAudio, jon_native_notification, event->notificationType);
-                }
-                ma_free(event, NULL);
+                process_single_event(env, event);
             }
 
             env->DeleteGlobalRef(jMiniAudio);
             DETACH_ENV()
-            ma_free(lock_free_queue, NULL);
-            ma_free(callback_thread, NULL);
-            return (ma_thread_result)0;
+
+            return (ma_thread_result) 0;
         }
      */
 
@@ -600,17 +595,27 @@ public class MiniAudio implements Disposable {
     }
 
     private native void jniDispose();/*
-        ma_device_uninit(&device);
         ma_engine_uninit(&engine);
-        ma_context_uninit(&context);
+        ma_device_uninit(&device);
         ma_audio_buffer_ref_uninit(&inputBufferData);
+
+        running_callback_thread = 0;
+        ma_semaphore_release(&lock_free_queue->sem);
+
+        ma_thread_wait(callback_thread);
+
+        ma_free(callback_thread, NULL);
+        uninit_queue(lock_free_queue);
+        ma_free(lock_free_queue, NULL);
+
+        ma_context_uninit(&context);
         ma_log_unregister_callback(&maLog, pLogCallback);
         ma_log_uninit(&maLog);
+
         #if defined(MA_ANDROID)
         ma_free(androidVFS, NULL);
         env->DeleteGlobalRef(assetManagerGlobalRef);
         #endif
-        running_callback_thread = 0;
     */
 
     /**

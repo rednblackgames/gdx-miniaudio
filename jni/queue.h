@@ -1,7 +1,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#define QUEUE_SIZE 100
+#define QUEUE_SIZE 4096
 
 typedef struct {
     int type;
@@ -15,6 +15,7 @@ typedef struct {
     Event* buffer[QUEUE_SIZE];
     ma_atomic_uint32 head;   // Points to the next free slot for producers
     ma_atomic_uint32 tail;   // Points to the next item for the consumer to consume
+    ma_semaphore sem;
 } LockFreeQueue;
 
 // Initialize the lock-free queue
@@ -22,6 +23,11 @@ void init_queue(LockFreeQueue *queue) {
     ma_atomic_uint32_set(&queue->head, 0);
     ma_atomic_uint32_set(&queue->tail, 0);
     MA_ZERO_MEMORY(&queue->buffer, sizeof(Event*) * QUEUE_SIZE);
+    ma_semaphore_init(0, &queue->sem);
+}
+
+void uninit_queue(LockFreeQueue *queue) {
+    ma_semaphore_uninit(&queue->sem);
 }
 
 // Add an event to the queue (non-blocking, multi-producer safe)
@@ -41,6 +47,8 @@ int enqueue(LockFreeQueue *queue, Event* event) {
 
     // Store the event
     queue->buffer[head] = event;
+    ma_semaphore_release(&queue->sem);
+
     return 0;
 }
 
