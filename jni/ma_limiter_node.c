@@ -19,18 +19,25 @@ MA_API ma_limiter_node_config ma_limiter_node_config_init(ma_uint32 channels, ma
 static void ma_limiter_node_process_pcm_frames(ma_node* pNode, const float** ppFramesIn, ma_uint32* pFrameCountIn, float** ppFramesOut, ma_uint32* pFrameCountOut)
 {
     ma_limiter_node* pLimiter = (ma_limiter_node*)pNode;
-    ma_uint32 frameCount = *pFrameCountOut;
+    ma_uint32 frameCountOut = *pFrameCountOut;
+    ma_uint32 frameCountIn = (pFrameCountIn != NULL) ? *pFrameCountIn : 0;
+    const float* pFramesIn = (ppFramesIn != NULL) ? ppFramesIn[0] : NULL;
+
+    float* pFramesOut = ppFramesOut[0];
     ma_uint32 iFrame, iChannel;
 
-    for (iFrame = 0; iFrame < frameCount; ++iFrame) {
+    for (iFrame = 0; iFrame < frameCountOut; ++iFrame) {
         /* 1. Apply input gain and find the absolute peak across all channels for this frame */
         float peak = 0.0f;
         for (iChannel = 0; iChannel < pLimiter->channels; ++iChannel) {
-            float in_sample = ppFramesIn[0][iFrame * pLimiter->channels + iChannel];
+            float in_sample = 0.0f;
+            if (pFramesIn != NULL && iFrame < frameCountIn) {
+                in_sample = pFramesIn[iFrame * pLimiter->channels + iChannel];
+            }
             float amplified_sample = in_sample * pLimiter->inputGainLinear;
 
             // Store the amplified sample to be used later
-            ppFramesOut[0][iFrame * pLimiter->channels + iChannel] = amplified_sample;
+            pFramesOut[iFrame * pLimiter->channels + iChannel] = amplified_sample;
 
             float abs_sample = fabsf(amplified_sample);
             if (abs_sample > peak) {
