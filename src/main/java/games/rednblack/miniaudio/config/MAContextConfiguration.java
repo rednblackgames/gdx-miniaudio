@@ -16,5 +16,5 @@ public class MAContextConfiguration {
     /** ONLY FOR iOS - Session category options to use with the shared AudioSession instance. See {@link MAiOSSessionCategoryOptions} */
     public short iOSSessionCategoryOptions = 0;
     /** ONLY FOR Android, Enable or disable AAudio backend, see https://github.com/rednblackgames/gdx-miniaudio/issues/1 */
-    public boolean androidUseAAudio = true;
+    public boolean androidUseAAudio = false;
 }
