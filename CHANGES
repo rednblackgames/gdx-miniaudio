@@ -1,5 +1,8 @@
 [0.7]
 - Improved native queue and Java callback: fix race condition, remove useless wait time
+- Disable AAudio by default
+- Improve stability of custom effect nodes
+- Disabled symbol strip in Android binaries
 - Fix wrong dispose sequence
 - Add `MASound#stop(milliseconds)` API to stop sound with fade effect
 - Bind `MASound#getVolume()`, `MASound#getFadeVolume()`, `MAGroup#getVolume()`, `MAGroup#getFadeVolume()` API
