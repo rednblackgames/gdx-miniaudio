@@ -104,10 +104,24 @@ MA_API ma_result ma_compressor_node_init(ma_node_graph* pNodeGraph, const ma_com
     pCompressorNode->sampleRate = pConfig->sampleRate;
 
     /* Pre-calculate coefficients and linear values to save CPU in the process loop */
-    double attack_seconds = pConfig->attack / 1000.0;
-    double release_seconds = pConfig->release / 1000.0;
-    pCompressorNode->attackCoeff  = (float)exp(-1.0 / (attack_seconds * pConfig->sampleRate));
-    pCompressorNode->releaseCoeff = (float)exp(-1.0 / (release_seconds * pConfig->sampleRate));
+    double safe_attack = (pConfig->attack < 0.0) ? 0.0 : pConfig->attack;
+    double safe_release = (pConfig->release < 0.0) ? 0.0 : pConfig->release;
+
+    double attack_seconds = safe_attack / 1000.0;
+    double release_seconds = safe_release / 1000.0;
+
+    if (attack_seconds > 0) {
+        pCompressorNode->attackCoeff  = (float)exp(-1.0 / (attack_seconds * pConfig->sampleRate));
+    } else {
+        pCompressorNode->attackCoeff = 0.0f;
+    }
+
+    if (release_seconds > 0) {
+        pCompressorNode->releaseCoeff = (float)exp(-1.0 / (release_seconds * pConfig->sampleRate));
+    } else {
+        pCompressorNode->releaseCoeff = 0.0f;
+    }
+
     pCompressorNode->makeupGainLinear = powf(10.0f, pConfig->makeupGain / 20.0f);
 
     MA_ZERO_MEMORY(pCompressorNode->envelope, sizeof(pCompressorNode->envelope));

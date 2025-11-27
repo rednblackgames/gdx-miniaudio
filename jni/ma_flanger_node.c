@@ -107,12 +107,14 @@ MA_API ma_result ma_flanger_node_init(ma_node_graph* pNodeGraph, const ma_flange
     pFlangerNode->delay      = pConfig->delay;
     pFlangerNode->rate       = pConfig->rate;
     pFlangerNode->depth      = pConfig->depth;
-    pFlangerNode->feedback   = pConfig->feedback;
     pFlangerNode->wet        = pConfig->wet;
     pFlangerNode->dry        = pConfig->dry;
     pFlangerNode->writeIndex = 0;
     pFlangerNode->lfoPhase   = 0.0f;
 
+    pFlangerNode->feedback = pConfig->feedback;
+    if (pFlangerNode->feedback > 0.99f) pFlangerNode->feedback = 0.99f;
+    if (pFlangerNode->feedback < -0.99f) pFlangerNode->feedback = -0.99f;
     /* Calculate the max delay buffer size, adding a margin for safety */
     max_delay_ms = pConfig->delay + pConfig->depth + 1.0f;
     delay_buffer_size_in_frames = (ma_uint32)((max_delay_ms / 1000.0f) * pConfig->sampleRate);
