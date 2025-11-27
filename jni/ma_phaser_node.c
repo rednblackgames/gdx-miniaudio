@@ -27,12 +27,15 @@ MA_API ma_phaser_node_config ma_phaser_node_config_init(ma_uint32 channels, ma_u
 static void ma_phaser_node_process_pcm_frames(ma_node* pNode, const float** ppFramesIn, ma_uint32* pFrameCountIn, float** ppFramesOut, ma_uint32* pFrameCountOut)
 {
     ma_phaser_node* pPhaserNode = (ma_phaser_node*)pNode;
-    ma_uint32 frameCount = *pFrameCountOut;
+    ma_uint32 frameCountOut = *pFrameCountOut;
+    ma_uint32 frameCountIn  = (pFrameCountIn != NULL) ? *pFrameCountIn : 0;
+    const float* pFramesIn  = (ppFramesIn != NULL) ? ppFramesIn[0] : NULL;
+
     ma_uint32 iFrame, iChannel, iStage;
 
     const float lfo_increment = 2.0f * (float)M_PI * pPhaserNode->rate / (float)pPhaserNode->sampleRate;
 
-    for (iFrame = 0; iFrame < frameCount; ++iFrame) {
+    for (iFrame = 0; iFrame < frameCountOut; ++iFrame) {
         float lfo_raw = sinf(pPhaserNode->lfoPhase);
         float lfo_val = (lfo_raw + 1.0f) * 0.5f * pPhaserNode->depth;
 
@@ -42,11 +45,21 @@ static void ma_phaser_node_process_pcm_frames(ma_node* pNode, const float** ppFr
         }
 
         float center_freq = pPhaserNode->rangeMin + (pPhaserNode->rangeMax - pPhaserNode->rangeMin) * lfo_val;
+
+        /* Safety clamp for frequency to prevent instability */
+        if (center_freq > pPhaserNode->sampleRate * 0.49f) {
+            center_freq = pPhaserNode->sampleRate * 0.49f;
+        }
+
         float tan_val = tanf((float)M_PI * center_freq / (float)pPhaserNode->sampleRate);
         float alpha = (tan_val - 1.0f) / (tan_val + 1.0f);
 
         for (iChannel = 0; iChannel < pPhaserNode->channels; ++iChannel) {
-            float in_sample = ppFramesIn[0][iFrame * pPhaserNode->channels + iChannel];
+            float in_sample = 0.0f;
+            if (pFramesIn != NULL && iFrame < frameCountIn) {
+                in_sample = pFramesIn[iFrame * pPhaserNode->channels + iChannel];
+            }
+
             float filtered_input = in_sample + pPhaserNode->feedbackSample[iChannel] * pPhaserNode->feedback;
 
             for (iStage = 0; iStage < pPhaserNode->numStages; ++iStage) {

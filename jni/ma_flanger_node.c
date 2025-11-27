@@ -25,7 +25,10 @@ MA_API ma_flanger_node_config ma_flanger_node_config_init(ma_uint32 channels, ma
 static void ma_flanger_node_process_pcm_frames(ma_node* pNode, const float** ppFramesIn, ma_uint32* pFrameCountIn, float** ppFramesOut, ma_uint32* pFrameCountOut)
 {
     ma_flanger_node* pFlangerNode = (ma_flanger_node*)pNode;
-    ma_uint32 frameCount = *pFrameCountOut;
+    ma_uint32 frameCountOut = *pFrameCountOut;
+    ma_uint32 frameCountIn  = (pFrameCountIn != NULL) ? *pFrameCountIn : 0;
+    const float* pFramesIn  = (ppFramesIn != NULL) ? ppFramesIn[0] : NULL;
+
     ma_uint32 iFrame, iChannel;
 
     const float lfo_increment = 2.0f * (float)M_PI * pFlangerNode->rate / (float)pFlangerNode->sampleRate;
@@ -33,7 +36,7 @@ static void ma_flanger_node_process_pcm_frames(ma_node* pNode, const float** ppF
     float delay_samples = pFlangerNode->delay * pFlangerNode->sampleRate / 1000.0f;
     float depth_samples = pFlangerNode->depth * pFlangerNode->sampleRate / 1000.0f;
 
-    for (iFrame = 0; iFrame < frameCount; ++iFrame) {
+    for (iFrame = 0; iFrame < frameCountOut; ++iFrame) {
         float lfo_val = sinf(pFlangerNode->lfoPhase);
         pFlangerNode->lfoPhase += lfo_increment;
         if (pFlangerNode->lfoPhase >= 2.0f * (float)M_PI) {
@@ -52,7 +55,10 @@ static void ma_flanger_node_process_pcm_frames(ma_node* pNode, const float** ppF
         float frac = read_pos_float - read_pos_0;
 
         for (iChannel = 0; iChannel < pFlangerNode->channels; ++iChannel) {
-            float in_sample = ppFramesIn[0][iFrame * pFlangerNode->channels + iChannel];
+            float in_sample = 0.0f;
+            if (pFramesIn != NULL && iFrame < frameCountIn) {
+                in_sample = pFramesIn[iFrame * pFlangerNode->channels + iChannel];
+            }
 
             /* Read and interpolate from delay buffer to get the delayed signal */
             float delayed_sample_0 = pFlangerNode->pDelayBuffer[read_pos_0 * pFlangerNode->channels + iChannel];

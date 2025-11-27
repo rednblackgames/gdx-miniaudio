@@ -20,17 +20,31 @@ MA_API ma_compressor_node_config ma_compressor_node_config_init(ma_uint32 channe
 static void ma_compressor_node_process_pcm_frames(ma_node* pNode, const float** ppFramesIn, ma_uint32* pFrameCountIn, float** ppFramesOut, ma_uint32* pFrameCountOut)
 {
     ma_compressor_node* pCompressor = (ma_compressor_node*)pNode;
-    ma_uint32 frameCount = *pFrameCountOut;
+    ma_uint32 frameCountOut = *pFrameCountOut;
+    ma_uint32 frameCountIn  = (pFrameCountIn != NULL) ? *pFrameCountIn : 0;
+
+    const float* pMainFrames = (ppFramesIn != NULL) ? ppFramesIn[0] : NULL;
+
+    /* If the side-chain input (bus 1) is not connected (NULL), use the main input (bus 0)
+       as the control signal. If ppFramesIn is NULL entirely, sidechain is NULL.
+    */
+    const float* pSidechainFrames = (ppFramesIn != NULL && ppFramesIn[1] != NULL) ? ppFramesIn[1] : pMainFrames;
+
     ma_uint32 iFrame, iChannel;
 
-    const float* pMainFrames = ppFramesIn[0];
-    /* If the side-chain input (bus 1) is not connected, use the main input (bus 0) as the control signal. */
-    const float* pSidechainFrames = (ppFramesIn[1] != NULL) ? ppFramesIn[1] : ppFramesIn[0];
-
-    for (iFrame = 0; iFrame < frameCount; ++iFrame) {
+    for (iFrame = 0; iFrame < frameCountOut; ++iFrame) {
         for (iChannel = 0; iChannel < pCompressor->channels; ++iChannel) {
-            float in_main = pMainFrames[iFrame * pCompressor->channels + iChannel];
-            float in_sidechain = pSidechainFrames[iFrame * pCompressor->channels + iChannel];
+            float in_main = 0.0f;
+            float in_sidechain = 0.0f;
+
+            if (iFrame < frameCountIn) {
+                if (pMainFrames != NULL) {
+                    in_main = pMainFrames[iFrame * pCompressor->channels + iChannel];
+                }
+                if (pSidechainFrames != NULL) {
+                    in_sidechain = pSidechainFrames[iFrame * pCompressor->channels + iChannel];
+                }
+            }
 
             /* 1. Envelope Detection (RMS detection would be better, but peak is simpler and faster) */
             float rectified_input = fabsf(in_sidechain);

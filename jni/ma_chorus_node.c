@@ -24,7 +24,10 @@ MA_API ma_chorus_node_config ma_chorus_node_config_init(ma_uint32 channels, ma_u
 static void ma_chorus_node_process_pcm_frames(ma_node* pNode, const float** ppFramesIn, ma_uint32* pFrameCountIn, float** ppFramesOut, ma_uint32* pFrameCountOut)
 {
     ma_chorus_node* pChorusNode = (ma_chorus_node*)pNode;
-    ma_uint32 frameCount = *pFrameCountOut;
+    ma_uint32 frameCountOut = *pFrameCountOut;
+    ma_uint32 frameCountIn  = (pFrameCountIn != NULL) ? *pFrameCountIn : 0;
+    const float* pFramesIn  = (ppFramesIn != NULL) ? ppFramesIn[0] : NULL;
+
     ma_uint32 iFrame;
     ma_uint32 iChannel;
 
@@ -34,7 +37,7 @@ static void ma_chorus_node_process_pcm_frames(ma_node* pNode, const float** ppFr
     float delay_samples = pChorusNode->delay * pChorusNode->sampleRate / 1000.0f;
     float depth_samples = pChorusNode->depth * pChorusNode->sampleRate / 1000.0f;
 
-    for (iFrame = 0; iFrame < frameCount; ++iFrame) {
+    for (iFrame = 0; iFrame < frameCountOut; ++iFrame) {
         /* Calculate LFO value */
         float lfo_val = sinf(pChorusNode->lfoPhase);
         pChorusNode->lfoPhase += lfo_increment;
@@ -56,7 +59,10 @@ static void ma_chorus_node_process_pcm_frames(ma_node* pNode, const float** ppFr
         float frac = read_pos_float - read_pos_0;
 
         for (iChannel = 0; iChannel < pChorusNode->channels; ++iChannel) {
-            float in_sample = ppFramesIn[0][iFrame * pChorusNode->channels + iChannel];
+            float in_sample = 0.0f;
+            if (pFramesIn != NULL && iFrame < frameCountIn) {
+                in_sample = pFramesIn[iFrame * pChorusNode->channels + iChannel];
+            }
 
             /* Write current input to delay buffer */
             pChorusNode->pDelayBuffer[pChorusNode->writeIndex * pChorusNode->channels + iChannel] = in_sample;
