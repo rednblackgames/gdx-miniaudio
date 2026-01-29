@@ -51,6 +51,9 @@ tasks.withType(JavaCompile) {
     }
 }
 
+import com.badlogic.gdx.jnigen.commons.Os;
+import com.badlogic.gdx.jnigen.commons.Architecture;
+
 jnigen {
     sharedLibName = "gdx-miniaudio"
 
@@ -58,6 +61,18 @@ jnigen {
         headerDirs += ["jni"]
         cIncludes  += ["jni/stb_vorbis.c"]
         libraries  += ["-lm", "-lpthread", "-ldl"]
+
+        def name = os.name().toLowerCase()
+        if (os == Os.IOS) {
+            name = "ios_" + targetType.platformName
+        }
+
+        def arch = architecture.name().toLowerCase() + (architecture == Architecture.x86 && bitness != Architecture.Bitness._32 ? "_" : "") + bitness.toSuffix()
+        arch = os == Os.Android ? targetAndroidABI.name().toLowerCase() : arch
+        def combined = "${name}_${arch}"
+
+        headerDirs += ["jniLibs/libopusfile/$combined/include", "jniLibs/libopusfile/$combined/include/opus"]
+        libraries += [file("jniLibs/libopusfile/$combined/lib/libopusfile_combined.a").absolutePath]
     }
 
     addWindows(x32, x86, GCC_CLANG) {

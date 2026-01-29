@@ -42,6 +42,8 @@ public class MiniAudio implements Disposable {
         #include "ma_compressor_node.c"
         #include "ma_limiter_node.c"
 
+        #include "miniaudio_libopus.c"
+
         #include <stdio.h>
         #include <queue.h>
 
@@ -52,6 +54,7 @@ public class MiniAudio implements Disposable {
         ma_android_vfs* androidVFS;
         static jobject assetManagerGlobalRef;
         #endif
+        ma_resource_manager* resourceManager;
 
         #ifndef MA_ANDROID_LOG_TAG
         #define MA_ANDROID_LOG_TAG  "miniaudio"
@@ -536,6 +539,24 @@ public class MiniAudio implements Disposable {
         engineConfig.pResourceManagerVFS = androidVFS;
         #endif
 
+        ma_resource_manager_config resourceManagerConfig;
+        resourceManager = (ma_resource_manager*) ma_malloc(sizeof(ma_resource_manager), NULL);
+
+        ma_decoding_backend_vtable* pCustomBackendVTables[] =
+        {
+            ma_decoding_backend_libopus
+        };
+
+        resourceManagerConfig = ma_resource_manager_config_init();
+        resourceManagerConfig.ppCustomDecodingBackendVTables = pCustomBackendVTables;
+        resourceManagerConfig.customDecodingBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
+        resourceManagerConfig.pCustomDecodingBackendUserData = NULL;
+
+        res = ma_resource_manager_init(&resourceManagerConfig, resourceManager);
+        if (res != MA_SUCCESS) return res;
+
+        engineConfig.pResourceManager = resourceManager;
+
 		return ma_engine_init(&engineConfig, &engine);
 	*/
 
@@ -596,6 +617,7 @@ public class MiniAudio implements Disposable {
 
     private native void jniDispose();/*
         ma_engine_uninit(&engine);
+        ma_resource_manager_uninit(resourceManager);
         ma_device_uninit(&device);
         ma_audio_buffer_ref_uninit(&inputBufferData);
 
