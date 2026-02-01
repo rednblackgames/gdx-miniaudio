@@ -88,13 +88,13 @@ jnigen {
     addLinux(x64, RISCV)
 
     addMac(x64, x86) {
-        linkerFlags += ["-mmacosx-version-min=10.13", "-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
+        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
     }
     addMac(x64, ARM) {
-        linkerFlags += ["-mmacosx-version-min=11.0", "-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
+        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
     }
     addIOS() {
-        linkerFlags += ["-miphoneos-version-min=15.0", "-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
+        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
         cppFlags += ["-x", "objective-c++"]
     }
     addAndroid() {
