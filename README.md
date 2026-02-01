@@ -80,6 +80,7 @@ dependencies {
 ```
 
 #### Android
+Min SDK Required is `Android 25`
 
 ```groovy
 dependencies {
@@ -104,6 +105,8 @@ dependencies {
 </details>
 
 #### iOS
+
+Min iOS Required is `15.0`
 
 ```groovy
 dependencies {
