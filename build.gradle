@@ -94,7 +94,6 @@ jnigen {
     addMac(x64, ARM) {
         linkerFlags -= ["-mmacosx-version-min=10.7"]
         linkerFlags += ["-mmacosx-version-min=11.0", "-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
-        println(linkerFlags)
     }
     addIOS() {
         linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
