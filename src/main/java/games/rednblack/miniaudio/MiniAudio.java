@@ -531,14 +531,6 @@ public class MiniAudio implements Disposable {
         engineConfig.channels = channels;
         engineConfig.pDevice = &device;
 
-        #if defined(MA_ANDROID)
-        androidVFS = (ma_android_vfs*) ma_malloc(sizeof(ma_android_vfs), NULL);
-        res = ma_android_vfs_init(androidVFS, NULL);
-        androidVFS->pLog = &maLog;
-        if (res != MA_SUCCESS) return res;
-        engineConfig.pResourceManagerVFS = androidVFS;
-        #endif
-
         ma_resource_manager_config resourceManagerConfig;
         resourceManager = (ma_resource_manager*) ma_malloc(sizeof(ma_resource_manager), NULL);
 
@@ -551,6 +543,14 @@ public class MiniAudio implements Disposable {
         resourceManagerConfig.ppCustomDecodingBackendVTables = pCustomBackendVTables;
         resourceManagerConfig.customDecodingBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
         resourceManagerConfig.pCustomDecodingBackendUserData = NULL;
+
+        #if defined(MA_ANDROID)
+        androidVFS = (ma_android_vfs*) ma_malloc(sizeof(ma_android_vfs), NULL);
+        res = ma_android_vfs_init(androidVFS, NULL);
+        androidVFS->pLog = &maLog;
+        if (res != MA_SUCCESS) return res;
+        resourceManagerConfig.pVFS = androidVFS;
+        #endif
 
         res = ma_resource_manager_init(&resourceManagerConfig, resourceManager);
         if (res != MA_SUCCESS) return res;

@@ -14,7 +14,7 @@
 ## Features
 
 - Reading files from internal Assets
-- Supported formats: WAV, FLAC, MP3, OGG Vorbis
+- Supported formats: WAV, FLAC, MP3, OGG Vorbis/Opus
 - Global start and stop/pause
 - Master volume control
 - Virtual 3D Listener (Position/Direction/WorldUp/Cone)
@@ -80,7 +80,7 @@ dependencies {
 ```
 
 #### Android
-Min SDK Required is `Android 25`
+Min SDK Required is `Android 24`
 
 ```groovy
 dependencies {

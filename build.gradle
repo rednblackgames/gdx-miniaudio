@@ -106,7 +106,8 @@ jnigen {
     }
 
     addAndroid() {
-        libraries = ["-llog", "-landroid", "-lm", "-ldl"]
+        libraries -= ["-lpthread"]
+        libraries += ["-llog", "-landroid"]
         androidApplicationMk += ["APP_STRIP_MODE := none", "APP_PLATFORM := android-24"]
         androidAndroidMkSharedLibModule += "LOCAL_WHOLE_STATIC_LIBRARIES := opusfile_combined"
         def arch = targetAndroidABI.name().toLowerCase()
