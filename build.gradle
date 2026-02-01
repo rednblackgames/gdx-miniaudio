@@ -88,15 +88,23 @@ jnigen {
     addLinux(x64, RISCV)
 
     addMac(x64, x86) {
-        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
+        linkerFlags -= ["-mmacosx-version-min=10.7"]
+        linkerFlags += ["-mmacosx-version-min=10.13", "-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
     }
     addMac(x64, ARM) {
-        linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
+        linkerFlags -= ["-mmacosx-version-min=10.7"]
+        linkerFlags += ["-mmacosx-version-min=11.0", "-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
+        println(linkerFlags)
     }
     addIOS() {
         linkerFlags += ["-framework", "CoreFoundation", "-framework", "CoreAudio", "-framework", "Foundation", "-framework", "AVFAudio", "-framework", "AudioToolbox"]
         cppFlags += ["-x", "objective-c++"]
     }
+
+    robovm {
+        minIOSVersion = "15.0"
+    }
+
     addAndroid() {
         libraries = ["-llog", "-landroid", "-lm", "-ldl"]
         androidApplicationMk += ["APP_STRIP_MODE := none", "APP_PLATFORM := android-24"]
