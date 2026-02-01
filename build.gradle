@@ -76,10 +76,10 @@ jnigen {
     }
 
     addWindows(x32, x86, GCC_CLANG) {
-        libraries = ["-lm", "-lpthread"]
+        libraries -= ["-ldl"]
     }
     addWindows(x64, x86, GCC_CLANG) {
-        libraries = ["-lm", "-lpthread"]
+        libraries -= ["-ldl"]
     }
 
     addLinux(x64, x86)
@@ -107,8 +107,6 @@ jnigen {
 
         def libFile = file("jniLibs/libopusfile/$combined/lib/libopusfile_combined.a").absoluteFile
         def includeDir = file("jniLibs/libopusfile/$combined/include").absoluteFile
-
-        println(libFile)
 
         androidAndroidMk += [
                 "include \$(CLEAR_VARS)",
