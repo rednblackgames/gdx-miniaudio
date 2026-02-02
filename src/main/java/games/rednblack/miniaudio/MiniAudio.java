@@ -2329,6 +2329,15 @@ public class MiniAudio implements Disposable {
         ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
         ma_decoder_config config = ma_decoder_config_init(ma_format_f32, outputChannels, sampleRate);
 
+        ma_decoding_backend_vtable* pCustomBackendVTables[] =
+        {
+            ma_decoding_backend_libopus
+        };
+
+        config.pCustomBackendUserData = NULL;
+        config.ppCustomBackendVTables = pCustomBackendVTables;
+        config.customBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
+
         ma_uint64 frameCountOut = 0;
         void* pPcmFramesOut = NULL;
 
