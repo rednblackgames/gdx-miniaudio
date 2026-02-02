@@ -16,6 +16,7 @@ plugins {
     id 'java'
 }
 
+apply from: "jni-helpers.gradle"
 apply plugin: "com.badlogicgames.jnigen.jnigen-gradle"
 
 group 'games.rednblack.miniaudio'
@@ -51,9 +52,6 @@ tasks.withType(JavaCompile) {
     }
 }
 
-import com.badlogic.gdx.jnigen.commons.Os;
-import com.badlogic.gdx.jnigen.commons.Architecture;
-
 jnigen {
     sharedLibName = "gdx-miniaudio"
 
@@ -62,17 +60,7 @@ jnigen {
         cIncludes  += ["jni/stb_vorbis.c"]
         libraries  += ["-lm", "-lpthread", "-ldl"]
 
-        def name = os.name().toLowerCase()
-        if (os == Os.IOS) {
-            name = "ios_" + targetType.platformName
-        }
-
-        def arch = architecture.name().toLowerCase() + (architecture == Architecture.x86 && bitness != Architecture.Bitness._32 ? "_" : "") + bitness.toSuffix()
-        arch = os == Os.Android ? targetAndroidABI.name().toLowerCase() : arch
-        def combined = "${name}_${arch}"
-
-        headerDirs += ["jniLibs/libopusfile/$combined/include", "jniLibs/libopusfile/$combined/include/opus"]
-        libraries += [file("jniLibs/libopusfile/$combined/lib/libopusfile_combined.a").absolutePath]
+        addPrebuiltCombinedLib(it, "libopusfile_combined")
     }
 
     addWindows(x32, x86, GCC_CLANG) {
@@ -108,22 +96,18 @@ jnigen {
         libraries -= ["-lpthread"]
         libraries += ["-llog", "-landroid"]
         androidApplicationMk += ["APP_STRIP_MODE := none", "APP_PLATFORM := android-24"]
-        androidAndroidMkSharedLibModule += "LOCAL_WHOLE_STATIC_LIBRARIES := opusfile_combined"
-        def arch = targetAndroidABI.name().toLowerCase()
-        def name = os.name().toLowerCase()
-        def combined = "${name}_${arch}"
-
-        def libFile = file("jniLibs/libopusfile/$combined/lib/libopusfile_combined.a").absoluteFile
-        def includeDir = file("jniLibs/libopusfile/$combined/include").absoluteFile
-
-        androidAndroidMk += [
-                "include \$(CLEAR_VARS)",
-                "LOCAL_MODULE := opusfile_combined",
-                "LOCAL_SRC_FILES := \$(realpath ${libFile})",
-                "LOCAL_EXPORT_C_INCLUDES := \$(realpath ${includeDir})",
-                "include \$(PREBUILT_STATIC_LIBRARY)"
-        ]
     }
+}
+
+def fetchOpusfile = registerJniZip(
+        "fetchLibOpusfile",
+        "libopusfile_combined",
+        "https://github.com/rednblackgames/opusfile/releases/download/cc04a82/libopusfile-all-platforms.zip",
+        "0a6219665af557e4427474606053301ddb9de38804e6bd7a7761b5b46ba2e00f"
+)
+
+tasks.register("fetchDependencies") {
+    dependsOn(fetchOpusfile)
 }
 
 apply from : 'publish.gradle'

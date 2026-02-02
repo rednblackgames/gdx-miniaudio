@@ -1,0 +1,106 @@
+buildscript {
+    repositories {
+        maven { url 'https://jitpack.io' }
+        mavenCentral()
+        gradlePluginPortal()
+        mavenLocal()
+        google()
+        maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
+    }
+    dependencies {
+        classpath "com.badlogicgames.jnigen:jnigen-gradle:$jniGenVersion"
+    }
+}
+
+apply plugin: "com.badlogicgames.jnigen.jnigen-gradle"
+
+import java.security.MessageDigest
+import java.security.DigestInputStream
+import com.badlogic.gdx.jnigen.BuildTarget
+import com.badlogic.gdx.jnigen.commons.Os;
+import com.badlogic.gdx.jnigen.commons.Architecture;
+
+ext.sha256Hex = { File f ->
+    MessageDigest md = MessageDigest.getInstance("SHA-256")
+    f.withInputStream { is ->
+        DigestInputStream dis = new DigestInputStream(is, md)
+        byte[] buf = new byte[1024 * 64]
+        while (dis.read(buf) != -1) { }
+        dis.close()
+    }
+    md.digest().collect { String.format("%02x", it) }.join()
+}
+
+ext.downloadVerifyAndExtractZip = { String url, String expectedSha256, Object destDirObj, boolean stripTopDir = true ->
+    File destDir = project.file(destDirObj)
+    File cacheDir = project.file("$buildDir/jniZips")
+    cacheDir.mkdirs()
+
+    String fileName = url.tokenize('/').last()
+    File zipFile = new File(cacheDir, fileName)
+
+    // Download if missing
+    if (!zipFile.exists()) {
+        new URL(url).withInputStream { i -> zipFile.withOutputStream { o -> o << i } }
+    }
+
+    // Verify checksum (optional but recommended)
+    if (expectedSha256 != null && !expectedSha256.trim().isEmpty()) {
+        String actual = sha256Hex(zipFile)
+        String expected = expectedSha256.toLowerCase(Locale.ROOT)
+        if (actual != expected) {
+            zipFile.delete()
+            throw new GradleException("SHA-256 mismatch for ${url}\nExpected: ${expected}\nActual:   ${actual}")
+        }
+    }
+
+    // Clean + extract
+    project.delete(destDir)
+    destDir.mkdirs()
+
+    project.copy {
+        from project.zipTree(zipFile)
+        into destDir
+    }
+}
+
+ext.addHeaderDirsRecursive = { BuildTarget t, Object includeRoot ->
+    File base = project.file(includeRoot)
+    if (!base.exists()) return
+
+    def headerFiles = project.fileTree(base).matching {
+        include '**/*.h', '**/*.hpp', '**/*.hh', '**/*.inc'
+    }.files
+
+    def dirs = (headerFiles.collect { it.parentFile } + [base]).unique()
+
+    t.headerDirs += dirs.collect { project.file(project.relativePath(it)).absolutePath }
+}
+
+ext.addPrebuiltCombinedLib = { BuildTarget t, String libName ->
+    def name = t.os.name().toLowerCase()
+    if (t.os == Os.IOS) {
+        name = "ios_" + t.targetType.platformName
+    }
+
+    def arch = t.architecture.name().toLowerCase() + (t.architecture == Architecture.x86 && t.bitness != Architecture.Bitness._32 ? "_" : "") + t.bitness.toSuffix()
+    arch = t.os == Os.Android ? t.targetAndroidABI.name().toLowerCase() : arch
+    def combined = "${name}_${arch}"
+
+    def includeRoot = "build/staticLibs/${libName}/${combined}/include"
+    addHeaderDirsRecursive(t, includeRoot)
+    t.libraries += project.file("build/staticLibs/${libName}/${combined}/lib/${libName}.a").absolutePath
+}
+
+ext.registerJniZip = { String taskName, String libName, String url, String sha256 ->
+    tasks.register(taskName) {
+        def outDir = file("build/staticLibs/${libName}")
+        inputs.property("url", url)
+        inputs.property("sha256", sha256)
+        outputs.dir(outDir)
+
+        doLast {
+            downloadVerifyAndExtractZip(url, sha256, outDir, true)
+        }
+    }
+}
