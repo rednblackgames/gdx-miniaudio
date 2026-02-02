@@ -32,7 +32,8 @@ jobs:
       - name: Build macOS natives
         run: |
           /usr/bin/xcodebuild -version
-          ./gradlew fetchDependencies jnigen jnigenBuildAllIOS jnigenBuildAllMacOsX
+          ./gradlew fetchDependencies
+          ./gradlew jnigen jnigenBuildAllIOS jnigenBuildAllMacOsX
       - name: Upload macOS/iOS natives
         uses: actions/upload-artifact@v4.4.0
         with:
@@ -84,7 +85,8 @@ jobs:
           echo "NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
       - name: Build with Gradle
         run: |
-          ./gradlew fetchDependencies jnigen jnigenBuildAllLinux jnigenBuildAllWindows jnigenBuildAllAndroid
+          ./gradlew fetchDependencies
+          ./gradlew jnigen jnigenBuildAllLinux jnigenBuildAllWindows jnigenBuildAllAndroid
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v3
