@@ -24,9 +24,6 @@ public class MiniAudio implements Disposable {
     public static final String MA_ANDROID_STORAGE_EXTERNAL_PREFIX = "external:";
 
     /*JNI
-        #define STB_VORBIS_HEADER_ONLY
-        #include "stb_vorbis.c"
-
         #define MA_AAUDIO_MIN_ANDROID_SDK_VERSION 31
         #define MINIAUDIO_IMPLEMENTATION
         #include "miniaudio.h"
@@ -43,6 +40,7 @@ public class MiniAudio implements Disposable {
         #include "ma_limiter_node.c"
 
         #include "miniaudio_libopus.c"
+        #include "miniaudio_libvorbis.c"
 
         #include <stdio.h>
         #include <queue.h>
@@ -536,6 +534,7 @@ public class MiniAudio implements Disposable {
 
         ma_decoding_backend_vtable* pCustomBackendVTables[] =
         {
+            ma_decoding_backend_libvorbis,
             ma_decoding_backend_libopus
         };
 
@@ -2331,6 +2330,7 @@ public class MiniAudio implements Disposable {
 
         ma_decoding_backend_vtable* pCustomBackendVTables[] =
         {
+            ma_decoding_backend_libvorbis,
             ma_decoding_backend_libopus
         };
 

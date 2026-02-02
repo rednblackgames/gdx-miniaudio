@@ -57,10 +57,10 @@ jnigen {
 
     all {
         headerDirs += ["jni"]
-        cIncludes  += ["jni/stb_vorbis.c"]
         libraries  += ["-lm", "-lpthread", "-ldl"]
 
         addPrebuiltCombinedLib(it, "libopusfile_combined")
+        addPrebuiltCombinedLib(it, "libvorbis_combined")
     }
 
     addWindows(x32, x86, GCC_CLANG) {
@@ -106,8 +106,16 @@ def fetchOpusfile = registerJniZip(
         "0a6219665af557e4427474606053301ddb9de38804e6bd7a7761b5b46ba2e00f"
 )
 
+def fetchVorbis = registerJniZip(
+        "fetchLibVorbis",
+        "libvorbis_combined",
+        "https://github.com/rednblackgames/vorbis/releases/download/2d79800/libvorbis-all-platforms.zip",
+        "128c66439c250084ae414e5bb35e07344af480f7f6cfb511e6097e6f859a1ab5"
+)
+
 tasks.register("fetchDependencies") {
     dependsOn(fetchOpusfile)
+    dependsOn(fetchVorbis)
 }
 
 apply from : 'publish.gradle'
