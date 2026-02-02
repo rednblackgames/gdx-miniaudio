@@ -1,5 +1,8 @@
 package games.rednblack.miniaudio.loader;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Files;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.assets.loaders.AssetLoader;
@@ -38,7 +41,20 @@ public class MASoundLoader extends AsynchronousAssetLoader<MASound, MASoundLoade
                 sound = miniAudio.createSound(file.path(), parameter.flags, parameter.maGroup, parameter.external);
             }
         } else {
-            sound = miniAudio.createSound(file.path());
+            //Native library cannot access internal jar resources, desktop backends must read bytes and fully decode
+            //audio in memory to avoid extraction
+            if (Gdx.app.getType() == Application.ApplicationType.Desktop &&
+                    (file.type() == Files.FileType.Classpath || file.type() == Files.FileType.Internal)) {
+
+                Gdx.app.error(MiniAudio.TAG, file.name() + ": attempt to load Classpath/Internal asset from desktop. Reading from memory...");
+
+                byte[] data = file.readBytes();
+                MAAudioBuffer decodedBuffer = miniAudio.decodeBytes(data, 2);
+                sound = miniAudio.createSound(decodedBuffer);
+                sound.setLinkedAudioBuffer(decodedBuffer);
+            } else {
+                sound = miniAudio.createSound(file.path());
+            }
         }
     }
 
