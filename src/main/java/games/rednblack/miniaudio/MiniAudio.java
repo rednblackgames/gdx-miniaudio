@@ -1907,15 +1907,15 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Pause sound group.
+     * Stop sound group.
      *
      * @param groupAddress native address to group object
      */
-    public void pauseGroup(long groupAddress) {
-        jniPauseGroup(groupAddress);
+    public void stopGroup(long groupAddress) {
+        jniStopGroup(groupAddress);
     }
 
-    private native void jniPauseGroup(long groupAddress); /*
+    private native void jniStopGroup(long groupAddress); /*
         ma_sound_group* group = (ma_sound_group*) groupAddress;
         ma_sound_group_stop(group);
     */

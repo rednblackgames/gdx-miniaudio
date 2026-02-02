@@ -82,7 +82,7 @@ public class GdxMASound implements Sound, GdxEndListener {
 
     @Override
     public void pause() {
-        group.pause();
+        group.stop();
     }
 
     @Override

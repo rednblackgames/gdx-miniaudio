@@ -23,10 +23,10 @@ public class MAGroup extends MANode {
     }
 
     /**
-     * Pause group.
+     * Stop group.
      */
-    public void pause() {
-        miniAudio.pauseGroup(address);
+    public void stop() {
+        miniAudio.stopGroup(address);
     }
 
     /**
