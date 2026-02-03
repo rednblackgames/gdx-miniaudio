@@ -210,6 +210,7 @@ public class MiniAudio implements Disposable {
     private MASoundEndListener endListener;
     private MALogCallback logCallback;
     private MADeviceNotificationListener deviceNotificationListener;
+    private final MADeviceInfo[] hardwareDevices;
 
     /**
      * Create a new MiniAudio Engine Instance
@@ -236,6 +237,9 @@ public class MiniAudio implements Disposable {
         if (result != MAResult.MA_SUCCESS) {
             throw new MiniAudioException("Unable to init MiniAudio Context", result);
         }
+
+        //Enumerate devices just once, this will ensure validity of native pointers
+        hardwareDevices = jniEnumerateDevices(MADeviceInfo.class, MADeviceInfo.MADeviceNativeDataFormat.class);
 
         if (engineConfiguration != null)
             initEngine(engineConfiguration);
@@ -343,13 +347,13 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Enumerate every device attached to the device with their capabilities,
+     * Enumerate every hardware attached to the device with their capabilities,
      * check devices before {@link #initEngine(MAEngineConfiguration)}
      *
      * @return array of devices information
      */
-    public MADeviceInfo[] enumerateDevices() {
-        return jniEnumerateDevices(MADeviceInfo.class, MADeviceInfo.MADeviceNativeDataFormat.class);
+    public MADeviceInfo[] getAvailableDevices() {
+        return hardwareDevices;
     }
 
     private native MADeviceInfo[] jniEnumerateDevices(Class infoClass, Class nativeFormatClass);/*
@@ -499,15 +503,13 @@ public class MiniAudio implements Disposable {
 
     private native int jniInitEngine(int listenerCount, long playbackId, long captureId, int channels, int bufferPeriodMillis, int bufferPeriodFrames, int sampleRate, int format, boolean fullDuplex, boolean exclusive, boolean lowLatency);/*
         ma_result res;
-        if (fullDuplex)
-            deviceConfig = ma_device_config_init(ma_device_type_duplex);
-        else
-            deviceConfig = ma_device_config_init(ma_device_type_playback);
-        deviceConfig.capture.pDeviceID  = playbackId == -1 ? NULL : (ma_device_id*) playbackId;
+
+        deviceConfig = ma_device_config_init(fullDuplex ? ma_device_type_duplex : ma_device_type_playback);
+        deviceConfig.capture.pDeviceID  = captureId == -1 ? NULL : (ma_device_id*) captureId;
         deviceConfig.capture.format     = (ma_format) format;
         deviceConfig.capture.channels   = channels;
         deviceConfig.capture.shareMode  = exclusive ? ma_share_mode_exclusive : ma_share_mode_shared;
-        deviceConfig.playback.pDeviceID = captureId == -1 ? NULL : (ma_device_id*) captureId;
+        deviceConfig.playback.pDeviceID = playbackId == -1 ? NULL : (ma_device_id*) playbackId;
         deviceConfig.playback.format    = (ma_format) format;
         deviceConfig.playback.channels  = channels;
         deviceConfig.sampleRate         = sampleRate;
