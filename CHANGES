@@ -3,6 +3,7 @@
 - Support OGG Opus decoding
 - `MASoundLoader` will decode from memory (and warn) when try to load a Classpath/Internal asset from desktop
 - Replaced `stb_vorbis` with libVorbis and official miniaudio decoder
+- Fix init audio with custom playback/capture devices
 
 [0.7]
 - Improved native queue and Java callback: fix race condition, remove useless wait time

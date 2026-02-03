@@ -71,9 +71,9 @@ public class GdxMiniAudio implements Audio {
     public String[] getAvailableOutputDevices() {
         Array<String> outputDevices = new Array<>();
         MADeviceInfo[] devices = miniAudio.getAvailableDevices();
-        for (int i = 0; i < devices.length; i++) {
-            if (devices[i].isCapture) {
-                outputDevices.add(devices[i].name);
+        for (MADeviceInfo device : devices) {
+            if (!device.isCapture) {
+                outputDevices.add(device.name);
             }
         }
         return outputDevices.toArray();
