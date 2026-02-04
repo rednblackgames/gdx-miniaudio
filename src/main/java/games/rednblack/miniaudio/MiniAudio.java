@@ -60,6 +60,7 @@ public class MiniAudio implements Disposable {
 
         ma_context context;
         ma_device_config deviceConfig;
+        ma_engine_config engineConfig;
         ma_device device;
         ma_engine engine;
         ma_log maLog;
@@ -529,7 +530,7 @@ public class MiniAudio implements Disposable {
         res = ma_audio_buffer_ref_init(device.capture.format, device.capture.channels, NULL, 0, &inputBufferData);
         if (res != MA_SUCCESS) return res;
 
-        ma_engine_config engineConfig = ma_engine_config_init();
+        engineConfig = ma_engine_config_init();
         engineConfig.noDevice = MA_TRUE;
         engineConfig.listenerCount = listenerCount;
         engineConfig.channels = device.playback.channels;
@@ -611,6 +612,10 @@ public class MiniAudio implements Disposable {
 
         deviceConfig.capture.pDeviceID  = captureId == -1 ? NULL : (ma_device_id*) captureId;
         deviceConfig.playback.pDeviceID = playbackId == -1 ? NULL : (ma_device_id*) playbackId;
+        deviceConfig.playback.channels  = engineConfig.channels;
+        deviceConfig.capture.channels   = engineConfig.channels;
+        deviceConfig.sampleRate         = engineConfig.sampleRate;
+
         return ma_device_init(&context, &deviceConfig, &device);
     */
 
