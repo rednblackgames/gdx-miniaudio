@@ -278,6 +278,7 @@ public class MiniAudio implements Disposable {
             throw new MiniAudioException("Unable to init MiniAudio Engine", result);
         }
         engineAddress = jniEngineAddress();
+        startEngine();
     }
 
     private native int jniInitContext(int iOSSessionCategory, short iOSSessionCategoryOptions, boolean enableAAudioBackend);/*
@@ -520,6 +521,8 @@ public class MiniAudio implements Disposable {
         deviceConfig.periodSizeInMilliseconds = bufferPeriodMillis;
         deviceConfig.wasapi.noAutoConvertSRC = true;
         deviceConfig.coreaudio.allowNominalSampleRateChange = true;
+        deviceConfig.noPreSilencedOutputBuffer = MA_TRUE;
+        deviceConfig.noClip                    = MA_TRUE;
         res = ma_device_init(&context, &deviceConfig, &device);
         if (res != MA_SUCCESS) return res;
 
@@ -527,9 +530,11 @@ public class MiniAudio implements Disposable {
         if (res != MA_SUCCESS) return res;
 
         ma_engine_config engineConfig = ma_engine_config_init();
+        engineConfig.noDevice = MA_TRUE;
         engineConfig.listenerCount = listenerCount;
-        engineConfig.channels = channels;
-        engineConfig.pDevice = &device;
+        engineConfig.channels = device.playback.channels;
+        engineConfig.sampleRate = device.sampleRate;
+        engineConfig.periodSizeInFrames = ma_device__get_processing_size_in_frames(&device);
 
         ma_resource_manager_config resourceManagerConfig;
         resourceManager = (ma_resource_manager*) ma_malloc(sizeof(ma_resource_manager), NULL);
@@ -573,6 +578,41 @@ public class MiniAudio implements Disposable {
     public long getEngineAddress() {
         return engineAddress;
     }
+
+    /**
+     * Change playback or capture hardware device at runtime. Pass null to use system default.
+     * To obtain a list of available devices use {@link MiniAudio#getAvailableDevices()}.
+     *
+     * @param outputDevice selected output device or null for default
+     * @param inputDevice selected input device or null for default
+     */
+    public void changeDevice(@Null MADeviceInfo outputDevice, @Null MADeviceInfo inputDevice) {
+        if (outputDevice != null && outputDevice.isCapture)
+            throw new IllegalArgumentException("outputDevice cannot be a capture device.");
+
+        if (inputDevice != null && !inputDevice.isCapture)
+            throw new IllegalArgumentException("inputDevice must be a capture device.");
+
+        int result = jniChangeDevice(
+                outputDevice != null ? outputDevice.idAddress : -1,
+                inputDevice != null ? inputDevice.idAddress : -1
+        );
+
+        if (result != MAResult.MA_SUCCESS) {
+            throw new MiniAudioException("Unable to change Audio device", result);
+        }
+
+        //Device must be started here
+        startEngine();
+    }
+
+    private native int jniChangeDevice(long playbackId, long captureId);/*
+        ma_device_uninit(&device);
+
+        deviceConfig.capture.pDeviceID  = captureId == -1 ? NULL : (ma_device_id*) captureId;
+        deviceConfig.playback.pDeviceID = playbackId == -1 ? NULL : (ma_device_id*) playbackId;
+        return ma_device_init(&context, &deviceConfig, &device);
+    */
 
     /**
      * Android native implementation needs the AssetManager reference from Java code.
@@ -658,7 +698,7 @@ public class MiniAudio implements Disposable {
     }
 
     private native int jniStartEngine();/*
-        ma_result res = ma_engine_start(&engine);
+        ma_result res = ma_device_start(&device);
         if (res != MA_SUCCESS) return res;
         return MA_SUCCESS;
     */
@@ -674,7 +714,7 @@ public class MiniAudio implements Disposable {
     }
 
     private native int jniStopEngine();/*
-        ma_result res = ma_engine_stop(&engine);
+        ma_result res = ma_device_stop(&device);
         if (res != MA_SUCCESS) return res;
         return MA_SUCCESS;
     */

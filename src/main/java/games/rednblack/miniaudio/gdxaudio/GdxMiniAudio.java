@@ -64,7 +64,24 @@ public class GdxMiniAudio implements Audio {
 
     @Override
     public boolean switchOutputDevice(String deviceIdentifier) {
-        return false;
+        MADeviceInfo[] devices = miniAudio.getAvailableDevices();
+        MADeviceInfo targetDevice = null;
+        for (MADeviceInfo device : devices) {
+            if (!device.isCapture && device.name.equals(deviceIdentifier)) {
+                targetDevice = device;
+                break;
+            }
+        }
+
+        if (targetDevice == null) return false;
+
+        try {
+            miniAudio.changeDevice(targetDevice, null);
+        } catch (Exception ignore) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
