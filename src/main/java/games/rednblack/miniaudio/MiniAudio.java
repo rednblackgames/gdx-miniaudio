@@ -211,7 +211,7 @@ public class MiniAudio implements Disposable {
     private MASoundEndListener endListener;
     private MALogCallback logCallback;
     private MADeviceNotificationListener deviceNotificationListener;
-    private final MADeviceInfo[] hardwareDevices;
+    private MADeviceInfo[] hardwareDevices;
 
     /**
      * Create a new MiniAudio Engine Instance
@@ -349,13 +349,23 @@ public class MiniAudio implements Disposable {
     */
 
     /**
-     * Enumerate every hardware attached to the device with their capabilities,
+     * Enumerate every hardware available to the device with their capabilities,
      * check devices before {@link #initEngine(MAEngineConfiguration)}
      *
      * @return array of devices information
      */
     public MADeviceInfo[] getAvailableDevices() {
         return hardwareDevices;
+    }
+
+    /**
+     * Rescan the system for hardware changes.
+     *
+     * IMPORTANT NOTE: Any devices list previously cached must be discarded.
+     * Get the new list using {@link MiniAudio#getAvailableDevices()}
+     */
+    public void refreshAvailableDevices() {
+        hardwareDevices = jniEnumerateDevices(MADeviceInfo.class, MADeviceInfo.MADeviceNativeDataFormat.class);
     }
 
     private native MADeviceInfo[] jniEnumerateDevices(Class infoClass, Class nativeFormatClass);/*

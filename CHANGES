@@ -5,6 +5,7 @@
 - Replaced `stb_vorbis` with libVorbis and official miniaudio decoder
 - Fix init audio with custom playback/capture devices
 - [BREAK] Changed `MiniAudio#enumerateDevices` to `MiniAudio#getAvailableDevices`
+- Add `MiniAudio#refreshAvailableDevices` API
 - Allow to change output/input device at runtime with `MiniAudio#changeDevice`
 
 [0.7]
