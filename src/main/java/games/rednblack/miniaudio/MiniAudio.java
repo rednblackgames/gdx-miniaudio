@@ -3,10 +3,12 @@ package games.rednblack.miniaudio;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.Null;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
 import games.rednblack.miniaudio.config.MAContextConfiguration;
 import games.rednblack.miniaudio.config.MAEngineConfiguration;
+import games.rednblack.miniaudio.mix.MAVisualizerNode;
 
 /**
  * Main Audio Engine interface that handle calls with native library.
@@ -38,6 +40,7 @@ public class MiniAudio implements Disposable {
         #include "ma_phaser_node.c"
         #include "ma_compressor_node.c"
         #include "ma_limiter_node.c"
+        #include "ma_visualizer_node.c"
 
         #include "miniaudio_libopus.c"
         #include "miniaudio_libvorbis.c"
@@ -90,6 +93,9 @@ public class MiniAudio implements Disposable {
         static jmethodID jon_native_sound_end;
         static jmethodID jon_native_log;
         static jmethodID jon_native_notification;
+        static jmethodID jon_native_visualizer;
+        static jfloatArray jVisualizerBuffer = NULL;
+        static ma_uint32 jVisualizerBufferSize = 0;
         static LockFreeQueue* lock_free_queue;
         static ma_thread* callback_thread;
         static int running_callback_thread = 1;
@@ -166,6 +172,24 @@ public class MiniAudio implements Disposable {
             }
         }
 
+        void visualizer_pcm_callback_jni(const float* pFrames, ma_uint32 frameCount,
+                                          ma_uint32 channels, void* pUserData) {
+            ma_uint32 totalSamples = frameCount * channels;
+            Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
+            if (event == NULL) return;
+            event->pcmData = (float*) ma_malloc(totalSamples * sizeof(float), NULL);
+            if (event->pcmData == NULL) { ma_free(event, NULL); return; }
+            memcpy(event->pcmData, pFrames, totalSamples * sizeof(float));
+            event->type = 3;
+            event->frameCount = frameCount;
+            event->channels = channels;
+            event->nodeAddress = pUserData;
+            if (enqueue(lock_free_queue, event) == -1) {
+                ma_free(event->pcmData, NULL);
+                ma_free(event, NULL);
+            }
+        }
+
         void process_single_event(JNIEnv* env, Event* event) {
             if (event->type == 0) {
                 env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
@@ -176,6 +200,21 @@ public class MiniAudio implements Disposable {
                 ma_free(event->message, NULL);
             } else if (event->type == 2) {
                 env->CallVoidMethod(jMiniAudio, jon_native_notification, event->notificationType);
+            } else if (event->type == 3) {
+                ma_uint32 totalSamples = event->frameCount * event->channels;
+                if (jVisualizerBuffer == NULL || totalSamples > jVisualizerBufferSize) {
+                    if (jVisualizerBuffer != NULL) {
+                        env->DeleteGlobalRef(jVisualizerBuffer);
+                    }
+                    jfloatArray localArray = env->NewFloatArray(totalSamples);
+                    jVisualizerBuffer = (jfloatArray) env->NewGlobalRef(localArray);
+                    env->DeleteLocalRef(localArray);
+                    jVisualizerBufferSize = totalSamples;
+                }
+                env->SetFloatArrayRegion(jVisualizerBuffer, 0, totalSamples, event->pcmData);
+                env->CallVoidMethod(jMiniAudio, jon_native_visualizer,
+                    (jlong) event->nodeAddress, jVisualizerBuffer, (jint) totalSamples, (jint) event->channels);
+                ma_free(event->pcmData, NULL);
             }
             ma_free(event, NULL);
         }
@@ -212,6 +251,7 @@ public class MiniAudio implements Disposable {
     private MALogCallback logCallback;
     private MADeviceNotificationListener deviceNotificationListener;
     private MADeviceInfo[] hardwareDevices;
+    private final LongMap<MAVisualizerNode> visualizerNodes = new LongMap<>();
 
     /**
      * Create a new MiniAudio Engine Instance
@@ -289,6 +329,7 @@ public class MiniAudio implements Disposable {
         jon_native_sound_end = env->GetMethodID(handlerClass, "on_native_sound_end", "(J)V");
         jon_native_log = env->GetMethodID(handlerClass, "on_native_log", "(ILjava/lang/String;)V");
         jon_native_notification = env->GetMethodID(handlerClass, "on_native_notification", "(I)V");
+        jon_native_visualizer = env->GetMethodID(handlerClass, "on_native_visualizer", "(J[FII)V");
 
         lock_free_queue = (LockFreeQueue*) ma_malloc(sizeof(LockFreeQueue), NULL);
         init_queue(lock_free_queue);
@@ -681,6 +722,12 @@ public class MiniAudio implements Disposable {
         ma_semaphore_release(&lock_free_queue->sem);
 
         ma_thread_wait(callback_thread);
+
+        if (jVisualizerBuffer != NULL) {
+            env->DeleteGlobalRef(jVisualizerBuffer);
+            jVisualizerBuffer = NULL;
+            jVisualizerBufferSize = 0;
+        }
 
         ma_free(callback_thread, NULL);
         uninit_queue(lock_free_queue);
@@ -2350,6 +2397,21 @@ public class MiniAudio implements Disposable {
     public void on_native_notification(int type) {
         if (deviceNotificationListener != null) {
             deviceNotificationListener.onNotification(MADeviceNotificationType.decode(type));
+        }
+    }
+
+    public void registerVisualizerNode(MAVisualizerNode node) {
+        visualizerNodes.put(node.getAddress(), node);
+    }
+
+    public void unregisterVisualizerNode(MAVisualizerNode node) {
+        visualizerNodes.remove(node.getAddress());
+    }
+
+    public void on_native_visualizer(long nodeAddress, float[] pcmData, int totalSamples, int channels) {
+        MAVisualizerNode node = visualizerNodes.get(nodeAddress);
+        if (node != null) {
+            node.deliverPcmData(pcmData, totalSamples, channels);
         }
     }
 

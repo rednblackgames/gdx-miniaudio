@@ -9,6 +9,11 @@ typedef struct {
     ma_uint32 level;
     char* message;
     int notificationType;
+    /* type == 3: visualizer */
+    float* pcmData;
+    ma_uint32 frameCount;
+    ma_uint32 channels;
+    void* nodeAddress;
 } Event;
 
 typedef struct {

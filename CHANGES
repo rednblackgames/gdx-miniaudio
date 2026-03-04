@@ -1,12 +1,13 @@
 [0.8]
-- Update MiniAudio to 0.11.24
+- Update MiniAudio to 0.11.25
 - Support OGG Opus decoding
-- `MASoundLoader` will decode from memory (and warn) when try to load a Classpath/Internal asset from desktop
 - Replaced `stb_vorbis` with libVorbis and official miniaudio decoder
+- `MASoundLoader` will decode from memory (and warn) when try to load a Classpath/Internal asset from desktop
 - Fix init audio with custom playback/capture devices
 - [BREAK] Changed `MiniAudio#enumerateDevices` to `MiniAudio#getAvailableDevices`
 - Add `MiniAudio#refreshAvailableDevices` API
 - Allow to change output/input device at runtime with `MiniAudio#changeDevice`
+- Add PCM Visualizer Node
 
 [0.7]
 - Improved native queue and Java callback: fix race condition, remove useless wait time

@@ -13,7 +13,7 @@
 
 ## Features
 
-- Reading files from internal Assets
+- Reading files from internal Assets or byte array
 - Supported formats: WAV, FLAC, MP3, OGG Vorbis/Opus
 - Global start and stop/pause
 - Master volume control
@@ -37,6 +37,7 @@
 - MASoundPool with libGDX Pool API
 - Audio Input Node (microphone)
 - Audio Encoder Node (only wav)
+- PCM Visualizer Node
 
 **Filters**
 - Band Pass
@@ -172,6 +173,13 @@ public class Main implements ApplicationListener {
         assetManager.setLoader(MASound.class, new MASoundLoader(miniAudio, assetManager.getFileHandleResolver()));
         assetManager.load("game.ogg", MASound.class);
         // ... load as usual ...
+        
+        //Load from byte array
+        FileHandle file = ...;
+        byte[] data = file.readBytes(); //any supported bytes (e.g. mp3, wav, etc.)
+        MAAudioBuffer decodedBuffer = miniAudio.decodeBytes(data, 2);
+        maSound = miniAudio.createSound(decodedBuffer);
+        maSound.setLinkedAudioBuffer(decodedBuffer); //Important!
     }
 
     @Override
@@ -215,6 +223,7 @@ If your Java code is obfuscated, be sure to keep required JNI methods.
     public void on_native_sound_end(long);
     public void on_native_log(int, java.lang.String);
     public void on_native_notification(int);
+    public void on_native_visualizer(long, float[], int, int);
 }
 ```
 

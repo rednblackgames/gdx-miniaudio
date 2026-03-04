@@ -7,7 +7,9 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.Logger;
+import com.badlogic.gdx.utils.ScreenUtils;
 import games.rednblack.miniaudio.config.MAContextConfiguration;
 import games.rednblack.miniaudio.config.MAEngineConfiguration;
 import games.rednblack.miniaudio.config.MAiOSSessionCategory;
@@ -17,6 +19,7 @@ import games.rednblack.miniaudio.loader.MASoundLoader;
 import games.rednblack.miniaudio.mix.MAChannelCombiner;
 import games.rednblack.miniaudio.mix.MAChannelSeparator;
 import games.rednblack.miniaudio.mix.MASplitter;
+import games.rednblack.miniaudio.mix.MAVisualizerNode;
 
 public class Main implements ApplicationListener {
 
@@ -36,6 +39,10 @@ public class Main implements ApplicationListener {
     MAAudioBuffer decodedBuffer;
 
     AssetManager assetManager;
+    ShapeRenderer shapeRenderer;
+    final float[] visualizerData = new float[8192];
+    volatile int visualizerSamples;
+    volatile int visualizerChannels;
     @Override
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
@@ -50,17 +57,7 @@ public class Main implements ApplicationListener {
         contextConfiguration.iOSSessionCategory = MAiOSSessionCategory.AMBIENT;
         MAEngineConfiguration engineConfiguration = new MAEngineConfiguration();
         miniAudio = new MiniAudio(contextConfiguration, null);
-        MADeviceInfo[] devices = miniAudio.enumerateDevices();
-        long def = 0;
-        for (MADeviceInfo info : devices) {
-            System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);
-            if (info.name.startsWith("GA102 High Definition Audio Controller")) {
-                def = info.idAddress;
-                //break;
-            }
-        }
-        System.out.println("GA102 High Definition Audio Controller " + def);
-        engineConfiguration.playbackId = def;
+        listDevices();
         miniAudio.initEngine(engineConfiguration);
         miniAudio.setEndListener(new MASoundEndListener() {
             @Override
@@ -88,56 +85,6 @@ public class Main implements ApplicationListener {
             }
         });*/
 
-       /*byte[] data = Gdx.files.internal("background.wav").readBytes();
-        System.out.println("data length: " + data.length);
-        decodedBuffer = miniAudio.decodeBytes(data, 2);
-        MASound maSound1 = miniAudio.createSound(decodedBuffer);
-        maSound1.setLinkedAudioBuffer(decodedBuffer);
-
-        MAAudioBuffer audioBuffer = miniAudio.createAudioBuffer(4096, 2);
-        maSound = miniAudio.createSound(audioBuffer);
-        maSound.setLinkedAudioBuffer(audioBuffer);
-        float[] pcmFrames = new float[4096];
-
-        // 2. Definiamo le frequenze per le parti del suono "Hey".
-        // Queste sono scelte arbitrarie per creare un effetto vocale.
-        double freq_H = 300.0; // Frequenza per la parte "H" (più bassa)
-        double freq_E = 500.0; // Frequenza per la parte "E" (più alta)
-        double freq_Y = 400.0; // Frequenza per la parte finale "Y" (scende un po')
-
-        // 3. Dividiamo l'array in sezioni per ogni "lettera".
-        int h_end = pcmFrames.length / 4;      // Il primo 25%
-        int e_end = pcmFrames.length * 3 / 4;  // Il successivo 50%
-        // La parte finale "Y" occuperà il restante 25%.
-
-        // 4. Generiamo le onde sinusoidali e le scriviamo nell'array.
-        for (int i = 0; i < pcmFrames.length; i++) {
-            double frequency;
-
-            // Scegli la frequenza in base alla posizione nell'array
-            if (i < h_end) {
-                frequency = freq_H;
-            } else if (i < e_end) {
-                frequency = freq_E;
-            } else {
-                frequency = freq_Y;
-            }
-
-            // Calcola il valore del campione usando la formula dell'onda sinusoidale.
-            // Math.sin(2 * PI * frequenza * tempo)
-            // dove tempo = indice_campione / frequenza_campionamento
-            double time = (double) i / 48000;
-            pcmFrames[i] = (float) Math.sin(2 * Math.PI * frequency * time);
-
-            // Aggiungiamo un leggero "fade out" alla fine per evitare un "click" secco.
-            if (i > pcmFrames.length * 0.8) {
-                float fadeMultiplier = 1.0f - ((float)(i - pcmFrames.length * 0.8f) / (pcmFrames.length * 0.2f));
-                pcmFrames[i] *= fadeMultiplier;
-            }
-        }
-        audioBuffer.write(pcmFrames);
-        maSound.play();
-        maSound.chainSound(maSound1);*/
        /* miniAudio.initEngine(1, -1, -1, 2, 0, 512, 44100, MAFormatType.F32,false, false, false);
         miniAudio.setListenerDirection(0, 0, 1);
         miniAudio.setListenerCone(MathUtils.PI / 4f, MathUtils.PI / 4f, 2f);*/
@@ -153,8 +100,8 @@ public class Main implements ApplicationListener {
         //maSound.setPositioning(MAPositioning.RELATIVE);
         //maSound = miniAudio.createInputSound((short) 0, null);
 
-        maSound = miniAudio.createSound("piano2.wav");
-        maSound.loop();
+        /*maSound = miniAudio.createSound("Symphony No.6 (1st movement).ogg");
+        maSound.loop();*/
 
         //Create a Group
         /*MAGroup group = miniAudio.createGroup();
@@ -174,7 +121,20 @@ public class Main implements ApplicationListener {
         //Attach the limiter output to the main engine endpoint
         miniAudio.attachToEngineOutput(limiterNode, 0);*/
 
-        /*MACompressorNode compressorNode = new MACompressorNode(miniAudio);
+        MAVisualizerNode maVisualizerNode = new MAVisualizerNode(miniAudio);
+        maVisualizerNode.setListener(new MAVisualizerListener() {
+            @Override
+            public void onVisualizerData(float[] pcmData, int totalSamples, int channels) {
+                int len = Math.min(totalSamples, visualizerData.length);
+                System.arraycopy(pcmData, 0, visualizerData, 0, len);
+                visualizerChannels = channels;
+                visualizerSamples = len;
+            }
+        });
+
+        MASound backgroundMusic = miniAudio.createSound("background.wav");
+        maSound = miniAudio.createSound("voice.mp3");
+        MACompressorNode compressorNode = new MACompressorNode(miniAudio);
         compressorNode.setRatio(24);
         compressorNode.setThreshold(-50);
         compressorNode.setRelease(200);
@@ -184,10 +144,12 @@ public class Main implements ApplicationListener {
         compressorNode.attachToThisNode(backgroundMusic, 0, 0);
         compressorNode.attachToThisNode(splitter, 0, 1);
 
-        miniAudio.attachToEngineOutput(compressorNode, 0);
-        miniAudio.attachToEngineOutput(splitter, 1);*/
+        maVisualizerNode.attachToThisNode(compressorNode, 0);
 
-        //backgroundMusic.loop();
+        miniAudio.attachToEngineOutput(maVisualizerNode, 0);
+        miniAudio.attachToEngineOutput(splitter, 1);
+
+        backgroundMusic.loop();
 
         /*MALimiterNode limiterNode = new MALimiterNode(miniAudio);
         limiterNode.setCeilingDb(-50);
@@ -278,11 +240,11 @@ public class Main implements ApplicationListener {
         //MAWaveform waveform = miniAudio.createWaveform(2, MAWaveformType.SQUARE, 1, 400);
         //maSound = miniAudio.createSound(waveform);
         //maSound.play();
-        System.out.println(maSound.isPlaying());
+        /*System.out.println(maSound.isPlaying());
         System.out.println(maSound.isLooping());
         System.out.println(maSound.isEnd());
         System.out.println(maSound.isPlaying());
-        System.out.println(maSound.getLength());
+        System.out.println(maSound.getLength());*/
 
         assetManager = new AssetManager();
         assetManager.getLogger().setLevel(Logger.DEBUG);
@@ -297,6 +259,18 @@ public class Main implements ApplicationListener {
         for (int i = 0; i < 10; i++) {
             sound.play();
         }*/
+
+        shapeRenderer = new ShapeRenderer();
+    }
+
+    private void listDevices() {
+        MADeviceInfo[] devices = miniAudio.getAvailableDevices();
+        for (MADeviceInfo info : devices) {
+            System.out.println(info.isCapture + " " + info.idAddress + " . " + info.name);
+            for (MADeviceInfo.MADeviceNativeDataFormat format : info.nativeDataFormats) {
+                System.out.println("\t-" + format.channels + " -> " + format.sampleRate + " -> " + format.format);
+            }
+        }
     }
 
     @Override
@@ -316,7 +290,32 @@ public class Main implements ApplicationListener {
             effectNode.attachToThisNode(sound, 0);
             sound.loop();*/
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+            maSound.reset();
+            maSound.play();
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+            maSound.stop(1000);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_0)) {
+            miniAudio.changeDevice(miniAudio.getAvailableDevices()[0], null);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_1)) {
+            miniAudio.changeDevice(miniAudio.getAvailableDevices()[1], null);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_3)) {
+            miniAudio.changeDevice(miniAudio.getAvailableDevices()[3], null);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.N)) {
+            miniAudio.changeDevice(null, null);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.L)) {
+            listDevices();
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            miniAudio.refreshAvailableDevices();
+        }
+        /*if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
             maSound.stop(1000);
         }
 
@@ -329,7 +328,7 @@ public class Main implements ApplicationListener {
             System.out.println(maSound.isLooping());
             System.out.println(maSound.isEnd());
             System.out.println(maSound.getLength());
-        }
+        }*/
         //System.out.println(maSound.getFadeVolume());
         //System.out.println(maSound.getCursorPosition());
         //System.out.println("isLooping " + maSound.isLooping());
@@ -355,6 +354,26 @@ public class Main implements ApplicationListener {
         //miniAudio.setListenerDirection(0, 0, MathUtils.sin(angle));
         //maSound.setPosition(MathUtils.sin(angle), 0f, -MathUtils.cos(angle));
         //miniAudio.setListenerPosition(MathUtils.cosDeg(i)*5, 0, 0);
+
+        ScreenUtils.clear(0, 0, 0, 1);
+        int samples = visualizerSamples;
+        int ch = visualizerChannels;
+        if (samples > 0 && ch > 0) {
+            float width = Gdx.graphics.getWidth();
+            float height = Gdx.graphics.getHeight();
+            float midY = height / 2f;
+            int frames = samples / ch;
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            shapeRenderer.setColor(0, 1, 0, 1);
+            for (int i = 1; i < frames; i++) {
+                float x1 = (i - 1) * width / (frames - 1);
+                float x2 = i * width / (frames - 1);
+                float y1 = midY + visualizerData[(i - 1) * ch] * midY;
+                float y2 = midY + visualizerData[i * ch] * midY;
+                shapeRenderer.line(x1, y1, x2, y2);
+            }
+            shapeRenderer.end();
+        }
     }
 
     @Override
@@ -370,8 +389,9 @@ public class Main implements ApplicationListener {
     @Override
     public void dispose() {
         assetManager.dispose();
+        shapeRenderer.dispose();
 
-        maSound.dispose();
+        //maSound.dispose();
         //effectNode.dispose();
         //maGroup.dispose();
         miniAudio.dispose();
