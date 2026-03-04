@@ -71,16 +71,111 @@ public class MiniAudio implements Disposable {
         ma_audio_buffer_ref inputBufferData;
 
         #ifdef MA_APPLE_MOBILE
-        #include <string>
-        std::string getBundlePath(const char* fileName) {
-            NSString* fileNameString = [NSString stringWithUTF8String: fileName];
-            NSString* filePath = [[NSBundle mainBundle] pathForResource:fileNameString ofType:nil];
-            if (filePath != nil) {
-                return [filePath UTF8String];
-            } else {
-                return "";
+            #include <string>
+            std::string getBundlePath(const char* fileName) {
+                NSString* fileNameString = [NSString stringWithUTF8String: fileName];
+                NSString* filePath = [[NSBundle mainBundle] pathForResource:fileNameString ofType:nil];
+                if (filePath != nil) {
+                    return [filePath UTF8String];
+                } else {
+                    return "";
+                }
             }
-        }
+        #endif
+
+        #ifdef MA_WIN32
+            MA_API ma_result ma_engine_play_sound_ex_w(ma_engine* pEngine, const wchar_t* pFilePath, ma_node* pNode, ma_uint32 nodeInputBusIndex)
+            {
+                ma_result result = MA_SUCCESS;
+                ma_sound_inlined* pSound = NULL;
+                ma_sound_inlined* pNextSound = NULL;
+
+                if (pEngine == NULL || pFilePath == NULL) {
+                    return MA_INVALID_ARGS;
+                }
+
+                if (pNode == NULL) {
+                    pNode = ma_node_graph_get_endpoint(&pEngine->nodeGraph);
+                    nodeInputBusIndex = 0;
+                }
+
+                ma_spinlock_lock(&pEngine->inlinedSoundLock);
+                {
+                    ma_uint32 soundFlags = 0;
+
+                    for (pNextSound = pEngine->pInlinedSoundHead; pNextSound != NULL; pNextSound = pNextSound->pNext) {
+                        if (ma_sound_at_end(&pNextSound->sound)) {
+                            pSound = pNextSound;
+                            ma_atomic_fetch_sub_32(&pEngine->inlinedSoundCount, 1);
+                            break;
+                        }
+                    }
+
+                    if (pSound != NULL) {
+                        if (pEngine->pInlinedSoundHead == pSound) {
+                            pEngine->pInlinedSoundHead =  pSound->pNext;
+                        }
+
+                        if (pSound->pPrev != NULL) {
+                            pSound->pPrev->pNext = pSound->pNext;
+                        }
+                        if (pSound->pNext != NULL) {
+                            pSound->pNext->pPrev = pSound->pPrev;
+                        }
+
+                        ma_sound_uninit(&pNextSound->sound);
+                    } else {
+                        pSound = (ma_sound_inlined*)ma_malloc(sizeof(*pSound), &pEngine->allocationCallbacks);
+                    }
+
+                    if (pSound != NULL) {
+                        soundFlags |= MA_SOUND_FLAG_ASYNC;
+                        soundFlags |= MA_SOUND_FLAG_NO_DEFAULT_ATTACHMENT;
+                        soundFlags |= MA_SOUND_FLAG_NO_PITCH;
+                        soundFlags |= MA_SOUND_FLAG_NO_SPATIALIZATION;
+
+                        result = ma_sound_init_from_file_w(pEngine, pFilePath, soundFlags, NULL, NULL, &pSound->sound);
+                        if (result == MA_SUCCESS) {
+                            result = ma_node_attach_output_bus(pSound, 0, pNode, nodeInputBusIndex);
+                            if (result == MA_SUCCESS) {
+
+                                pSound->pNext = pEngine->pInlinedSoundHead;
+                                pSound->pPrev = NULL;
+
+                                pEngine->pInlinedSoundHead = pSound;
+                                if (pSound->pNext != NULL) {
+                                    pSound->pNext->pPrev = pSound;
+                                }
+                            } else {
+                                ma_free(pSound, &pEngine->allocationCallbacks);
+                            }
+                        } else {
+                            ma_free(pSound, &pEngine->allocationCallbacks);
+                        }
+                    } else {
+                        result = MA_OUT_OF_MEMORY;
+                    }
+                }
+                ma_spinlock_unlock(&pEngine->inlinedSoundLock);
+
+                if (result != MA_SUCCESS) {
+                    return result;
+                }
+
+                result = ma_sound_start(&pSound->sound);
+                if (result != MA_SUCCESS) {
+                    ma_atomic_exchange_32(&pSound->sound.atEnd, MA_TRUE);
+                    return result;
+                }
+
+                ma_atomic_fetch_add_32(&pEngine->inlinedSoundCount, 1);
+                return result;
+            }
+
+            MA_API ma_result ma_engine_play_sound_w(ma_engine* pEngine, const wchar_t* pFilePath, ma_sound_group* pGroup)
+            {
+                return ma_engine_play_sound_ex_w(pEngine, pFilePath, pGroup, 0);
+            }
         #endif
 
         void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
@@ -960,11 +1055,16 @@ public class MiniAudio implements Disposable {
 
     private native int jniPlaySound(String fileName, boolean external);/*
         #if defined(MA_APPLE_MOBILE)
-        std::string cppStr = getBundlePath(fileName);
-        char* cFileName = const_cast<char*>(cppStr.c_str());
-        return ma_engine_play_sound(&engine, external ? fileName : cFileName, NULL);
+            std::string cppStr = getBundlePath(fileName);
+            char* cFileName = const_cast<char*>(cppStr.c_str());
+            return ma_engine_play_sound(&engine, external ? fileName : cFileName, NULL);
+        #elif defined(MA_WIN32)
+            const jchar* pFileNameW = env->GetStringChars(obj_fileName, NULL);
+            ma_result result = ma_engine_play_sound_w(&engine, (const wchar_t*)pFileNameW, NULL);
+            env->ReleaseStringChars(obj_fileName, pFileNameW);
+            return result;
         #else
-        return ma_engine_play_sound(&engine, fileName, NULL);
+            return ma_engine_play_sound(&engine, fileName, NULL);
         #endif
     */
 
@@ -1018,17 +1118,24 @@ public class MiniAudio implements Disposable {
     private native long jniCreateSound(String fileName, short flags, long group, boolean external); /*
         ma_sound_group* pGroup = group == -1 ? NULL : (ma_sound_group*) group;
         ma_sound* sound = (ma_sound*) ma_malloc(sizeof(ma_sound), NULL);
+
         #if defined(MA_APPLE_MOBILE)
-        std::string cppStr = getBundlePath(fileName);
-        char* cFileName = const_cast<char*>(cppStr.c_str());
-        ma_result result = ma_sound_init_from_file(&engine, external ? fileName : cFileName, flags, pGroup, NULL, sound);
+            std::string cppStr = getBundlePath(fileName);
+            char* cFileName = const_cast<char*>(cppStr.c_str());
+            ma_result result = ma_sound_init_from_file(&engine, external ? fileName : cFileName, flags, pGroup, NULL, sound);
+        #elif defined(MA_WIN32)
+            const jchar* pFileNameW = env->GetStringChars(obj_fileName, NULL);
+            ma_result result = ma_sound_init_from_file_w(&engine, (const wchar_t*)pFileNameW, flags, pGroup, NULL, sound);
+            env->ReleaseStringChars(obj_fileName, pFileNameW);
         #else
-        ma_result result = ma_sound_init_from_file(&engine, fileName, flags, pGroup, NULL, sound);
+            ma_result result = ma_sound_init_from_file(&engine, fileName, flags, pGroup, NULL, sound);
         #endif
+
         if (result != MA_SUCCESS) {
             ma_free(sound, NULL);
             return (jlong) result;
         }
+
         ma_sound_set_end_callback(sound, sound_end_callback, NULL);
         return (jlong) sound;
     */
