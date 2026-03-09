@@ -42,8 +42,8 @@ public class MiniAudio implements Disposable {
         #include "ma_limiter_node.c"
         #include "ma_visualizer_node.c"
 
-        //#include "miniaudio_libopus.c"
-        //#include "miniaudio_libvorbis.c"
+        #include "miniaudio_libopus.c"
+        #include "miniaudio_libvorbis.c"
 
         #include <stdio.h>
         #include <queue.h>
@@ -1019,8 +1019,8 @@ public class MiniAudio implements Disposable {
         {
             ma_decoding_backend_vtable* pCustomBackendVTables[] =
             {
-                //ma_decoding_backend_libvorbis,
-                //ma_decoding_backend_libopus
+                ma_decoding_backend_libvorbis,
+                ma_decoding_backend_libopus
             };
             resourceManagerConfig.ppCustomDecodingBackendVTables = pCustomBackendVTables;
             resourceManagerConfig.customDecodingBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
@@ -3178,8 +3178,8 @@ public class MiniAudio implements Disposable {
 
         ma_decoding_backend_vtable* pCustomBackendVTables[] =
         {
-            //ma_decoding_backend_libvorbis,
-            //ma_decoding_backend_libopus
+            ma_decoding_backend_libvorbis,
+            ma_decoding_backend_libopus
         };
 
         config.pCustomBackendUserData = NULL;
