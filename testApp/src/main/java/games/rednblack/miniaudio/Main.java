@@ -43,6 +43,9 @@ public class Main implements ApplicationListener {
     final float[] visualizerData = new float[8192];
     volatile int visualizerSamples;
     volatile int visualizerChannels;
+    final float[] visualizerData2 = new float[8192];
+    volatile int visualizerSamples2;
+    volatile int visualizerChannels2;
     @Override
     public void create() {
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
@@ -132,6 +135,17 @@ public class Main implements ApplicationListener {
             }
         });
 
+        MAVisualizerNode maVisualizerNode2 = new MAVisualizerNode(miniAudio);
+        maVisualizerNode2.setListener(new MAVisualizerListener() {
+            @Override
+            public void onVisualizerData(float[] pcmData, int totalSamples, int channels) {
+                int len = Math.min(totalSamples, visualizerData2.length);
+                System.arraycopy(pcmData, 0, visualizerData2, 0, len);
+                visualizerChannels2 = channels;
+                visualizerSamples2 = len;
+            }
+        });
+
         MASound backgroundMusic = miniAudio.createSound("background.wav");
         maSound = miniAudio.createSound("voice.mp3");
         MACompressorNode compressorNode = new MACompressorNode(miniAudio);
@@ -145,9 +159,10 @@ public class Main implements ApplicationListener {
         compressorNode.attachToThisNode(splitter, 0, 1);
 
         maVisualizerNode.attachToThisNode(compressorNode, 0);
+        maVisualizerNode2.attachToThisNode(splitter, 1);
 
         miniAudio.attachToEngineOutput(maVisualizerNode, 0);
-        miniAudio.attachToEngineOutput(splitter, 1);
+        miniAudio.attachToEngineOutput(maVisualizerNode2, 0);
 
         backgroundMusic.loop();
 
@@ -356,24 +371,42 @@ public class Main implements ApplicationListener {
         //miniAudio.setListenerPosition(MathUtils.cosDeg(i)*5, 0, 0);
 
         ScreenUtils.clear(0, 0, 0, 1);
+        float width = Gdx.graphics.getWidth();
+        float height = Gdx.graphics.getHeight();
+        float halfH = height / 2f;
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
         int samples = visualizerSamples;
         int ch = visualizerChannels;
         if (samples > 0 && ch > 0) {
-            float width = Gdx.graphics.getWidth();
-            float height = Gdx.graphics.getHeight();
-            float midY = height / 2f;
+            float midY = halfH + halfH / 2f;
             int frames = samples / ch;
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             shapeRenderer.setColor(0, 1, 0, 1);
             for (int i = 1; i < frames; i++) {
                 float x1 = (i - 1) * width / (frames - 1);
                 float x2 = i * width / (frames - 1);
-                float y1 = midY + visualizerData[(i - 1) * ch] * midY;
-                float y2 = midY + visualizerData[i * ch] * midY;
+                float y1 = midY + visualizerData[(i - 1) * ch] * halfH / 2f;
+                float y2 = midY + visualizerData[i * ch] * halfH / 2f;
                 shapeRenderer.line(x1, y1, x2, y2);
             }
-            shapeRenderer.end();
         }
+
+        int samples2 = visualizerSamples2;
+        int ch2 = visualizerChannels2;
+        if (samples2 > 0 && ch2 > 0) {
+            float midY = halfH / 2f;
+            int frames = samples2 / ch2;
+            shapeRenderer.setColor(0, 1, 1, 1);
+            for (int i = 1; i < frames; i++) {
+                float x1 = (i - 1) * width / (frames - 1);
+                float x2 = i * width / (frames - 1);
+                float y1 = midY + visualizerData2[(i - 1) * ch2] * halfH / 2f;
+                float y2 = midY + visualizerData2[i * ch2] * halfH / 2f;
+                shapeRenderer.line(x1, y1, x2, y2);
+            }
+        }
+
+        shapeRenderer.end();
     }
 
     @Override

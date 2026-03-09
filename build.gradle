@@ -26,6 +26,7 @@ repositories {
     maven { url 'https://jitpack.io' }
     maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -97,6 +98,8 @@ jnigen {
         libraries += ["-llog", "-landroid"]
         androidApplicationMk += ["APP_STRIP_MODE := none", "APP_PLATFORM := android-24"]
     }
+
+    //addWeb()
 }
 
 def fetchOpusfile = registerJniZip(
