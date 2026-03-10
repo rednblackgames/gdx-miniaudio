@@ -1015,18 +1015,14 @@ public class MiniAudio implements Disposable {
         resourceManagerConfig.decodedFormat     = ma_format_f32;
         resourceManagerConfig.decodedSampleRate = device.sampleRate;
 
-        #if !defined(__EMSCRIPTEN__)
-        {
-            ma_decoding_backend_vtable* pCustomBackendVTables[] =
+        ma_decoding_backend_vtable* pCustomBackendVTables[] =
             {
                 ma_decoding_backend_libvorbis,
                 ma_decoding_backend_libopus
             };
-            resourceManagerConfig.ppCustomDecodingBackendVTables = pCustomBackendVTables;
-            resourceManagerConfig.customDecodingBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
-            resourceManagerConfig.pCustomDecodingBackendUserData = NULL;
-        }
-        #endif
+        resourceManagerConfig.ppCustomDecodingBackendVTables = pCustomBackendVTables;
+        resourceManagerConfig.customDecodingBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
+        resourceManagerConfig.pCustomDecodingBackendUserData = NULL;
 
         #if defined(MA_EMSCRIPTEN) && !defined(__EMSCRIPTEN_PTHREADS__)
         resourceManagerConfig.jobThreadCount = 0;
@@ -3137,6 +3133,16 @@ public class MiniAudio implements Disposable {
         #if defined(__EMSCRIPTEN__)
         ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
         ma_decoder_config config = ma_decoder_config_init(ma_format_f32, outputChannels, sampleRate);
+
+        ma_decoding_backend_vtable* pCustomBackendVTables[] =
+        {
+            ma_decoding_backend_libvorbis,
+            ma_decoding_backend_libopus
+        };
+
+        config.pCustomBackendUserData = NULL;
+        config.ppCustomBackendVTables = pCustomBackendVTables;
+        config.customBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
 
         em_decoded_frames = 0;
         if (em_decoded_data != NULL) { ma_free(em_decoded_data, NULL); em_decoded_data = NULL; }

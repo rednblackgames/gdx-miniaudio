@@ -105,15 +105,15 @@ jnigen {
 def fetchOpusfile = registerJniZip(
         "fetchLibOpusfile",
         "libopusfile_combined",
-        "https://github.com/rednblackgames/opusfile/releases/download/cc04a82/libopusfile-all-platforms.zip",
-        "0a6219665af557e4427474606053301ddb9de38804e6bd7a7761b5b46ba2e00f"
+        "https://github.com/rednblackgames/opusfile/releases/download/cc04a82-wasm/libopusfile-all-platforms.zip",
+        "61840a3ed89c06b748cd7eea7e5c3cfb6246c1f1e0cb22148eaefb8165f2d5a6"
 )
 
 def fetchVorbis = registerJniZip(
         "fetchLibVorbis",
         "libvorbis_combined",
-        "https://github.com/rednblackgames/vorbis/releases/download/2d79800/libvorbis-all-platforms.zip",
-        "128c66439c250084ae414e5bb35e07344af480f7f6cfb511e6097e6f859a1ab5"
+        "https://github.com/rednblackgames/vorbis/releases/download/2d79800-wasm/libvorbis-all-platforms.zip",
+        "dd1d23531e5284c0da410077499bd4a8a0d821b87d707f8493439d0005af852c"
 )
 
 tasks.register("fetchDependencies") {
