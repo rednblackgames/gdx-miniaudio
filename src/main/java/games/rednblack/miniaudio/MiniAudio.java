@@ -48,7 +48,7 @@ public class MiniAudio implements Disposable {
         #include <stdio.h>
         #include <queue.h>
 
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         #include <emscripten.h>
         #endif
 
@@ -189,7 +189,7 @@ public class MiniAudio implements Disposable {
 
         static LockFreeQueue* lock_free_queue;
 
-        #if !defined(__EMSCRIPTEN__)
+        #if !defined(MA_EMSCRIPTEN)
         static JavaVM* jvm = 0;
         static jobject jMiniAudio;
         static jmethodID jon_native_sound_end;
@@ -222,9 +222,9 @@ public class MiniAudio implements Disposable {
             if (_hadToAttach) {             \
                 jvm->DetachCurrentThread(); \
             }
-        #endif // !__EMSCRIPTEN__
+        #endif // !MA_EMSCRIPTEN
 
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         // EM_JS dispatch functions — call JavaScript callbacks registered on Module._maCallbacks.
         // All wrapped in try-catch so a crash in one callback (e.g. during init) doesn't
         // kill the requestAnimationFrame loop permanently.
@@ -309,13 +309,13 @@ public class MiniAudio implements Disposable {
                 Module._maAutoDispatchId = 0;
             }
         });
-        #endif // __EMSCRIPTEN__
+        #endif // MA_EMSCRIPTEN
 
         void sound_end_callback(void* pUserData, ma_sound* pSound) {
             Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
             event->type = 0;
             event->sound = pSound;
-            #if defined(__EMSCRIPTEN__)
+            #if defined(MA_EMSCRIPTEN)
             if (enqueue(lock_free_queue, event) == -1) {
                 ma_free(event, NULL);
             }
@@ -353,7 +353,7 @@ public class MiniAudio implements Disposable {
             event->type = 1;
             event->level = level;
 
-            #if defined(__EMSCRIPTEN__)
+            #if defined(MA_EMSCRIPTEN)
             if (enqueue(lock_free_queue, event) == -1) {
                 ma_free(event->message, NULL);
                 ma_free(event, NULL);
@@ -369,7 +369,7 @@ public class MiniAudio implements Disposable {
             Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
             event->type = 2;
             event->notificationType = pNotification->type;
-            #if defined(__EMSCRIPTEN__)
+            #if defined(MA_EMSCRIPTEN)
             if (enqueue(lock_free_queue, event) == -1) {
                 ma_free(event, NULL);
             }
@@ -398,7 +398,7 @@ public class MiniAudio implements Disposable {
             }
         }
 
-        #if !defined(__EMSCRIPTEN__)
+        #if !defined(MA_EMSCRIPTEN)
         void process_single_event(JNIEnv* env, Event* event) {
             if (event->type == 0) {
                 env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
@@ -452,7 +452,7 @@ public class MiniAudio implements Disposable {
 
             return (ma_thread_result) 0;
         }
-        #endif // !__EMSCRIPTEN__
+        #endif // !MA_EMSCRIPTEN
      */
 
     private long engineAddress = 0;
@@ -543,7 +543,7 @@ public class MiniAudio implements Disposable {
         lock_free_queue = (LockFreeQueue*) ma_malloc(sizeof(LockFreeQueue), NULL);
         init_queue(lock_free_queue);
 
-        #if !defined(__EMSCRIPTEN__)
+        #if !defined(MA_EMSCRIPTEN)
         env->GetJavaVM(&jvm);
         jMiniAudio = env->NewGlobalRef(object);
         jclass handlerClass = env->GetObjectClass(jMiniAudio);
@@ -565,7 +565,7 @@ public class MiniAudio implements Disposable {
         ma_context_config config = ma_context_config_init();
         config.pLog = &maLog;
 
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         ma_backend webBackends[] = {
             ma_backend_webaudio,
             ma_backend_null
@@ -643,7 +643,7 @@ public class MiniAudio implements Disposable {
     }
 
     private native MADeviceInfo[] jniEnumerateDevices(Class infoClass, Class nativeFormatClass);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         // Device enumeration not available in browsers — return empty array
         return NULL;
         #else
@@ -789,11 +789,11 @@ public class MiniAudio implements Disposable {
         }
 
         return ret;
-        #endif // !__EMSCRIPTEN__
+        #endif // !MA_EMSCRIPTEN
     */
 
     private native boolean jniIsEmscripten();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         return 1;
         #else
         return 0;
@@ -801,7 +801,7 @@ public class MiniAudio implements Disposable {
     */
 
     /*JNI
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         static ma_device_info* em_playback_infos = NULL;
         static ma_uint32 em_playback_count = 0;
         static ma_device_info* em_capture_infos = NULL;
@@ -813,7 +813,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniEnumerateDevicesEmscripten();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         ma_result res = ma_context_get_devices(&context,
             &em_playback_infos, &em_playback_count,
             &em_capture_infos, &em_capture_count);
@@ -825,7 +825,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetDeviceNameLength(int index);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         const char* name;
         if (index < (int)em_playback_count)
             name = em_playback_infos[index].name;
@@ -838,7 +838,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetDeviceNameByte(int index, int byteIndex);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         const char* name;
         if (index < (int)em_playback_count)
             name = em_playback_infos[index].name;
@@ -851,7 +851,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native boolean jniGetDeviceIsCapture(int index);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         return index >= (int)em_playback_count;
         #else
         return 0;
@@ -859,7 +859,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native boolean jniGetDeviceIsDefault(int index);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (index < (int)em_playback_count)
             return em_playback_infos[index].isDefault;
         return em_capture_infos[index - em_playback_count].isDefault;
@@ -869,7 +869,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetDeviceFormatCount(int index);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (index < (int)em_playback_count)
             return em_playback_infos[index].nativeDataFormatCount;
         return em_capture_infos[index - em_playback_count].nativeDataFormatCount;
@@ -879,7 +879,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetDeviceFormat(int deviceIndex, int formatIndex);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         ma_device_info* info = (deviceIndex < (int)em_playback_count)
             ? &em_playback_infos[deviceIndex]
             : &em_capture_infos[deviceIndex - em_playback_count];
@@ -890,7 +890,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetDeviceFormatChannels(int deviceIndex, int formatIndex);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         ma_device_info* info = (deviceIndex < (int)em_playback_count)
             ? &em_playback_infos[deviceIndex]
             : &em_capture_infos[deviceIndex - em_playback_count];
@@ -901,7 +901,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetDeviceFormatSampleRate(int deviceIndex, int formatIndex);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         ma_device_info* info = (deviceIndex < (int)em_playback_count)
             ? &em_playback_infos[deviceIndex]
             : &em_capture_infos[deviceIndex - em_playback_count];
@@ -912,7 +912,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetDeviceFormatFlags(int deviceIndex, int formatIndex);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         ma_device_info* info = (deviceIndex < (int)em_playback_count)
             ? &em_playback_infos[deviceIndex]
             : &em_capture_infos[deviceIndex - em_playback_count];
@@ -1146,7 +1146,7 @@ public class MiniAudio implements Disposable {
         ma_device_uninit(&device);
         ma_audio_buffer_ref_uninit(&inputBufferData);
 
-        #if !defined(__EMSCRIPTEN__)
+        #if !defined(MA_EMSCRIPTEN)
         running_callback_thread = 0;
         ma_semaphore_release(&lock_free_queue->sem);
 
@@ -2807,7 +2807,7 @@ public class MiniAudio implements Disposable {
     // All methods return primitives (no JNI array/object creation needed).
 
     /*JNI
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         static Event* current_poll_event = NULL;
         #endif
     */
@@ -2840,7 +2840,7 @@ public class MiniAudio implements Disposable {
     }
 
     private native void jniStartAutoDispatch();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (!em_auto_dispatch_active) {
             em_auto_dispatch_active = 1;
             em_start_auto_dispatch();
@@ -2849,7 +2849,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native void jniStopAutoDispatch();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (em_auto_dispatch_active) {
             em_auto_dispatch_active = 0;
             em_stop_auto_dispatch();
@@ -2897,9 +2897,7 @@ public class MiniAudio implements Disposable {
                     if (visualizerBuffer == null || visualizerBuffer.length < totalSamples) {
                         visualizerBuffer = new float[totalSamples];
                     }
-                    for (int s = 0; s < totalSamples; s++) {
-                        visualizerBuffer[s] = jniGetEventPcmSample(s);
-                    }
+                    jniGetEventPcmBulk(visualizerBuffer, totalSamples);
                     on_native_visualizer(jniGetEventNodeAddress(), visualizerBuffer, totalSamples, channels);
                     break;
             }
@@ -2912,7 +2910,7 @@ public class MiniAudio implements Disposable {
      * @return true if an event was dequeued, false if queue is empty
      */
     private native boolean jniPollNextEvent();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) {
             // Previous event not freed — free it now to avoid leak
             if (current_poll_event->type == 1 && current_poll_event->message != NULL) {
@@ -2935,28 +2933,28 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetEventType();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) return current_poll_event->type;
         #endif
         return -1;
     */
 
     private native long jniGetEventSoundAddress();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) return (jlong) current_poll_event->sound;
         #endif
         return 0;
     */
 
     private native int jniGetEventNotificationType();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) return (jint) current_poll_event->notificationType;
         #endif
         return 0;
     */
 
     private native int jniGetEventLogMessageLength();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL && current_poll_event->message != NULL)
             return (jint) strlen(current_poll_event->message);
         #endif
@@ -2964,7 +2962,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetEventLogMessageByte(int byteIndex);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL && current_poll_event->message != NULL)
             return (jint)(unsigned char) current_poll_event->message[byteIndex];
         #endif
@@ -2972,43 +2970,42 @@ public class MiniAudio implements Disposable {
     */
 
     private native int jniGetEventLogLevel();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) return (jint) current_poll_event->level;
         #endif
         return 0;
     */
 
-    private native float jniGetEventPcmSample(int sampleIndex);/*
-        #if defined(__EMSCRIPTEN__)
+    private native void jniGetEventPcmBulk(float[] buffer, int totalSamples);/*
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL && current_poll_event->pcmData != NULL)
-            return current_poll_event->pcmData[sampleIndex];
+            memcpy(buffer, current_poll_event->pcmData, totalSamples * sizeof(float));
         #endif
-        return 0.0f;
     */
 
     private native int jniGetEventFrameCount();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) return (jint) current_poll_event->frameCount;
         #endif
         return 0;
     */
 
     private native int jniGetEventChannels();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) return (jint) current_poll_event->channels;
         #endif
         return 0;
     */
 
     private native long jniGetEventNodeAddress();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) return (jlong)(intptr_t) current_poll_event->nodeAddress;
         #endif
         return 0;
     */
 
     private native void jniFreeCurrentEvent();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) {
             if (current_poll_event->type == 1 && current_poll_event->message != NULL) {
                 ma_free(current_poll_event->message, NULL);
@@ -3130,7 +3127,7 @@ public class MiniAudio implements Disposable {
     }
 
     private native int jniDecodeBytesEmscripten(byte[] data, int length, int outputChannels);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
         ma_decoder_config config = ma_decoder_config_init(ma_format_f32, outputChannels, sampleRate);
 
@@ -3155,7 +3152,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native long jniGetDecodedDataPointer();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         return (jlong)(intptr_t) em_decoded_data;
         #else
         return 0;
@@ -3163,7 +3160,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native long jniGetDecodedFrameCount();/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         return (jlong) em_decoded_frames;
         #else
         return 0;
@@ -3171,7 +3168,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native long[] jniDecodeBytes(byte[] data, int length, int outputChannels);/*
-        #if defined(__EMSCRIPTEN__)
+        #if defined(MA_EMSCRIPTEN)
         return NULL;
         #else
         jlongArray returnArray = env->NewLongArray(2);
