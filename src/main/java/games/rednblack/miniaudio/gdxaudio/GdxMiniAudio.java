@@ -1,7 +1,7 @@
 package games.rednblack.miniaudio.gdxaudio;
 
 import com.badlogic.gdx.Audio;
-import com.badlogic.gdx.Files;
+import com.badlogic.gdx.Files.FileType;
 import com.badlogic.gdx.audio.AudioDevice;
 import com.badlogic.gdx.audio.AudioRecorder;
 import com.badlogic.gdx.audio.Music;
@@ -10,6 +10,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
 import games.rednblack.miniaudio.*;
+import games.rednblack.miniaudio.MASound.Flags;
 
 public class GdxMiniAudio implements Audio {
     private final MiniAudio miniAudio;
@@ -49,8 +50,9 @@ public class GdxMiniAudio implements Audio {
     @Override
     public Sound newSound(FileHandle fileHandle) {
         MAGroup group = miniAudio.createGroup();
-        boolean external = fileHandle.type() == Files.FileType.Absolute;
-        MASoundPool soundPool = new MASoundPool(miniAudio, fileHandle.path(), (short) 0, group, external);
+        boolean external = isExternal(fileHandle);
+        String path = external ? fileHandle.file().getAbsolutePath() : fileHandle.path();
+        MASoundPool soundPool = new MASoundPool(miniAudio, path, (short) 0, group, external);
         GdxMASound gdxMASound = new GdxMASound(soundPool, group);
         listeners.add(gdxMASound);
         return gdxMASound;
@@ -58,8 +60,10 @@ public class GdxMiniAudio implements Audio {
 
     @Override
     public Music newMusic(FileHandle file) {
-        boolean external = file.type() == Files.FileType.Absolute;
-        return new GdxMAMusic(miniAudio.createSound(file.path(), MASound.Flags.MA_SOUND_FLAG_STREAM, null, external), this);
+        boolean external = isExternal(file);
+        String path = external ? file.file().getAbsolutePath() : file.path();
+        MASound sound = miniAudio.createSound(path, Flags.MA_SOUND_FLAG_STREAM, null, external);
+        return new GdxMAMusic(sound, this);
     }
 
     @Override
@@ -95,5 +99,11 @@ public class GdxMiniAudio implements Audio {
             }
         }
         return outputDevices.toArray();
+    }
+
+    private static boolean isExternal(FileHandle file) {
+        return file.type() == FileType.Absolute
+            || file.type() == FileType.External
+            || file.type() == FileType.Local;
     }
 }
