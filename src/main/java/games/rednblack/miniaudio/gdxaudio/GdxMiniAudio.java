@@ -1,6 +1,7 @@
 package games.rednblack.miniaudio.gdxaudio;
 
 import com.badlogic.gdx.Audio;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Files.FileType;
 import com.badlogic.gdx.audio.AudioDevice;
 import com.badlogic.gdx.audio.AudioRecorder;
@@ -19,12 +20,17 @@ public class GdxMiniAudio implements Audio {
 
     public GdxMiniAudio() {
         this.miniAudio = new MiniAudio();
+        // End events are fired from the native dispatch thread, post them to the
+        // render thread to serialize access with play()/stop()/newSound()
         MASoundEndListener endListener = maSound -> {
-            GdxEndListener music = completionListeners.get(maSound.getAddress());
-            if (music != null) music.onSoundEnd(maSound.getAddress());
-            for(GdxEndListener listener : listeners) {
-                listener.onSoundEnd(maSound.getAddress());
-            }
+            long address = maSound.getAddress();
+            Gdx.app.postRunnable(() -> {
+                GdxEndListener music = completionListeners.get(address);
+                if (music != null) music.onSoundEnd(address);
+                for(GdxEndListener listener : listeners) {
+                    listener.onSoundEnd(address);
+                }
+            });
         };
         miniAudio.setEndListener(endListener);
     }
