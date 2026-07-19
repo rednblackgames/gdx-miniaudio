@@ -1,5 +1,7 @@
 [0.8]
 - Update MiniAudio to 0.11.25
+- Update gdx-jnigen to 3.1.1
+- Update libGDX to 1.14.2
 - Support OGG Opus decoding
 - Replaced `stb_vorbis` with libVorbis and official miniaudio decoder
 - `MASoundLoader` will decode from memory (and warn) when try to load a Classpath/Internal asset from desktop

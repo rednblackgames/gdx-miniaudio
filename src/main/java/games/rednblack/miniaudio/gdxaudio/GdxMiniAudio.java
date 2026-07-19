@@ -112,4 +112,9 @@ public class GdxMiniAudio implements Audio {
             || file.type() == FileType.External
             || file.type() == FileType.Local;
     }
+
+    @Override
+    public void dispose() {
+        miniAudio.dispose();
+    }
 }
