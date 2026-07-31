@@ -19,7 +19,11 @@ public class GdxMiniAudio implements Audio {
     private final Array<GdxEndListener> listeners = new Array<>();
 
     public GdxMiniAudio() {
-        this.miniAudio = new MiniAudio();
+        this(new MiniAudio());
+    }
+
+    public GdxMiniAudio(MiniAudio miniAudio) {
+        this.miniAudio = miniAudio;
         // End events are fired from the native dispatch thread, post them to the
         // render thread to serialize access with play()/stop()/newSound()
         MASoundEndListener endListener = maSound -> {
