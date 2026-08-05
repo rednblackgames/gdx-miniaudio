@@ -47,7 +47,9 @@ public class MASoundPool extends Pool<MASound> {
 
     @Override
     protected void discard(MASound object) {
-        object.dispose();
+        // super.discard() resets the sound with native calls, so it must run before
+        // dispose() frees the ma_sound pointer (use-after-free crash otherwise).
         super.discard(object);
+        object.dispose();
     }
 }
