@@ -23,10 +23,18 @@ public class MAVisualizerNode extends MANode {
     private boolean disposed = false;
 
     public MAVisualizerNode(MiniAudio miniAudio) {
-        this(miniAudio, -1);
+        this(miniAudio, -1, null);
     }
 
     public MAVisualizerNode(MiniAudio miniAudio, int customChannels) {
+        this(miniAudio, customChannels, null);
+    }
+
+    public MAVisualizerNode(MiniAudio miniAudio, MAVisualizerListener listener) {
+        this(miniAudio, -1, listener);
+    }
+
+    public MAVisualizerNode(MiniAudio miniAudio, int customChannels, MAVisualizerListener listener) {
         super(miniAudio);
 
         address = jniCreateNode(miniAudio.getEngineAddress(), customChannels);
@@ -36,15 +44,6 @@ public class MAVisualizerNode extends MANode {
         }
 
         miniAudio.registerVisualizerNode(this);
-    }
-
-    public MAVisualizerNode(MiniAudio miniAudio, MAVisualizerListener listener) {
-        this(miniAudio);
-        setListener(listener);
-    }
-
-    public MAVisualizerNode(MiniAudio miniAudio, MAVisualizerListener listener, int customChannels) {
-        this(miniAudio, customChannels);
         setListener(listener);
     }
 
