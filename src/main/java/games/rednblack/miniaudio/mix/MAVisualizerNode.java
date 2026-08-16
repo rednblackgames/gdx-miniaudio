@@ -38,6 +38,16 @@ public class MAVisualizerNode extends MANode {
         miniAudio.registerVisualizerNode(this);
     }
 
+    public MAVisualizerNode(MiniAudio miniAudio, MAVisualizerListener listener) {
+        this(miniAudio);
+        setListener(listener);
+    }
+
+    public MAVisualizerNode(MiniAudio miniAudio, MAVisualizerListener listener, int customChannels) {
+        this(miniAudio, customChannels);
+        setListener(listener);
+    }
+
     private native long jniCreateNode(long graphAddress, int customChannels);/*
         ma_engine* g_engine = (ma_engine*) graphAddress;
         ma_uint32 channels;
