@@ -220,6 +220,9 @@ You can safely pass `null` on other platforms.
 If your Java code is obfuscated, be sure to keep required JNI methods.
 
 ```
+-keep class games.rednblack.miniaudio.MADeviceInfo* { *; }
+-keep class games.rednblack.miniaudio.MAFormatType* { *; }
+
 -keepclassmembers class games.rednblack.miniaudio.MiniAudio {
     public void on_native_sound_end(long);
     public void on_native_log(int, java.lang.String);
