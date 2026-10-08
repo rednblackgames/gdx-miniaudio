@@ -74,6 +74,76 @@ public class MiniAudio implements Disposable {
         ma_log_callback pLogCallback;
         ma_audio_buffer_ref inputBufferData;
 
+        #if !defined(MA_EMSCRIPTEN)
+            // NewStringUTF expects Modified UTF-8: standard UTF-8 4-byte sequences (e.g. emoji in device names)
+            // or truncated sequences make some VMs (RoboVM) throw NegativeArraySizeException.
+            // Decode standard UTF-8 to UTF-16 manually, replacing invalid sequences with U+FFFD.
+            static jstring newJavaStringFromUTF8(JNIEnv* env, const char* utf8) {
+                if (utf8 == NULL) return NULL;
+
+                const unsigned char* p = (const unsigned char*) utf8;
+                size_t byteCount = strlen(utf8);
+                // UTF-16 length never exceeds the UTF-8 byte count, +1 avoids a zero-sized allocation
+                jchar* chars = (jchar*) ma_malloc((byteCount + 1) * sizeof(jchar), NULL);
+                if (chars == NULL) return NULL;
+
+                jsize length = 0;
+                size_t i = 0;
+                while (i < byteCount) {
+                    unsigned char c = p[i];
+                    ma_uint32 codePoint;
+                    size_t extraBytes;
+                    if (c < 0x80) {
+                        codePoint = c;
+                        extraBytes = 0;
+                    } else if ((c & 0xE0) == 0xC0) {
+                        codePoint = c & 0x1F;
+                        extraBytes = 1;
+                    } else if ((c & 0xF0) == 0xE0) {
+                        codePoint = c & 0x0F;
+                        extraBytes = 2;
+                    } else if ((c & 0xF8) == 0xF0) {
+                        codePoint = c & 0x07;
+                        extraBytes = 3;
+                    } else {
+                        chars[length++] = 0xFFFD;
+                        i++;
+                        continue;
+                    }
+
+                    size_t j = 1;
+                    for (; j <= extraBytes; j++) {
+                        if (i + j >= byteCount || (p[i + j] & 0xC0) != 0x80) break;
+                        codePoint = (codePoint << 6) | (p[i + j] & 0x3F);
+                    }
+                    if (j <= extraBytes) {
+                        // Truncated sequence, resume from the first byte that is not a continuation
+                        chars[length++] = 0xFFFD;
+                        i += j;
+                        continue;
+                    }
+                    i += extraBytes + 1;
+
+                    // Overlong encodings are invalid, except C0 80 (Modified UTF-8 NUL). Encoded surrogates are
+                    // passed through so Modified UTF-8 surrogate pairs (from GetStringUTFChars) still decode correctly.
+                    if ((extraBytes == 1 && codePoint < 0x80 && codePoint != 0) || (extraBytes == 2 && codePoint < 0x800) ||
+                        (extraBytes == 3 && codePoint < 0x10000) || codePoint > 0x10FFFF) {
+                        chars[length++] = 0xFFFD;
+                    } else if (codePoint >= 0x10000) {
+                        codePoint -= 0x10000;
+                        chars[length++] = (jchar) (0xD800 + (codePoint >> 10));
+                        chars[length++] = (jchar) (0xDC00 + (codePoint & 0x3FF));
+                    } else {
+                        chars[length++] = (jchar) codePoint;
+                    }
+                }
+
+                jstring result = env->NewString(chars, length);
+                ma_free(chars, NULL);
+                return result;
+            }
+        #endif
+
         #ifdef MA_APPLE_MOBILE
             #include <string>
             std::string getBundlePath(const char* fileName) {
@@ -403,7 +473,7 @@ public class MiniAudio implements Disposable {
             if (event->type == 0) {
                 env->CallVoidMethod(jMiniAudio, jon_native_sound_end, (jlong) event->sound);
             } else if (event->type == 1) {
-                jstring javaMessage = env->NewStringUTF(event->message);
+                jstring javaMessage = newJavaStringFromUTF8(env, event->message);
                 env->CallVoidMethod(jMiniAudio, jon_native_log, event->level, javaMessage);
                 env->DeleteLocalRef(javaMessage);
                 ma_free(event->message, NULL);
@@ -689,7 +759,7 @@ public class MiniAudio implements Disposable {
                     env->SetBooleanField(obj, fIsCapture, 0);
                     env->SetLongField(obj, fIdAddress, (jlong) &pPlaybackInfos[iDevice].id);
                     env->SetBooleanField(obj, fIsDefault, pPlaybackInfos[iDevice].isDefault);
-                    jstring buffer = env->NewStringUTF(pPlaybackInfos[iDevice].name);
+                    jstring buffer = newJavaStringFromUTF8(env, pPlaybackInfos[iDevice].name);
                     env->SetObjectField(obj, fName, buffer);
 
                     jobjectArray formats = env->NewObjectArray(pPlaybackInfos[iDevice].nativeDataFormatCount, nativeFormatClass, NULL);
@@ -742,7 +812,7 @@ public class MiniAudio implements Disposable {
                     env->SetBooleanField(obj, fIsCapture, 1);
                     env->SetLongField(obj, fIdAddress, (jlong) &pCaptureInfos[i2].id);
                     env->SetBooleanField(obj, fIsDefault, pCaptureInfos[i2].isDefault);
-                    jstring buffer = env->NewStringUTF(pCaptureInfos[i2].name);
+                    jstring buffer = newJavaStringFromUTF8(env, pCaptureInfos[i2].name);
                     env->SetObjectField(obj, fName, buffer);
 
                     jobjectArray formats = env->NewObjectArray(pCaptureInfos[i2].nativeDataFormatCount, nativeFormatClass, NULL);
