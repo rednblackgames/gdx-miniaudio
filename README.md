@@ -216,6 +216,83 @@ miniAudio.setupAndroid(Context#getAssets());
 
 You can safely pass `null` on other platforms.
 
+### Drop-in replacement of libGDX Audio Interface
+
+If your project is already built around libGDX `Sound` and `Music` APIs, `GdxMiniAudio` implements the libGDX `Audio` interface,
+so you can switch to MiniAudio engine without touching your existing code.
+
+First, disable libGDX built-in audio backend in each platform launcher.
+
+```java
+//Desktop (LWJGL3)
+configuration.disableAudio(true);
+
+//Android
+configuration.disableAudio = true;
+
+//iOS
+configuration.useAudio = false;
+```
+
+Then replace `Gdx.audio` as the very first thing in your `create` method.
+
+```java
+public class Main implements ApplicationListener {
+    GdxMiniAudio gdxMiniAudio;
+    Sound sound;
+    Music music;
+
+    @Override
+    public void create() {
+        //Create only one GdxMiniAudio object!
+        gdxMiniAudio = new GdxMiniAudio();
+        //or wrap an existing engine: new GdxMiniAudio(miniAudio);
+        Gdx.audio = gdxMiniAudio;
+
+        //Android only, see Android additions
+        gdxMiniAudio.getMiniAudio().setupAndroid(...);
+
+        //From here on, standard libGDX API
+        sound = Gdx.audio.newSound(Gdx.files.internal("click.mp3"));
+        long id = sound.play(1f, 1.2f, 0f);
+        sound.setLooping(id, true);
+
+        music = Gdx.audio.newMusic(Gdx.files.internal("game.ogg"));
+        music.setOnCompletionListener(m -> Gdx.app.log("Music", "Completed!"));
+        music.play();
+    }
+
+    @Override
+    public void dispose() {
+        //Always dispose everything! First all sounds and music and then the engine
+        sound.dispose();
+        music.dispose();
+
+        gdxMiniAudio.dispose();
+    }
+
+    @Override
+    public void pause() {
+        gdxMiniAudio.getMiniAudio().stopEngine();
+    }
+
+    @Override
+    public void resume() {
+        gdxMiniAudio.getMiniAudio().startEngine();
+    }
+}
+```
+
+Few things to keep in mind:
+
+- Each `Sound` is backed by a `MASoundPool` inside its own `MAGroup`, so multiple instances can play at the same time. Returned ids are valid until the instance ends or is stopped
+- Each `Music` is streamed from disk instead of being fully decoded in memory
+- `Internal`, `Absolute`, `External` and `Local` file handles are supported
+- `switchOutputDevice` and `getAvailableOutputDevices` are supported
+- `newAudioDevice` and `newAudioRecorder` are **not** supported and throw `UnsupportedOperationException`, use MiniAudio specific API instead (raw PCM data, Audio Input Node)
+- `GdxMiniAudio` registers its own `MASoundEndListener`, do not call `setEndListener` on the wrapped `MiniAudio` object, otherwise `Sound` recycling and `Music` completion callbacks will break
+- Need more? `getMiniAudio()` gives access to the underlying engine, so you can mix libGDX API with all MiniAudio features (effects, 3D spatialization, groups, etc.)
+
 ### Proguard Rules
 If your Java code is obfuscated, be sure to keep required JNI methods.
 
