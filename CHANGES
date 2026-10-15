@@ -1,3 +1,6 @@
+[0.10]
+- Desktop: read audio files packed inside jar archives directly from native engine (with length and streaming support)
+
 [0.9]
 - Fix native crashes during dispose with correct sequence
 - Fix MASoundPool#discard crash

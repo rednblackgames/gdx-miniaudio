@@ -19,6 +19,6 @@ public class MASoundLoaderParameters extends AssetLoaderParameters<MASound> {
     /** Do not load file from the internal asset manager but looks for an absolute path */
     public boolean external = false;
 
-    /** Do not read file from native code but loads data from memory, less efficient but works with jar packed sounds */
+    /** Do not read file from native code but fully decode data in memory, sound length and streaming are not available */
     public boolean loadFromMemory = false;
 }

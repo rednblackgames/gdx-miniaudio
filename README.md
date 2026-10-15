@@ -15,6 +15,7 @@
 ## Features
 
 - Reading files from internal Assets or byte array
+- Reading files packed inside jar archives (desktop)
 - Supported formats: WAV, FLAC, MP3, OGG Vorbis/Opus
 - Global start and stop/pause
 - Master volume control
@@ -216,6 +217,21 @@ miniAudio.setupAndroid(Context#getAssets());
 
 You can safely pass `null` on other platforms.
 
+#### Desktop additions
+
+When the game is distributed as a jar archive, audio files packed inside the jar are read directly by the native engine,
+no extraction or loading from memory needed. Files on disk always have precedence, then the classpath is searched.
+
+All the sound features (length, streaming, seeking, etc.) are available as with regular files. Compressed jar entries are
+inflated in memory while the file is open, this matters only for long streamed sounds (e.g. music with `MA_SOUND_FLAG_STREAM`).
+Audio formats are already compressed, so storing jar entries without compression costs almost nothing in size and avoids any extra memory:
+
+```groovy
+jar {
+    entryCompression = ZipEntryCompression.STORED
+}
+```
+
 ### Drop-in replacement of libGDX Audio Interface
 
 If your project is already built around libGDX `Sound` and `Music` APIs, `GdxMiniAudio` implements the libGDX `Audio` interface,
@@ -365,6 +381,32 @@ limitations under the License.
 ```
 
 - [MiniAudio](https://github.com/mackron/miniaudio) is licensed under public domain or MIT No Attribution.
+
+- [miniz](https://github.com/richgel999/miniz)
+```
+Copyright 2013-2014 RAD Game Tools and Valve Software
+Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
+
+All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
 
 - `opusfile`
 ```

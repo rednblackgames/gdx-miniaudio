@@ -48,6 +48,7 @@ public class Main implements ApplicationListener {
     volatile int visualizerChannels2;
     @Override
     public void create() {
+        Gdx.app.setLogLevel(Logger.DEBUG);
         //miniAudio = new MiniAudio(1, 1, 0, 256, 44100);
         //miniAudio = new MiniAudio(null, false, true, false);
         MAContextConfiguration contextConfiguration = new MAContextConfiguration();

@@ -5,10 +5,16 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.Null;
+import com.badlogic.gdx.utils.ObjectIntMap;
+import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
 import games.rednblack.miniaudio.config.MAContextConfiguration;
 import games.rednblack.miniaudio.config.MAEngineConfiguration;
 import games.rednblack.miniaudio.mix.MAVisualizerNode;
+
+import java.io.File;
+import java.net.URI;
+import java.net.URL;
 
 /**
  * Main Audio Engine interface that handle calls with native library.
@@ -24,6 +30,11 @@ public class MiniAudio implements Disposable {
 
     public static final int MA_ENGINE_MAX_LISTENERS = 4;
     public static final String MA_ANDROID_STORAGE_EXTERNAL_PREFIX = "external:";
+    public static final String MA_JAR_VFS_PREFIX = "jar:";
+
+    // Desktop classpath resolution, guarded by resolvedPaths lock
+    private final ObjectMap<String, String> resolvedPaths = new ObjectMap<>();
+    private final ObjectIntMap<String> registeredJars = new ObjectIntMap<>();
 
     /*JNI
         #define MA_AAUDIO_MIN_ANDROID_SDK_VERSION 31
@@ -58,6 +69,12 @@ public class MiniAudio implements Disposable {
         #include "miniaudio_android_assets.h"
         ma_android_vfs* androidVFS;
         static jobject assetManagerGlobalRef;
+        #endif
+
+        #if !defined(MA_ANDROID) && !defined(MA_APPLE_MOBILE) && !defined(MA_EMSCRIPTEN)
+        #define MA_JAR_VFS_ENABLED
+        #include "miniaudio_jar_vfs.h"
+        ma_jar_vfs* jarVFS;
         #endif
         ma_resource_manager* resourceManager;
 
@@ -1107,6 +1124,14 @@ public class MiniAudio implements Disposable {
         resourceManagerConfig.pVFS = androidVFS;
         #endif
 
+        #if defined(MA_JAR_VFS_ENABLED)
+        jarVFS = (ma_jar_vfs*) ma_malloc(sizeof(ma_jar_vfs), NULL);
+        res = ma_jar_vfs_init(jarVFS, NULL);
+        jarVFS->pLog = &maLog;
+        if (res != MA_SUCCESS) return res;
+        resourceManagerConfig.pVFS = jarVFS;
+        #endif
+
         res = ma_resource_manager_init(&resourceManagerConfig, resourceManager);
         if (res != MA_SUCCESS) return res;
 
@@ -1213,6 +1238,12 @@ public class MiniAudio implements Disposable {
     private native void jniDispose();/*
         ma_engine_uninit(&engine);
         ma_resource_manager_uninit(resourceManager);
+
+        #if defined(MA_JAR_VFS_ENABLED)
+        ma_jar_vfs_uninit(jarVFS);
+        ma_free(jarVFS, NULL);
+        jarVFS = NULL;
+        #endif
         ma_device_uninit(&device);
         ma_audio_buffer_ref_uninit(&inputBufferData);
 
@@ -1474,6 +1505,7 @@ public class MiniAudio implements Disposable {
     public int playSound(String fileName, boolean external) {
         if (external && Gdx.app.getType() == Application.ApplicationType.Android)
             fileName = MA_ANDROID_STORAGE_EXTERNAL_PREFIX + fileName;
+        fileName = resolveDesktopPath(fileName, external);
         return jniPlaySound(fileName, external);
     }
 
@@ -1536,6 +1568,7 @@ public class MiniAudio implements Disposable {
     public MASound createSound(String fileName, short flags, MAGroup group, boolean external) {
         if (external && Gdx.app.getType() == Application.ApplicationType.Android)
             fileName = MA_ANDROID_STORAGE_EXTERNAL_PREFIX + fileName;
+        fileName = resolveDesktopPath(fileName, external);
         return new MASound(jniCreateSound(fileName, flags, group == null ? -1 : group.address, external), this);
     }
 
@@ -1562,6 +1595,98 @@ public class MiniAudio implements Disposable {
 
         ma_sound_set_end_callback(sound, sound_end_callback, NULL);
         return (jlong) sound;
+    */
+
+    /**
+     * Desktop only: files that are not on disk are looked up in the classpath, so assets packed inside
+     * jar archives are read by the native engine without being extracted.
+     * Results are cached, so only the first load of each file does the lookup.
+     *
+     * @param fileName path of the file relative to assets folder
+     * @param external true if file is outside the `assets` directory
+     * @return path to pass to the native engine
+     */
+    private String resolveDesktopPath(String fileName, boolean external) {
+        if (external || Gdx.app == null) return fileName;
+        Application.ApplicationType type = Gdx.app.getType();
+        if (type != Application.ApplicationType.Desktop && type != Application.ApplicationType.HeadlessDesktop) return fileName;
+
+        synchronized (resolvedPaths) {
+            String resolved = resolvedPaths.get(fileName);
+            if (resolved == null) {
+                resolved = lookupDesktopPath(fileName);
+                // Files not found anywhere are not cached, they could be created later
+                if (resolved == null) return fileName;
+                resolvedPaths.put(fileName, resolved);
+            }
+            return resolved;
+        }
+    }
+
+    /**
+     * @return path to pass to the native engine, null if file does not exist
+     */
+    private String lookupDesktopPath(String fileName) {
+        if (new File(fileName).exists()) return fileName;
+
+        String entry = fileName.replace('\\', '/');
+        while (entry.startsWith("/")) entry = entry.substring(1);
+        URL url = MiniAudio.class.getResource("/" + entry);
+        if (url == null) return null;
+
+        try {
+            // Classpath directory, e.g. resources folder when running from IDE
+            if ("file".equals(url.getProtocol())) return new File(url.toURI()).getAbsolutePath();
+            if (!"jar".equals(url.getProtocol())) return fileName;
+
+            // jar:file:/path/to/game.jar!/entry, nested jars (e.g. Spring Boot) are not supported
+            String spec = url.getPath();
+            int separator = spec.indexOf("!/");
+            if (separator < 0 || separator != spec.lastIndexOf("!/") || !spec.startsWith("file:")) return fileName;
+
+            String jarPath = new File(new URI(spec.substring(0, separator))).getAbsolutePath();
+            int index = registerJar(jarPath);
+            if (index < 0) return fileName;
+            return MA_JAR_VFS_PREFIX + index + ":" + entry;
+        } catch (Exception e) {
+            Gdx.app.error(TAG, "Unable to resolve classpath file " + fileName, e);
+            return fileName;
+        }
+    }
+
+    private int registerJar(String jarPath) {
+        int index = registeredJars.get(jarPath, Integer.MIN_VALUE);
+        if (index == Integer.MIN_VALUE) {
+            index = jniRegisterJar(jarPath);
+            if (index < 0) {
+                Gdx.app.error(TAG, "Unable to open jar archive " + jarPath + ", error code " + index);
+                index = -1;
+            }
+            registeredJars.put(jarPath, index);
+        }
+        return index;
+    }
+
+    private native int jniRegisterJar(String jarPath);/*
+        #if defined(MA_JAR_VFS_ENABLED)
+            ma_uint32 index;
+            ma_result result;
+            #if defined(MA_WIN32)
+                // GetStringChars is not guaranteed to be null terminated
+                jsize length = env->GetStringLength(obj_jarPath);
+                wchar_t* pPathW = (wchar_t*) ma_malloc((length + 1) * sizeof(wchar_t), NULL);
+                if (pPathW == NULL) return MA_OUT_OF_MEMORY;
+                env->GetStringRegion(obj_jarPath, 0, length, (jchar*) pPathW);
+                pPathW[length] = L'\0';
+                result = ma_jar_vfs_register_archive(jarVFS, NULL, pPathW, &index);
+                ma_free(pPathW, NULL);
+            #else
+                result = ma_jar_vfs_register_archive(jarVFS, jarPath, NULL, &index);
+            #endif
+            return result == MA_SUCCESS ? (jint) index : (jint) result;
+        #else
+            return MA_NOT_IMPLEMENTED;
+        #endif
     */
 
     public MASound createInputSound(short flags, MAGroup group) {
