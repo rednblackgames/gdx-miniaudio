@@ -1,4 +1,5 @@
 [0.10]
+- Update MiniAudio to 0.11.26
 - Desktop: read audio files packed inside jar archives directly from native engine (with length and streaming support)
 
 [0.9]
