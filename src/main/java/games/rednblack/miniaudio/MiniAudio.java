@@ -7,7 +7,7 @@ import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.Null;
 import com.badlogic.gdx.utils.ObjectIntMap;
 import com.badlogic.gdx.utils.ObjectMap;
-import com.badlogic.gdx.utils.SharedLibraryLoader;
+import com.badlogic.gdx.jnigen.loader.SharedLibraryLoader;
 import games.rednblack.miniaudio.config.MAContextConfiguration;
 import games.rednblack.miniaudio.config.MAEngineConfiguration;
 import games.rednblack.miniaudio.mix.MAVisualizerNode;
