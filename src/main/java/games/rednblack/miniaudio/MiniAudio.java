@@ -1154,6 +1154,19 @@ public class MiniAudio implements Disposable {
     }
 
     /**
+     * Get the engine sample rate. Buffers created with {@link #decodeBytes(byte[], int)} use this sample rate.
+     *
+     * @return engine sample rate in Hz
+     */
+    public int getSampleRate() {
+        return jniGetSampleRate();
+    }
+
+    private native int jniGetSampleRate();/*
+        return (jint) ma_engine_get_sample_rate(&engine);
+    */
+
+    /**
      * Change playback or capture hardware device at runtime. Pass null to use system default.
      * To obtain a list of available devices use {@link MiniAudio#getAvailableDevices()}.
      *
@@ -2349,7 +2362,7 @@ public class MiniAudio implements Disposable {
      */
     public MAAudioBuffer createAudioBuffer(int size, int channels) {
         long dataBuffer = jniCreateDataBuffer(size, channels);
-        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, size, channels), dataBuffer, size * channels, this);
+        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, size, channels), dataBuffer, size, channels, this);
     }
 
     private native long jniCreateDataBuffer(int size, int channels);/*
@@ -3309,7 +3322,7 @@ public class MiniAudio implements Disposable {
             if (decodedFrames == 0) {
                 throw new MiniAudioException("Could not decode any frame from data", MAResult.MA_ERROR);
             }
-            return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, decodedFrames, outputChannels), dataBuffer, decodedFrames * outputChannels, this);
+            return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, decodedFrames, outputChannels), dataBuffer, decodedFrames, outputChannels, this);
         }
 
         long[] results = jniDecodeBytes(data, data.length, outputChannels);
@@ -3323,7 +3336,7 @@ public class MiniAudio implements Disposable {
             throw new MiniAudioException("Could not decode any frame from data", MAResult.MA_ERROR);
         }
 
-        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, decodedFrames, outputChannels), dataBuffer, decodedFrames * outputChannels, this);
+        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, decodedFrames, outputChannels), dataBuffer, decodedFrames, outputChannels, this);
     }
 
     private native int jniDecodeBytesEmscripten(byte[] data, int length, int outputChannels);/*
@@ -3342,7 +3355,7 @@ public class MiniAudio implements Disposable {
         config.customBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
 
         em_decoded_frames = 0;
-        if (em_decoded_data != NULL) { ma_free(em_decoded_data, NULL); em_decoded_data = NULL; }
+        em_decoded_data = NULL;
 
         ma_result result = ma_decode_memory(data, length, &config, &em_decoded_frames, &em_decoded_data);
         return (jint) result;
@@ -3404,5 +3417,127 @@ public class MiniAudio implements Disposable {
 
         return returnArray;
         #endif
+    */
+
+    /**
+     * Create a {@link MADecoder} to read PCM frames from a file without playing it. Output keeps the file's native
+     * channel count and sample rate.
+     *
+     * @param fileName path of the file relative to assets folder
+     * @return {@link MADecoder} positioned at the start of the file
+     */
+    public MADecoder createDecoder(String fileName) {
+        return createDecoder(fileName, 0, 0, false);
+    }
+
+    /**
+     * Create a {@link MADecoder} to read PCM frames from a file without playing it.
+     *
+     * @param fileName path of the file relative to assets folder
+     * @param channels output channel count, 0 to keep the file's native one
+     * @param sampleRate output sample rate in Hz, 0 to keep the file's native one
+     * @param external true if file needs to be read outside the `assets` directory (only for Android and iOS)
+     * @return {@link MADecoder} positioned at the start of the file
+     */
+    public MADecoder createDecoder(String fileName, int channels, int sampleRate, boolean external) {
+        if (channels < 0 || sampleRate < 0)
+            throw new IllegalArgumentException("Invalid output format: channels " + channels + ", sample rate " + sampleRate + ".");
+        if (external && Gdx.app.getType() == Application.ApplicationType.Android)
+            fileName = MA_ANDROID_STORAGE_EXTERNAL_PREFIX + fileName;
+        fileName = resolveDesktopPath(fileName, external);
+        return new MADecoder(jniCreateDecoder(fileName, channels, sampleRate, external));
+    }
+
+    /**
+     * Create a {@link MADecoder} to read PCM frames from an encoded bytes array, useful when there's no direct
+     * access to files. Data is copied, so the array can be reused. Output keeps the native channel count and
+     * sample rate.
+     *
+     * @param data bytes array of an encoded audio file
+     * @return {@link MADecoder} positioned at the start of the data
+     */
+    public MADecoder createDecoder(byte[] data) {
+        return createDecoder(data, 0, 0);
+    }
+
+    /**
+     * Create a {@link MADecoder} to read PCM frames from an encoded bytes array, useful when there's no direct
+     * access to files. Data is copied, so the array can be reused.
+     *
+     * @param data bytes array of an encoded audio file
+     * @param channels output channel count, 0 to keep the native one
+     * @param sampleRate output sample rate in Hz, 0 to keep the native one
+     * @return {@link MADecoder} positioned at the start of the data
+     */
+    public MADecoder createDecoder(byte[] data, int channels, int sampleRate) {
+        if (data.length == 0)
+            throw new IllegalArgumentException("Data cannot be empty.");
+        if (channels < 0 || sampleRate < 0)
+            throw new IllegalArgumentException("Invalid output format: channels " + channels + ", sample rate " + sampleRate + ".");
+        return new MADecoder(jniCreateDecoderFromMemory(data, data.length, channels, sampleRate));
+    }
+
+    /*JNI
+        // Decoders read files through the same VFS and decoding backends used by sounds
+        static ma_decoder_config jni_decoder_config(jint channels, jint sampleRate) {
+            ma_decoder_config config = ma_decoder_config_init(ma_format_f32, (ma_uint32) channels, (ma_uint32) sampleRate);
+            config.ppCustomBackendVTables = resourceManager->config.ppCustomDecodingBackendVTables;
+            config.customBackendCount     = resourceManager->config.customDecodingBackendCount;
+            config.pCustomBackendUserData = resourceManager->config.pCustomDecodingBackendUserData;
+            return config;
+        }
+    */
+
+    private native long jniCreateDecoder(String fileName, int channels, int sampleRate, boolean external);/*
+        if (resourceManager == NULL) return MA_INVALID_OPERATION;
+
+        ma_decoder_config config = jni_decoder_config(channels, sampleRate);
+        ma_vfs* pVFS = resourceManager->config.pVFS;
+
+        ma_decoder* decoder = (ma_decoder*) ma_malloc(sizeof(ma_decoder), NULL);
+        if (decoder == NULL) return MA_OUT_OF_MEMORY;
+
+        #if defined(MA_APPLE_MOBILE)
+            std::string cppStr = getBundlePath(fileName);
+            ma_result result = ma_decoder_init_vfs(pVFS, external ? fileName : cppStr.c_str(), &config, decoder);
+        #elif defined(MA_WIN32)
+            // GetStringChars is not guaranteed to be null terminated
+            jsize length = env->GetStringLength(obj_fileName);
+            wchar_t* pFileNameW = (wchar_t*) ma_malloc((length + 1) * sizeof(wchar_t), NULL);
+            if (pFileNameW == NULL) {
+                ma_free(decoder, NULL);
+                return MA_OUT_OF_MEMORY;
+            }
+            env->GetStringRegion(obj_fileName, 0, length, (jchar*) pFileNameW);
+            pFileNameW[length] = L'\0';
+            ma_result result = ma_decoder_init_vfs_w(pVFS, pFileNameW, &config, decoder);
+            ma_free(pFileNameW, NULL);
+        #else
+            ma_result result = ma_decoder_init_vfs(pVFS, fileName, &config, decoder);
+        #endif
+
+        if (result != MA_SUCCESS) {
+            ma_free(decoder, NULL);
+            return (jlong) result;
+        }
+        return (jlong) decoder;
+    */
+
+    private native long jniCreateDecoderFromMemory(byte[] data, int length, int channels, int sampleRate);/*
+        if (resourceManager == NULL) return MA_INVALID_OPERATION;
+
+        ma_decoder_config config = jni_decoder_config(channels, sampleRate);
+
+        ma_decoder* decoder = (ma_decoder*) ma_malloc(sizeof(ma_decoder) + (size_t) length, NULL);
+        if (decoder == NULL) return MA_OUT_OF_MEMORY;
+        void* pData = (ma_uint8*) decoder + sizeof(ma_decoder);
+        memcpy(pData, data, (size_t) length);
+
+        ma_result result = ma_decoder_init_memory(pData, (size_t) length, &config, decoder);
+        if (result != MA_SUCCESS) {
+            ma_free(decoder, NULL);
+            return (jlong) result;
+        }
+        return (jlong) decoder;
     */
 }

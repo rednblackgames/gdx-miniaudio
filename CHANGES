@@ -1,6 +1,10 @@
 [0.10]
 - Update MiniAudio to 0.11.26
+- [BREAK] `MAAudioBuffer` constructor takes frame count and channels instead of the total size
 - Desktop: read audio files packed inside jar archives directly from native engine (with length and streaming support)
+- Add `MADecoder` to read PCM frames from files or byte arrays without playing them
+- Add `MAAudioBuffer#read`, `MAAudioBuffer#getChannels` and `MAAudioBuffer#getFrameCount`
+- Add `MiniAudio#getSampleRate`
 
 [0.9]
 - Fix native crashes during dispose with correct sequence

@@ -7,7 +7,7 @@
 
 | gdx-miniaudio | libGDX |
 |---------------|--------|
-| <=0.8         | 1.14.2 |
+| <=0.9         | 1.14.2 |
 | <=0.7         | 1.14.0 |
 | <=0.5         | 1.12.1 |
 | <=0.3         | 1.11.0 |
@@ -32,6 +32,7 @@
 - Chain multiple sounds gapless
 - Graph Nodes Filters/Effects
 - Play raw PCM data
+- Read decoded PCM data without playback
 - Waves and Noise generation
 - Sound Groups with atomic management
 - Sound Groups Spatialization (position, direction, cone, attenuation model, rolloff, etc.)
@@ -230,6 +231,40 @@ Audio formats are already compressed, so storing jar entries without compression
 jar {
     entryCompression = ZipEntryCompression.STORED
 }
+```
+
+### Reading PCM data
+
+`MADecoder` reads PCM frames from a file without playing it, for example to draw the waveform of a whole file.
+Frames are read in chunks, so the whole decoded file is never kept in memory. Output is interleaved 32-bit float.
+
+```java
+//Native channel count and sample rate of the file, or use createDecoder(fileName, channels, sampleRate, external)
+MADecoder decoder = miniAudio.createDecoder("music.ogg");
+//When there's no direct access to files: miniAudio.createDecoder(byte[] data)
+int channels = decoder.getChannels();
+long totalFrames = decoder.getLengthInFrames();
+float seconds = totalFrames / (float) decoder.getSampleRate();
+
+float[] chunk = new float[4096 * channels];
+int framesRead;
+while ((framesRead = decoder.readFrames(chunk)) > 0) {
+    //... e.g. compute min/max peaks from chunk[0 .. framesRead * channels] ...
+}
+
+decoder.seekToFrame(0); //random access is supported too
+decoder.dispose();
+```
+
+A decoder does not depend on the playback engine, so it can be used from a background thread, but each instance must
+be used by one thread at a time. Dispose decoders before disposing `MiniAudio`.
+
+Data decoded with `MiniAudio#decodeBytes` can be read back too, at the engine sample rate (`MiniAudio#getSampleRate`):
+
+```java
+MAAudioBuffer buffer = miniAudio.decodeBytes(data, 2);
+float[] samples = new float[buffer.getBufferSize()]; //getFrameCount() * getChannels()
+buffer.read(samples);
 ```
 
 ### Drop-in replacement of libGDX Audio Interface
