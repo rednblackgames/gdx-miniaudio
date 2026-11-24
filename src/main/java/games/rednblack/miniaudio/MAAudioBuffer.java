@@ -1,35 +1,44 @@
 package games.rednblack.miniaudio;
 
 /**
- * Wrapper class to MiniAudio's audio buffer
+ * Wrapper class to MiniAudio's audio buffer. Data is interleaved 32-bit float PCM.
+ * <p>
+ * Create it with {@link MiniAudio#createAudioBuffer(int, int)} or {@link MiniAudio#decodeBytes(byte[], int)}.
  *
  * @author fgnm
  */
 public class MAAudioBuffer extends MADataSource {
     /*JNI
         #include <string.h>
+        #include "miniaudio.h"
     */
 
     private final int bufferSize;
     private final int channels;
-    protected long dataBufferAddress;
+    private final int frameCount;
 
     /**
-     * @param audioBuffer native address of the audio buffer
-     * @param dataBuffer native address of the interleaved float data buffer
-     * @param frameCount buffer length in PCM frames
-     * @param channels how many channels
+     * @param address native address of the audio buffer, allocated with a single ma_malloc block that also holds the
+     *                PCM data, freed together with the audio buffer
      * @param miniAudio engine instance
      */
-    public MAAudioBuffer(long audioBuffer, long dataBuffer, int frameCount, int channels, MiniAudio miniAudio) {
-        super(audioBuffer, miniAudio);
-        if (MAResult.checkErrors(audioBuffer)) {
-            throw new MiniAudioException("Error while creating Audio Buffer", (int) audioBuffer);
+    public MAAudioBuffer(long address, MiniAudio miniAudio) {
+        super(address, miniAudio);
+        if (MAResult.checkErrors(address)) {
+            throw new MiniAudioException("Error while creating Audio Buffer", (int) address);
         }
-        this.channels = channels;
+        channels = jniGetChannels(address);
+        frameCount = jniGetFrameCount(address);
         bufferSize = frameCount * channels;
-        dataBufferAddress = dataBuffer;
     }
+
+    private native int jniGetChannels(long audioBuffer);/*
+        return (jint) ((ma_audio_buffer*) audioBuffer)->ref.channels;
+    */
+
+    private native int jniGetFrameCount(long audioBuffer);/*
+        return (jint) ((ma_audio_buffer*) audioBuffer)->ref.sizeInFrames;
+    */
 
     /**
      * Write to data buffer.
@@ -51,13 +60,13 @@ public class MAAudioBuffer extends MADataSource {
             throw new IllegalArgumentException("Invalid size: " + size + " (data length " + data.length + ").");
         if (size > bufferSize)
             throw new IllegalArgumentException("Buffer size exceeded.");
-        jniWrite(dataBufferAddress, data, size);
+        if (size == 0) return;
+        jniWrite(address, data, size);
     }
 
-    private native void jniWrite(long dataBufferAddress, float[] data, int size);/*
-        float* buffer = (float*) dataBufferAddress;
-        for (int i = 0; i < size; i++)
-            buffer[i] = data[i];
+    private native void jniWrite(long audioBuffer, float[] data, int size);/*
+        float* buffer = (float*) ((ma_audio_buffer*) audioBuffer)->ref.pData;
+        memcpy(buffer, data, (size_t) size * sizeof(float));
     */
 
     /**
@@ -90,18 +99,30 @@ public class MAAudioBuffer extends MADataSource {
         if (dstOffset > dst.length - length)
             throw new IllegalArgumentException("Destination array too small: length " + dst.length + ", required " + ((long) dstOffset + length) + ".");
         if (length == 0) return;
-        jniRead(dataBufferAddress, dst, srcOffset, dstOffset, length);
+        jniRead(address, dst, srcOffset, dstOffset, length);
     }
 
-    private native void jniRead(long dataBufferAddress, float[] dst, int srcOffset, int dstOffset, int length);/*
-        const float* buffer = (const float*) dataBufferAddress;
+    private native void jniRead(long audioBuffer, float[] dst, int srcOffset, int dstOffset, int length);/*
+        const float* buffer = (const float*) ((ma_audio_buffer*) audioBuffer)->ref.pData;
         memcpy(dst + dstOffset, buffer + srcOffset, (size_t) length * sizeof(float));
     */
 
+    /**
+     * Dispose the audio buffer and free its data. Calling it more than once has no effect.
+     */
     @Override
     public void dispose() {
-        miniAudio.disposeAudioBuffer(address, dataBufferAddress);
+        if (address == 0) return;
+        jniDispose(address);
+        address = 0;
     }
+
+    private native void jniDispose(long audioBuffer);/*
+        ma_audio_buffer* buffer = (ma_audio_buffer*) audioBuffer;
+        ma_audio_buffer_uninit(buffer);
+        // Frees the whole block, including the PCM data
+        ma_free(buffer, NULL);
+    */
 
     /**
      * Get the length of the buffer in float samples (PCM frames multiplied by the channel count).
@@ -127,6 +148,6 @@ public class MAAudioBuffer extends MADataSource {
      * @return length in PCM frames
      */
     public int getFrameCount() {
-        return bufferSize / channels;
+        return frameCount;
     }
 }

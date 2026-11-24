@@ -884,9 +884,6 @@ public class MiniAudio implements Disposable {
         static ma_uint32 em_playback_count = 0;
         static ma_device_info* em_capture_infos = NULL;
         static ma_uint32 em_capture_count = 0;
-
-        static void* em_decoded_data = NULL;
-        static ma_uint64 em_decoded_frames = 0;
         #endif
     */
 
@@ -2339,54 +2336,50 @@ public class MiniAudio implements Disposable {
             throw new MiniAudioException("Could not attach node to graph output", res);
     }
 
+    /*JNI
+        // An audio buffer is a single ma_malloc block: the ma_audio_buffer struct followed by its interleaved float
+        // PCM data (buffer + 1), so ma_free(buffer) releases everything. sizeof(ma_audio_buffer) is a multiple of the
+        // struct alignment, so floats right after it are aligned.
+
+        // Max frames of an audio buffer: Java indexes samples with int and the whole block must fit in size_t
+        static ma_uint64 jni_audio_buffer_max_frames(ma_uint32 channels) {
+            ma_uint64 maxSamples = 0x7FFFFFFF;
+            ma_uint64 maxBytes = (ma_uint64) MA_SIZE_MAX - sizeof(ma_audio_buffer);
+            if (maxSamples > maxBytes / sizeof(float)) maxSamples = maxBytes / sizeof(float);
+            return maxSamples / channels;
+        }
+    */
+
     /**
-     * Create a new Audio Buffer and allocated a float array data buffer to store raw PCM data.
+     * Create a new Audio Buffer with a zeroed data buffer to store raw PCM data (interleaved 32-bit float).
      *
-     * @param size of the buffer
+     * @param frameCount buffer length in PCM frames
      * @param channels how many channels
      * @return {@link MAAudioBuffer} that can be used for create a new Sound with {@link #createSound(MADataSource)}
      */
-    public MAAudioBuffer createAudioBuffer(int size, int channels) {
-        long dataBuffer = jniCreateDataBuffer(size, channels);
-        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, size, channels), dataBuffer, size, channels, this);
+    public MAAudioBuffer createAudioBuffer(int frameCount, int channels) {
+        if (frameCount <= 0 || channels <= 0)
+            throw new IllegalArgumentException("Invalid audio buffer: frameCount " + frameCount + ", channels " + channels + ".");
+        return new MAAudioBuffer(jniCreateAudioBuffer(frameCount, channels), this);
     }
 
-    private native long jniCreateDataBuffer(int size, int channels);/*
-        ma_uint64 bpf = ma_get_bytes_per_frame(ma_format_f32, channels);
-        return (jlong) ma_calloc((size_t)(size * bpf), NULL);
-    */
+    private native long jniCreateAudioBuffer(int frameCount, int channels);/*
+        if ((ma_uint64) frameCount > jni_audio_buffer_max_frames((ma_uint32) channels)) return MA_TOO_BIG;
 
-    private native long jniCreateAudioBuffer(long dataBuffer, int size, int channels);/*
-        void* pExistingData = (void*) dataBuffer;
-        ma_audio_buffer_config config = ma_audio_buffer_config_init(ma_format_f32, channels, size, pExistingData, NULL);
+        // Fits in size_t, checked above
+        size_t dataSize = (size_t) frameCount * (size_t) channels * sizeof(float);
+        ma_audio_buffer* buffer = (ma_audio_buffer*) ma_malloc(sizeof(ma_audio_buffer) + dataSize, NULL);
+        if (buffer == NULL) return MA_OUT_OF_MEMORY;
+        memset(buffer + 1, 0, dataSize);
 
-        ma_audio_buffer* buffer = (ma_audio_buffer*) ma_malloc(sizeof(ma_audio_buffer), NULL);
+        ma_audio_buffer_config config = ma_audio_buffer_config_init(ma_format_f32, (ma_uint32) channels, (ma_uint64) frameCount, buffer + 1, NULL);
         ma_result result = ma_audio_buffer_init(&config, buffer);
         if (result != MA_SUCCESS) {
-            free(buffer);
+            ma_free(buffer, NULL);
             return (jlong) result;
         }
 
         return (jlong) buffer;
-    */
-
-    /**
-     * Dispose and free memory of the Audio Buffer and attached data buffer
-     *
-     * @param audioBuffer audio buffer native memory address
-     * @param dataBuffer data buffer native memory address
-     */
-    public void disposeAudioBuffer(long audioBuffer, long dataBuffer) {
-        jniDisposeAudioBuffer(audioBuffer, dataBuffer);
-    }
-
-    private native void jniDisposeAudioBuffer(long audioBuffer, long dataBuffer);/*
-        ma_audio_buffer* buffer = (ma_audio_buffer*) audioBuffer;
-        void* pExistingData = (void*) dataBuffer;
-
-        ma_audio_buffer_uninit(buffer);
-        ma_free(buffer, NULL);
-        ma_free(pExistingData, NULL);
     */
 
     /**
@@ -3279,120 +3272,126 @@ public class MiniAudio implements Disposable {
         }
     }
 
+    /*JNI
+        // Decoders read files through the same VFS and decoding backends used by sounds
+        static ma_decoder_config jni_decoder_config(jint channels, jint sampleRate) {
+            ma_decoder_config config = ma_decoder_config_init(ma_format_f32, (ma_uint32) channels, (ma_uint32) sampleRate);
+            config.ppCustomBackendVTables = resourceManager->config.ppCustomDecodingBackendVTables;
+            config.customBackendCount     = resourceManager->config.customDecodingBackendCount;
+            config.pCustomBackendUserData = resourceManager->config.pCustomDecodingBackendUserData;
+            return config;
+        }
+    */
+
     /**
      * Decode a bytes array into a {@link MAAudioBuffer} using MiniAudio's decoder, useful when there's no direct access
-     * to files.
+     * to files. Data is decoded at the engine sample rate, see {@link #getSampleRate()}.
      *
      * @param data bytes array input data
      * @param outputChannels how many channels (usually 2)
      * @return {@link MAAudioBuffer} with decoded data inside
      */
     public MAAudioBuffer decodeBytes(byte[] data, int outputChannels) {
-        if (isEmscripten) {
-            int result = jniDecodeBytesEmscripten(data, data.length, outputChannels);
-            if (result != MAResult.MA_SUCCESS) {
-                throw new MiniAudioException("Error while decoding byte array", result);
-            }
-            long dataBuffer = jniGetDecodedDataPointer();
-            int decodedFrames = (int) jniGetDecodedFrameCount();
-            if (decodedFrames == 0) {
-                throw new MiniAudioException("Could not decode any frame from data", MAResult.MA_ERROR);
-            }
-            return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, decodedFrames, outputChannels), dataBuffer, decodedFrames, outputChannels, this);
-        }
+        if (data.length == 0)
+            throw new IllegalArgumentException("Data cannot be empty.");
+        if (outputChannels <= 0)
+            throw new IllegalArgumentException("Invalid output channels: " + outputChannels + ".");
 
-        long[] results = jniDecodeBytes(data, data.length, outputChannels);
-        long dataBuffer = results[0];
-        int decodedFrames = (int) results[1];
-        if (MAResult.checkErrors(dataBuffer)) {
-            throw new MiniAudioException("Error while decoding byte array", (int) dataBuffer);
+        long address = jniDecodeBytes(data, data.length, outputChannels);
+        if (address == MAResult.MA_NO_DATA_AVAILABLE) {
+            throw new MiniAudioException("Could not decode any frame from data", (int) address);
         }
-
-        if (decodedFrames == 0) {
-            throw new MiniAudioException("Could not decode any frame from data", MAResult.MA_ERROR);
+        if (MAResult.checkErrors(address)) {
+            throw new MiniAudioException("Error while decoding byte array", (int) address);
         }
-
-        return new MAAudioBuffer(jniCreateAudioBuffer(dataBuffer, decodedFrames, outputChannels), dataBuffer, decodedFrames, outputChannels, this);
+        return new MAAudioBuffer(address, this);
     }
 
-    private native int jniDecodeBytesEmscripten(byte[] data, int length, int outputChannels);/*
-        #if defined(MA_EMSCRIPTEN)
-        ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
-        ma_decoder_config config = ma_decoder_config_init(ma_format_f32, outputChannels, sampleRate);
+    private native long jniDecodeBytes(byte[] data, int length, int outputChannels);/*
+        if (resourceManager == NULL) return MA_INVALID_OPERATION;
 
-        ma_decoding_backend_vtable* pCustomBackendVTables[] =
-        {
-            ma_decoding_backend_libvorbis,
-            ma_decoding_backend_libopus
-        };
+        ma_uint32 channels = (ma_uint32) outputChannels;
+        ma_decoder_config config = jni_decoder_config(outputChannels, (jint) ma_engine_get_sample_rate(&engine));
+        ma_decoder decoder;
+        ma_result result = ma_decoder_init_memory(data, (size_t) length, &config, &decoder);
+        if (result != MA_SUCCESS) return (jlong) result;
 
-        config.pCustomBackendUserData = NULL;
-        config.ppCustomBackendVTables = pCustomBackendVTables;
-        config.customBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
+        // Decode straight into the PCM data of the audio buffer block, growing it when full. The length reported by
+        // the decoder, when known, sizes the block so that usually it's allocated only once.
+        size_t bytesPerFrame = channels * sizeof(float);
+        ma_uint64 maxFrames = jni_audio_buffer_max_frames(channels);
+        ma_uint64 capacity = 4096;
+        ma_uint64 expectedLength = 0;
+        if (ma_decoder_get_length_in_pcm_frames(&decoder, &expectedLength) == MA_SUCCESS && expectedLength > 0) {
+            // Margin over the expected length (an estimate when resampling), so the end is reached without growing
+            capacity = expectedLength + 4096;
+        }
+        if (capacity > maxFrames) capacity = maxFrames;
 
-        em_decoded_frames = 0;
-        em_decoded_data = NULL;
-
-        ma_result result = ma_decode_memory(data, length, &config, &em_decoded_frames, &em_decoded_data);
-        return (jint) result;
-        #else
-        return -1;
-        #endif
-    */
-
-    private native long jniGetDecodedDataPointer();/*
-        #if defined(MA_EMSCRIPTEN)
-        return (jlong)(intptr_t) em_decoded_data;
-        #else
-        return 0;
-        #endif
-    */
-
-    private native long jniGetDecodedFrameCount();/*
-        #if defined(MA_EMSCRIPTEN)
-        return (jlong) em_decoded_frames;
-        #else
-        return 0;
-        #endif
-    */
-
-    private native long[] jniDecodeBytes(byte[] data, int length, int outputChannels);/*
-        #if defined(MA_EMSCRIPTEN)
-        return NULL;
-        #else
-        jlongArray returnArray = env->NewLongArray(2);
-        if (returnArray == NULL) {
-            return NULL;
+        ma_audio_buffer* buffer = (ma_audio_buffer*) ma_malloc(sizeof(ma_audio_buffer) + (size_t) (capacity * bytesPerFrame), NULL);
+        if (buffer == NULL && capacity > 4096) {
+            // The expected length can be wrong (e.g. a corrupted header), start small instead
+            capacity = 4096;
+            if (capacity > maxFrames) capacity = maxFrames;
+            buffer = (ma_audio_buffer*) ma_malloc(sizeof(ma_audio_buffer) + (size_t) (capacity * bytesPerFrame), NULL);
+        }
+        if (buffer == NULL) {
+            ma_decoder_uninit(&decoder);
+            return MA_OUT_OF_MEMORY;
         }
 
-        ma_uint32 sampleRate = ma_engine_get_sample_rate(&engine);
-        ma_decoder_config config = ma_decoder_config_init(ma_format_f32, outputChannels, sampleRate);
+        ma_uint64 frameCount = 0;
+        for (;;) {
+            ma_uint64 framesToRead = capacity - frameCount;
+            ma_uint64 framesRead = 0;
+            ma_uint8* pFrames = (ma_uint8*) (buffer + 1) + (size_t) (frameCount * bytesPerFrame);
+            result = ma_decoder_read_pcm_frames(&decoder, pFrames, framesToRead, &framesRead);
+            frameCount += framesRead;
 
-        ma_decoding_backend_vtable* pCustomBackendVTables[] =
-        {
-            ma_decoding_backend_libvorbis,
-            ma_decoding_backend_libopus
-        };
+            // Same end condition of ma_decode_memory: a decoding error keeps the frames read so far
+            if (result != MA_SUCCESS || framesRead < framesToRead) {
+                result = MA_SUCCESS;
+                break;
+            }
 
-        config.pCustomBackendUserData = NULL;
-        config.ppCustomBackendVTables = pCustomBackendVTables;
-        config.customBackendCount     = sizeof(pCustomBackendVTables) / sizeof(pCustomBackendVTables[0]);
+            // Block full, double it
+            if (capacity == maxFrames) {
+                result = MA_TOO_BIG;
+                break;
+            }
+            ma_uint64 newCapacity = capacity * 2 < maxFrames ? capacity * 2 : maxFrames;
+            ma_audio_buffer* newBuffer = (ma_audio_buffer*) ma_realloc(buffer, sizeof(ma_audio_buffer) + (size_t) (newCapacity * bytesPerFrame), NULL);
+            if (newBuffer == NULL) {
+                result = MA_OUT_OF_MEMORY;
+                break;
+            }
+            buffer = newBuffer;
+            capacity = newCapacity;
+        }
+        ma_decoder_uninit(&decoder);
 
-        ma_uint64 frameCountOut = 0;
-        void* pPcmFramesOut = NULL;
-
-        ma_result result = ma_decode_memory(data, length, &config, &frameCountOut, &pPcmFramesOut);
-
+        if (result == MA_SUCCESS && frameCount == 0) result = MA_NO_DATA_AVAILABLE;
         if (result != MA_SUCCESS) {
-            jlong nativeValues[] = {(jlong) result, 0L};
-            env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
-        } else {
-            jlong nativeValues[] = {(jlong) pPcmFramesOut, (jlong) frameCountOut};
-            env->SetLongArrayRegion(returnArray, 0, 2, nativeValues);
+            ma_free(buffer, NULL);
+            return (jlong) result;
         }
 
-        return returnArray;
-        #endif
+        // Shrink the block to the decoded frames. The audio buffer is initialized only now since it points to its
+        // own data, and realloc can move the block
+        if (frameCount < capacity) {
+            ma_audio_buffer* shrunkBuffer = (ma_audio_buffer*) ma_realloc(buffer, sizeof(ma_audio_buffer) + (size_t) (frameCount * bytesPerFrame), NULL);
+            // On failure the bigger block is still valid
+            if (shrunkBuffer != NULL) buffer = shrunkBuffer;
+        }
+
+        ma_audio_buffer_config bufferConfig = ma_audio_buffer_config_init(ma_format_f32, channels, frameCount, buffer + 1, NULL);
+        result = ma_audio_buffer_init(&bufferConfig, buffer);
+        if (result != MA_SUCCESS) {
+            ma_free(buffer, NULL);
+            return (jlong) result;
+        }
+
+        return (jlong) buffer;
     */
 
     /**
@@ -3452,17 +3451,6 @@ public class MiniAudio implements Disposable {
             throw new IllegalArgumentException("Invalid output format: channels " + channels + ", sample rate " + sampleRate + ".");
         return new MADecoder(jniCreateDecoderFromMemory(data, data.length, channels, sampleRate));
     }
-
-    /*JNI
-        // Decoders read files through the same VFS and decoding backends used by sounds
-        static ma_decoder_config jni_decoder_config(jint channels, jint sampleRate) {
-            ma_decoder_config config = ma_decoder_config_init(ma_format_f32, (ma_uint32) channels, (ma_uint32) sampleRate);
-            config.ppCustomBackendVTables = resourceManager->config.ppCustomDecodingBackendVTables;
-            config.customBackendCount     = resourceManager->config.customDecodingBackendCount;
-            config.pCustomBackendUserData = resourceManager->config.pCustomDecodingBackendUserData;
-            return config;
-        }
-    */
 
     private native long jniCreateDecoder(String fileName, int channels, int sampleRate, boolean external);/*
         if (resourceManager == NULL) return MA_INVALID_OPERATION;
