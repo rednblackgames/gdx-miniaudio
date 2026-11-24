@@ -364,7 +364,6 @@ public class MiniAudio implements Disposable {
                         break;
                     case 1:
                         em_dispatch_log(event->level, event->message);
-                        ma_free(event->message, NULL);
                         break;
                     case 2:
                         em_dispatch_notification(event->notificationType);
@@ -373,7 +372,6 @@ public class MiniAudio implements Disposable {
                         ma_uint32 total = event->frameCount * event->channels;
                         em_dispatch_visualizer((intptr_t)event->nodeAddress,
                             event->pcmData, total, event->channels);
-                        ma_free(event->pcmData, NULL);
                         break;
                     }
                 }
@@ -424,17 +422,13 @@ public class MiniAudio implements Disposable {
                 new_len = len - 1;
             }
 
-            Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
+            // Event and message in one block, ma_free(event) frees both
+            Event* event = (Event*) ma_malloc(sizeof(Event) + new_len + 1, NULL);
             if (event == NULL) {
                 return;
             }
 
-            event->message = (char*) ma_malloc(new_len + 1, NULL);
-            if (event->message == NULL) {
-                ma_free(event, NULL);
-                return;
-            }
-
+            event->message = (char*) (event + 1);
             memcpy(event->message, pMessage, new_len);
             event->message[new_len] = '\0';
             event->type = 1;
@@ -442,7 +436,6 @@ public class MiniAudio implements Disposable {
 
             #if defined(MA_EMSCRIPTEN)
             if (enqueue(lock_free_queue, event) == -1) {
-                ma_free(event->message, NULL);
                 ma_free(event, NULL);
             }
             #else
@@ -470,17 +463,17 @@ public class MiniAudio implements Disposable {
         void visualizer_pcm_callback_jni(const float* pFrames, ma_uint32 frameCount,
                                           ma_uint32 channels, void* pUserData) {
             ma_uint32 totalSamples = frameCount * channels;
-            Event* event = (Event*) ma_malloc(sizeof(Event), NULL);
+            // Event and PCM data in one block, ma_free(event) frees both.
+            // sizeof(Event) is a multiple of the pointer alignment, so floats right after it are aligned.
+            Event* event = (Event*) ma_malloc(sizeof(Event) + totalSamples * sizeof(float), NULL);
             if (event == NULL) return;
-            event->pcmData = (float*) ma_malloc(totalSamples * sizeof(float), NULL);
-            if (event->pcmData == NULL) { ma_free(event, NULL); return; }
+            event->pcmData = (float*) (event + 1);
             memcpy(event->pcmData, pFrames, totalSamples * sizeof(float));
             event->type = 3;
             event->frameCount = frameCount;
             event->channels = channels;
             event->nodeAddress = pUserData;
             if (enqueue(lock_free_queue, event) == -1) {
-                ma_free(event->pcmData, NULL);
                 ma_free(event, NULL);
             }
         }
@@ -493,7 +486,6 @@ public class MiniAudio implements Disposable {
                 jstring javaMessage = newJavaStringFromUTF8(env, event->message);
                 env->CallVoidMethod(jMiniAudio, jon_native_log, event->level, javaMessage);
                 env->DeleteLocalRef(javaMessage);
-                ma_free(event->message, NULL);
             } else if (event->type == 2) {
                 env->CallVoidMethod(jMiniAudio, jon_native_notification, event->notificationType);
             } else if (event->type == 3) {
@@ -510,7 +502,6 @@ public class MiniAudio implements Disposable {
                 env->SetFloatArrayRegion(jVisualizerBuffer, 0, totalSamples, event->pcmData);
                 env->CallVoidMethod(jMiniAudio, jon_native_visualizer,
                     (jlong) event->nodeAddress, jVisualizerBuffer, (jint) totalSamples, (jint) event->channels);
-                ma_free(event->pcmData, NULL);
             }
             ma_free(event, NULL);
         }
@@ -1285,11 +1276,6 @@ public class MiniAudio implements Disposable {
         {
             Event* event;
             while (dequeue(lock_free_queue, &event) == 0) {
-                if (event->type == 1 && event->message != NULL) {
-                    ma_free(event->message, NULL);
-                } else if (event->type == 3 && event->pcmData != NULL) {
-                    ma_free(event->pcmData, NULL);
-                }
                 ma_free(event, NULL);
             }
         }
@@ -3126,11 +3112,6 @@ public class MiniAudio implements Disposable {
         #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) {
             // Previous event not freed — free it now to avoid leak
-            if (current_poll_event->type == 1 && current_poll_event->message != NULL) {
-                ma_free(current_poll_event->message, NULL);
-            } else if (current_poll_event->type == 3 && current_poll_event->pcmData != NULL) {
-                ma_free(current_poll_event->pcmData, NULL);
-            }
             ma_free(current_poll_event, NULL);
             current_poll_event = NULL;
         }
@@ -3220,11 +3201,6 @@ public class MiniAudio implements Disposable {
     private native void jniFreeCurrentEvent();/*
         #if defined(MA_EMSCRIPTEN)
         if (current_poll_event != NULL) {
-            if (current_poll_event->type == 1 && current_poll_event->message != NULL) {
-                ma_free(current_poll_event->message, NULL);
-            } else if (current_poll_event->type == 3 && current_poll_event->pcmData != NULL) {
-                ma_free(current_poll_event->pcmData, NULL);
-            }
             ma_free(current_poll_event, NULL);
             current_poll_event = NULL;
         }

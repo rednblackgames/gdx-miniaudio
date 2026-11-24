@@ -3,9 +3,14 @@
 
 #define QUEUE_SIZE 4096
 
+/*
+Every event is a single ma_malloc block: message and pcmData point right after the Event struct, in the same
+allocation, so ma_free(event) releases everything.
+*/
 typedef struct {
     int type;
     ma_sound* sound;
+    /* type == 1: log */
     ma_uint32 level;
     char* message;
     int notificationType;
