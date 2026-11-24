@@ -76,7 +76,9 @@ public class MiniAudio implements Disposable {
         #include "miniaudio_jar_vfs.h"
         ma_jar_vfs* jarVFS;
         #endif
-        ma_resource_manager* resourceManager;
+        ma_resource_manager resourceManager;
+        // True between a successful resource manager init and the engine dispose
+        ma_bool32 resourceManagerInitialized = MA_FALSE;
 
         #ifndef MA_ANDROID_LOG_TAG
         #define MA_ANDROID_LOG_TAG  "miniaudio"
@@ -1084,8 +1086,6 @@ public class MiniAudio implements Disposable {
         engineConfig.periodSizeInFrames = ma_device__get_processing_size_in_frames(&device);
 
         ma_resource_manager_config resourceManagerConfig;
-        resourceManager = (ma_resource_manager*) ma_malloc(sizeof(ma_resource_manager), NULL);
-
         resourceManagerConfig = ma_resource_manager_config_init();
         resourceManagerConfig.decodedFormat     = ma_format_f32;
         resourceManagerConfig.decodedSampleRate = device.sampleRate;
@@ -1120,12 +1120,19 @@ public class MiniAudio implements Disposable {
         resourceManagerConfig.pVFS = jarVFS;
         #endif
 
-        res = ma_resource_manager_init(&resourceManagerConfig, resourceManager);
+        res = ma_resource_manager_init(&resourceManagerConfig, &resourceManager);
         if (res != MA_SUCCESS) return res;
+        resourceManagerInitialized = MA_TRUE;
 
-        engineConfig.pResourceManager = resourceManager;
+        engineConfig.pResourceManager = &resourceManager;
 
-		return ma_engine_init(&engineConfig, &engine);
+        res = ma_engine_init(&engineConfig, &engine);
+        if (res != MA_SUCCESS) {
+            // Stop the resource manager job threads, initEngine can be called again
+            ma_resource_manager_uninit(&resourceManager);
+            resourceManagerInitialized = MA_FALSE;
+        }
+        return res;
 	*/
 
     private native long jniEngineAddress();/*
@@ -1238,7 +1245,10 @@ public class MiniAudio implements Disposable {
 
     private native void jniDispose();/*
         ma_engine_uninit(&engine);
-        ma_resource_manager_uninit(resourceManager);
+        if (resourceManagerInitialized) {
+            ma_resource_manager_uninit(&resourceManager);
+            resourceManagerInitialized = MA_FALSE;
+        }
 
         #if defined(MA_JAR_VFS_ENABLED)
         ma_jar_vfs_uninit(jarVFS);
@@ -3276,9 +3286,9 @@ public class MiniAudio implements Disposable {
         // Decoders read files through the same VFS and decoding backends used by sounds
         static ma_decoder_config jni_decoder_config(jint channels, jint sampleRate) {
             ma_decoder_config config = ma_decoder_config_init(ma_format_f32, (ma_uint32) channels, (ma_uint32) sampleRate);
-            config.ppCustomBackendVTables = resourceManager->config.ppCustomDecodingBackendVTables;
-            config.customBackendCount     = resourceManager->config.customDecodingBackendCount;
-            config.pCustomBackendUserData = resourceManager->config.pCustomDecodingBackendUserData;
+            config.ppCustomBackendVTables = resourceManager.config.ppCustomDecodingBackendVTables;
+            config.customBackendCount     = resourceManager.config.customDecodingBackendCount;
+            config.pCustomBackendUserData = resourceManager.config.pCustomDecodingBackendUserData;
             return config;
         }
     */
@@ -3308,7 +3318,7 @@ public class MiniAudio implements Disposable {
     }
 
     private native long jniDecodeBytes(byte[] data, int length, int outputChannels);/*
-        if (resourceManager == NULL) return MA_INVALID_OPERATION;
+        if (!resourceManagerInitialized) return MA_INVALID_OPERATION;
 
         ma_uint32 channels = (ma_uint32) outputChannels;
         ma_decoder_config config = jni_decoder_config(outputChannels, (jint) ma_engine_get_sample_rate(&engine));
@@ -3453,10 +3463,10 @@ public class MiniAudio implements Disposable {
     }
 
     private native long jniCreateDecoder(String fileName, int channels, int sampleRate, boolean external);/*
-        if (resourceManager == NULL) return MA_INVALID_OPERATION;
+        if (!resourceManagerInitialized) return MA_INVALID_OPERATION;
 
         ma_decoder_config config = jni_decoder_config(channels, sampleRate);
-        ma_vfs* pVFS = resourceManager->config.pVFS;
+        ma_vfs* pVFS = resourceManager.config.pVFS;
 
         ma_decoder* decoder = (ma_decoder*) ma_malloc(sizeof(ma_decoder), NULL);
         if (decoder == NULL) return MA_OUT_OF_MEMORY;
@@ -3488,7 +3498,7 @@ public class MiniAudio implements Disposable {
     */
 
     private native long jniCreateDecoderFromMemory(byte[] data, int length, int channels, int sampleRate);/*
-        if (resourceManager == NULL) return MA_INVALID_OPERATION;
+        if (!resourceManagerInitialized) return MA_INVALID_OPERATION;
 
         ma_decoder_config config = jni_decoder_config(channels, sampleRate);
 
